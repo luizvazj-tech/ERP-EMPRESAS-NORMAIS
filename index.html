@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FolhaPro — Departamento Pessoal, Folha de Pagamento e eSocial</title>
+<style>
+:root{--bg:#f3f5f7;--card:#fff;--ink:#17212b;--mut:#5d6b79;--line:#dbe2e9;--pri:#0f5c63;--pri2:#0a4146;--pri3:#e3f1f2;--acc:#b7791f;--ok:#1a7f4b;--okb:#e2f4ea;--warn:#9a6700;--warnb:#fff4d6;--err:#b42318;--errb:#fde8e6;--blue:#1f5fbf;--blueb:#e4edfb}
+*{box-sizing:border-box}html,body{margin:0}
+body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:76px}
+#top{background:var(--pri2);color:#fff;display:flex;align-items:center;gap:14px;padding:10px 18px;position:sticky;top:0;z-index:20}
+#top .logo{font-weight:700;font-size:17px;letter-spacing:.2px}#top .logo span{color:#e8c37a}
+#top .emp{margin-left:auto;font-size:12.5px;opacity:.9;text-align:right}
+#top button{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px}
+#top button:hover{background:rgba(255,255,255,.22)}
+#app{display:flex;align-items:flex-start;gap:0;max-width:1500px;margin:0 auto}
+#side{width:230px;flex:none;padding:14px 10px;position:sticky;top:52px;max-height:calc(100vh - 130px);overflow:auto}
+#side h6{margin:14px 8px 4px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut)}
+#side a{display:block;padding:7px 10px;border-radius:6px;color:var(--ink);cursor:pointer;font-size:13.5px}
+#side a:hover{background:#e5eaef}#side a.on{background:var(--pri);color:#fff}
+#main{flex:1;min-width:0;padding:18px 20px 30px}
+h1{font-size:21px;margin:0 0 2px}h2{font-size:16px;margin:0 0 10px}h3{font-size:14px;margin:0 0 8px}
+.sub{color:var(--mut);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+.grid>.f{grid-column:span 3}
+.f label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px;font-weight:600}
+.f input,.f select,.f textarea{width:100%;padding:8px 9px;border:1px solid #c7d0d9;border-radius:6px;font:inherit;background:#fff}
+.f input:focus,.f select:focus,.f textarea:focus{outline:2px solid #9ccfd3;border-color:var(--pri)}
+.f input[readonly]{background:#eef2f5}
+.f small{display:block;color:var(--mut);font-size:11.5px;margin-top:2px}
+.chk{display:flex!important;align-items:center;gap:7px;font-weight:400!important;font-size:13.5px!important;color:var(--ink)!important;padding-top:6px}.chk input{width:auto!important}
+.rq{color:var(--err)}
+.btn{border:1px solid #bcc7d1;background:#fff;border-radius:7px;padding:8px 14px;cursor:pointer;font:inherit;font-weight:600;color:var(--ink)}
+.btn:hover{background:#eef2f5}.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}.btn.pri:hover{background:var(--pri2)}
+.btn.send{background:var(--acc);border-color:var(--acc);color:#fff}.btn.send:hover{background:#97640f}
+.btn.danger{color:var(--err);border-color:#e3b1ab}.btn.sm{padding:4px 9px;font-size:12.5px;font-weight:600}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+#bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 18px;display:flex;gap:10px;align-items:center;z-index:30;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#bar .sp{flex:1}#bar .hint{color:var(--mut);font-size:11.5px}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{background:#eef2f5;text-align:left;padding:7px 9px;font-size:12px;color:var(--mut);border-bottom:1px solid var(--line);white-space:nowrap}
+table.t td{padding:7px 9px;border-bottom:1px solid #edf0f3;vertical-align:middle}
+table.t tr:hover td{background:#fafcfd}.r{text-align:right}.c{text-align:center}
+.tw{overflow:auto;border:1px solid var(--line);border-radius:8px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.b-gray{background:#e8ecf0;color:#4a5662}.b-blue{background:var(--blueb);color:var(--blue)}.b-ok{background:var(--okb);color:var(--ok)}.b-err{background:var(--errb);color:var(--err)}.b-warn{background:var(--warnb);color:var(--warn)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}.kpi b{display:block;font-size:20px;margin-top:2px}.kpi span{font-size:12px;color:var(--mut)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.step{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff;display:flex;flex-direction:column;gap:6px}
+.step .n{width:24px;height:24px;border-radius:50%;background:var(--pri3);color:var(--pri);font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-right:6px}
+.step.done .n{background:var(--ok);color:#fff}.step p{margin:0;color:var(--mut);font-size:12.5px;flex:1}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.tabs a{padding:8px 14px;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:7px 7px 0 0;color:var(--mut);font-weight:600}
+.tabs a.on{background:#fff;border-color:var(--line);color:var(--pri);margin-bottom:-1px}
+.note{border-left:4px solid var(--acc);background:var(--warnb);padding:9px 12px;border-radius:6px;font-size:13px;margin:0 0 14px}
+.note.info{border-color:var(--blue);background:var(--blueb)}.note.err{border-color:var(--err);background:var(--errb)}.note.ok{border-color:var(--ok);background:var(--okb)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row.sp{justify-content:space-between}
+pre.xml{background:#0f1a22;color:#d7e7ee;padding:12px;border-radius:8px;overflow:auto;max-height:420px;font-size:12px;line-height:1.5;white-space:pre}
+code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+#modal{position:fixed;inset:0;background:rgba(15,26,34,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 14px;overflow:auto}
+#modal.on{display:flex}.mbox{background:#fff;border-radius:12px;max-width:760px;width:100%;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.mbox.wide{max-width:1000px}.mbox h2{margin-bottom:12px}
+#toast{position:fixed;right:16px;top:64px;z-index:60;display:flex;flex-direction:column;gap:8px}
+.tst{background:#17212b;color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:380px;font-size:13px}.tst.ok{background:var(--ok)}.tst.err{background:var(--err)}
+.hol{background:#fff;border:1px solid #222;padding:16px 18px;font-size:12.5px;color:#000;max-width:820px;margin:0 auto 14px}
+.hol h4{margin:0;font-size:15px;text-align:center}.hol .hd{display:flex;justify-content:space-between;gap:10px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px}
+.hol table{width:100%;border-collapse:collapse}.hol th,.hol td{border:1px solid #444;padding:3px 6px}.hol th{background:#eee;font-size:11.5px}
+.hol .bx{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:8px}.hol .bx div{border:1px solid #444;padding:4px 6px}.hol .bx small{display:block;font-size:10.5px;color:#333}
+.hol .ass{margin-top:26px;display:flex;justify-content:space-between;gap:30px}.hol .ass div{flex:1;border-top:1px solid #000;text-align:center;padding-top:3px;font-size:11.5px}
+#printarea{display:none}
+.mat td input{width:78px;padding:4px 5px;border:1px solid #c7d0d9;border-radius:5px;text-align:right}
+.mat td input.w{width:130px;text-align:left}
+.dep{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr auto auto auto auto;gap:8px;align-items:end;margin-bottom:8px;padding:8px;background:#f7f9fa;border-radius:8px}
+.dep .f{grid-column:auto}
+@media (max-width:900px){#side{display:none}.grid>.f{grid-column:span 6!important}.dep{grid-template-columns:1fr 1fr}}
+@media print{body{background:#fff;padding:0}body.printing #top,body.printing #app,body.printing #bar,body.printing #modal,body.printing #toast{display:none!important}body.printing #printarea{display:block}.hol{border:1px solid #000;page-break-after:always;margin:0 auto}}
+</style>
+</head>
+<body>
+<header id="top">
+  <div class="logo">Folha<span>Pro</span></div>
+  <button data-act="home" title="Alt+I">⌂ Tela inicial</button>
+  <button data-act="back" title="Alt+V">◀ Voltar</button>
+  <div class="emp" id="topemp"></div>
+</header>
+<div id="app"><nav id="side"></nav><main id="main"></main></div>
+<footer id="bar"></footer>
+<div id="modal"></div><div id="toast"></div><div id="printarea"></div>
+<script>
+'use strict';
+/* =====================================================================
+   FOLHA PRO — núcleo (sem DOM): utilitários, parâmetros legais, motor de
+   cálculo, banco local e geradores de eventos do eSocial (leiaute S-1.3)
+   ===================================================================== */
+const r2=v=>Math.round((Number(v)+Number.EPSILON)*100)/100;
+const onlyD=s=>String(s==null?'':s).replace(/\D/g,'');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl=v=>Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=v=>{ if(typeof v==='number') return v; let s=String(v==null?'':v).trim(); if(!s) return 0; if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isNaN(n)?0:n; };
+const fx=v=>r2(v).toFixed(2);
+const brIn=v=>(v===''||v==null||isNaN(v))?'':Number(v).toFixed(2).replace('.',',');
+function cpfValido(c){c=onlyD(c);if(c.length!==11||/^(\d)\1+$/.test(c))return false;for(let t=9;t<11;t++){let s=0;for(let i=0;i<t;i++)s+=c[i]*(t+1-i);if((s*10)%11%10!=c[t])return false;}return true;}
+function cnpjValido(c){c=onlyD(c);if(c.length!==14||/^(\d)\1+$/.test(c))return false;const f=n=>{let p=n-7,s=0;for(let i=0;i<n;i++){s+=c[i]*p--;if(p<2)p=9;}const r=s%11;return r<2?0:11-r;};return f(12)==c[12]&&f(13)==c[13];}
+const fmtCPF=c=>{c=onlyD(c);return c.length===11?c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4'):c;};
+const fmtCNPJ=c=>{c=onlyD(c);return c.length===14?c.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5'):c;};
+const fmtCEP=c=>{c=onlyD(c);return c.length===8?c.replace(/(\d{5})(\d{3})/,'$1-$2'):c;};
+const fmtData=d=>d?String(d).split('-').reverse().join('/'):'';
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const compLabel=c=>{const [a,m]=String(c).split('-');return MESES[+m-1]+'/'+a;};
+const hoje=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const compAtual=()=>hoje().slice(0,7);
+const diasMes=c=>{const [a,m]=c.split('-').map(Number);return new Date(a,m,0).getDate();};
+const idadeEm=(nasc,ref)=>{if(!nasc)return 0;const n=new Date(nasc),r=new Date(ref);let i=r.getFullYear()-n.getFullYear();if(r.getMonth()<n.getMonth()||(r.getMonth()==n.getMonth()&&r.getDate()<n.getDate()))i--;return i;};
+const agoraISO=()=>new Date().toISOString();
+const dtHora=iso=>{if(!iso)return '';const d=new Date(iso);return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});};
+
+/* ---------------- Parâmetros legais 2026 (editáveis na tela própria) ---------------- */
+function defaultParams(){return{
+  salMin:1621.00, tetoInss:8475.55,
+  inss:[[1621.00,7.5],[2902.84,9],[4354.27,12],[8475.55,14]],
+  irrf:[[2428.80,0,0],[2826.65,7.5,182.16],[3751.05,15,394.16],[4664.68,22.5,675.49],[999999999,27.5,908.73]],
+  depIr:189.59, simpl:607.20,
+  redutor:{isento:5000.00,teto:7350.00,a:978.62,b:0.133145},
+  salFam:{cota:67.54,limite:1980.38,idade:14},
+  fgts:8, fgtsAprendiz:2, vtPerc:6,
+  patronal:20, rat:2, fap:1, terceiros:5.8, adNoturno:20, peric:30, he50:50, he100:100, divisor:220, cprbFrac:{2025:25,2026:50,2027:75}, venc:{inss:20,fgts:20}
+};}
+
+/* ---------------- Rubricas padrão ---------------- */
+// natureza (Tabela 3) preenchida apenas onde confirmada em fonte oficial: 1000, 1409, 9200, 9201, 9203.
+function defaultRubricas(){
+  const R=(sys,cod,desc,tp,nat,cp,ir,fg,reduz)=>({sys,cod,desc,tp,nat,incCP:cp,incIRRF:ir,incFGTS:fg,reduz:!!reduz,conf:['1000','1409','9200','9201','9203'].includes(nat)?false:false});
+  return [
+    R('SAL','001','SALÁRIO',1,'1000','11','11','11'),
+    R('INSAL','002','ADICIONAL DE INSALUBRIDADE',1,'','11','11','11'),
+    R('PERIC','003','ADICIONAL DE PERICULOSIDADE',1,'','11','11','11'),
+    R('ADNOT','004','ADICIONAL NOTURNO',1,'','11','11','11'),
+    R('HE50','005','HORAS EXTRAS 50%',1,'','11','11','11'),
+    R('HE100','006','HORAS EXTRAS 100%',1,'','11','11','11'),
+    R('DSRHE','007','DSR SOBRE HORAS EXTRAS',1,'','11','11','11'),
+    R('COMIS','008','COMISSÕES',1,'','11','11','11'),
+    R('GRAT','009','GRATIFICAÇÕES',1,'','11','11','11'),
+    R('OUTP','010','OUTROS PROVENTOS TRIBUTÁVEIS',1,'','11','11','11'),
+    R('SALFAM','011','SALÁRIO-FAMÍLIA',1,'1409','00','00','00'),
+    R('FALTAS','101','FALTAS INJUSTIFICADAS',2,'','11','11','11',true),
+    R('ATRASOS','102','ATRASOS / SAÍDAS ANTECIPADAS',2,'','11','11','11',true),
+    R('INSS','103','INSS',2,'9201','00','31','00'),
+    R('IRRF','104','IRRF',2,'9203','00','00','00'),
+    R('VT','105','VALE-TRANSPORTE (6%)',2,'','00','00','00'),
+    R('ADIANT','106','ADIANTAMENTO SALARIAL',2,'9200','00','00','00'),
+    R('PENSAO','107','PENSÃO ALIMENTÍCIA',2,'','00','00','00'),
+    R('OUTD','108','OUTROS DESCONTOS',2,'','00','00','00'),
+    R('FERIAS','012','FÉRIAS',1,'','11','11','11'),
+    R('FERTERCO','013','1/3 CONSTITUCIONAL DE FÉRIAS',1,'','11','11','11'),
+    R('ABONO','014','ABONO PECUNIÁRIO DE FÉRIAS',1,'','00','00','00'),
+    R('ABONOTERCO','015','1/3 S/ ABONO PECUNIÁRIO',1,'','00','00','00'),
+    R('D13','016','13º SALÁRIO',1,'','12','12','12'),
+    R('D13P1','109','ADIANTAMENTO 13º (1ª PARCELA)',2,'','00','00','00'),
+    R('D13INSS','110','INSS S/ 13º SALÁRIO',2,'9201','00','32','00'),
+    R('D13IRRF','111','IRRF S/ 13º SALÁRIO',2,'9203','00','00','00'),
+    R('AVISO','017','AVISO PRÉVIO INDENIZADO',1,'','00','00','11'),
+    R('FERVENC','018','FÉRIAS VENCIDAS INDENIZADAS',1,'','00','00','00'),
+    R('FERPROP','019','FÉRIAS PROPORCIONAIS',1,'','00','00','00'),
+    R('FERPTERCO','020','1/3 S/ FÉRIAS NA RESCISÃO',1,'','00','00','00'),
+    R('D13PROP','021','13º SALÁRIO PROPORCIONAL',1,'','12','12','12'),
+    R('AVISOD','112','DESCONTO AVISO PRÉVIO NÃO CUMPRIDO',2,'','00','00','00')
+  ];
+}
+
+/* ---------------- Banco local ---------------- */
+const LS_KEY='folhaPro.v1';
+let DB=null,_mem=null;
+function emptyDB(){return{ver:1,empresa:null,estabs:[],lotacoes:[],cargos:[],rubricas:defaultRubricas(),empregados:[],comps:{},eventos:[],seq:0,entregues:{},movs:[],ferias:[],decimo:{},rescisoes:{},
+  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams()};}
+function loadDB(){let r=null;try{r=localStorage.getItem(LS_KEY);}catch(e){}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{if(!o.rubricas.some(x=>x.sys===r.sys))o.rubricas.push(r);});migrar(o);return o;}catch(e){}}return emptyDB();}
+function migrar(o){const E=o.empresa;if(E&&!E.regime){const ct=E.classTrib;E.regime=['01','02','03'].includes(ct)?'sn':'lp';E.anexo=ct==='03'?'iv':ct==='02'?'misto':'std';E.cprb=false;}
+  if(E&&E.regime)E.classTrib=classTribDe(E);
+  (o.lotacoes||[]).forEach(l=>{if(l.terceiros==null)l.terceiros='';});}
+function saveDB(){const s=JSON.stringify(DB);_mem=s;try{localStorage.setItem(LS_KEY,s);}catch(e){}}
+const uid=(p)=>p+Math.random().toString(36).slice(2,9);
+const byId=(arr,id)=>(arr||[]).find(x=>x.id===id);
+
+/* ---------------- Motor de cálculo ---------------- */
+function calcInss(base,P){base=Math.min(Math.max(base,0),P.tetoInss);let prev=0,t=0;for(const [lim,al] of P.inss){if(base>prev)t+=(Math.min(base,lim)-prev)*al/100;prev=lim;}return r2(t);}
+function impostoTabela(base,P){for(const [lim,al,ded] of P.irrf){if(base<=lim)return Math.max(0,r2(base*al/100-ded));}return 0;}
+function calcIrrf(rendTrib,inss,nDep,pensao,P,semRed){
+  const dedLegal=inss+nDep*P.depIr+pensao;
+  const baseL=Math.max(0,r2(rendTrib-dedLegal)),baseS=Math.max(0,r2(rendTrib-P.simpl));
+  const impL=impostoTabela(baseL,P),impS=impostoTabela(baseS,P);
+  const simp=impS<impL,base=simp?baseS:baseL,imp=Math.min(impL,impS);
+  let red=0;const R=P.redutor;
+  if(semRed){}else if(rendTrib<=R.isento)red=imp;else if(rendTrib<R.teto)red=Math.min(imp,Math.max(0,r2(R.a-R.b*rendTrib)));
+  return{base,imposto:imp,reducao:r2(red),irrf:Math.max(0,r2(imp-red)),simplificado:simp};
+}
+const rubBy=(sys)=>DB.rubricas.find(r=>r.sys===sys);
+function empAtivoNaComp(e,comp){
+  if(e.situacao==='afastado'&&e.afastAteComp&&e.afastAteComp>=comp)return false;
+  if(e.admissao&&e.admissao.slice(0,7)>comp)return false;
+  if(e.desligamento&&e.desligamento.slice(0,7)<comp)return false;
+  return true;
+}
+const LANC_CAMPOS=[['he50','HE 50% (h)'],['he100','HE 100% (h)'],['adnot','Ad. noturno (h)'],['faltas','Faltas (dias)'],['atrasos','Atrasos (h)'],['comis','Comissões R$'],['grat','Gratificações R$'],['outp','Outros prov. R$'],['adiant','Adiantamento R$'],['outd','Outros desc. R$']];
+function calcEmpregado(e,comp,L,P,emp){
+  L=L||{};const it=[];const ctx=DB.comps[comp]||{};
+  const add=(sys,ref,val,info,sep)=>{if(val>0||info){const r=rubBy(sys);it.push({sys,cod:r.cod,desc:r.desc,tp:r.tp,ref:ref||'',valor:r2(val),sep:!!sep,r});}};
+  const dm=diasMes(comp);let dias=30;
+  if(e.admissao&&e.admissao.slice(0,7)===comp)dias=Math.max(0,30-(Number(e.admissao.slice(8,10))-1));
+  if(e.desligamento&&e.desligamento.slice(0,7)===comp)dias=Math.min(dias,Number(e.desligamento.slice(8,10)));
+  const fer=feriasNoMes(e,comp);dias=Math.max(0,dias-fer.diasGozoMes);
+  const sal=num(e.salario);
+  const salMes=dias>=30?sal:r2(sal/30*dias);
+  const div=num(e.divisor)||P.divisor;
+  const peric=e.peric?r2(sal*P.peric/100):0;
+  const insal=e.insal?r2(P.salMin*Number(e.insal)/100):0;
+  const vh=(sal+peric+insal)/div;
+  const vhSal=sal/div;
+  add('SAL',dias+' d',salMes);
+  if(insal)add('INSAL',e.insal+'%',insal);
+  if(peric)add('PERIC',P.peric+'%',peric);
+  (DB.ferias||[]).filter(f=>f.empId===e.id&&f.compPgto===comp).forEach(f=>{const c=f.calc;add('FERIAS',f.diasGozo+' d',c.ferias);add('FERTERCO','',c.terco);if(c.abono>0){add('ABONO',f.diasAbono+' d',c.abono);add('ABONOTERCO','',c.abonoTerco);}});
+  const hAdn=num(L.adnot);if(hAdn>0)add('ADNOT',hAdn+' h',r2(hAdn*vhSal*P.adNoturno/100));
+  const h50=num(L.he50),h100=num(L.he100);
+  const vHE50=r2(h50*vh*(1+P.he50/100)),vHE100=r2(h100*vh*(1+P.he100/100));
+  if(h50>0)add('HE50',h50+' h',vHE50);
+  if(h100>0)add('HE100',h100+' h',vHE100);
+  const du=num(ctx.diasUteis),df=num(ctx.domFer);
+  if((vHE50+vHE100)>0&&du>0&&df>0)add('DSRHE',df+' d',r2((vHE50+vHE100)/du*df));
+  add('COMIS','',num(L.comis));add('GRAT','',num(L.grat));add('OUTP','',num(L.outp));
+  // 13º salário e verbas rescisórias (tributação exclusiva/separada)
+  let base13=0,sep13=0,inss13=0,irrf13=0,multaFgts=0,notasRes=[];
+  const a13=comp.slice(0,4),d13=(DB.decimo||{})[a13+'|'+e.id];
+  const rsAno=!!((DB.rescisoes||{})[e.id]&&e.desligamento&&e.desligamento.slice(0,4)===a13);
+  if(d13&&!rsAno){const p1=d13.p1&&d13.p1.comp===comp,p2=d13.p2&&d13.p2.comp===comp;
+    if(p2){add('D13',d13.avos+'/12',d13.bruto,0,1);if(!p1&&d13.p1&&d13.p1.valor>0)add('D13P1','',d13.p1.valor,0,1);add('D13INSS','',d13.inss13,0,1);add('D13IRRF','',d13.irrf13,0,1);base13+=d13.bruto;inss13=d13.inss13;irrf13=d13.irrf13;}
+    else if(p1){add('D13','1ª parcela',d13.p1.valor,0,1);}}
+  const rs=(DB.rescisoes||{})[e.id];
+  if(rs&&e.desligamento&&e.desligamento.slice(0,7)===comp){const v=calcRescisaoVerbas(e,rs,P);notasRes=v.notas;multaFgts=v.multaFgts;
+    if(v.aviso>0)add('AVISO',v.avisoDias+' d',v.aviso);
+    if(v.ferVenc>0){add('FERVENC',rs.ferVencPer+' per',v.ferVenc);add('FERPTERCO','venc.',v.ferVencTerco);}
+    if(v.ferProp>0){add('FERPROP',v.avosFer+'/12',v.ferProp);add('FERPTERCO','prop.',v.ferPropTerco);}
+    if(v.d13>0){add('D13PROP',v.avos13+'/12',v.d13,0,1);const dd=(DB.decimo||{})[e.desligamento.slice(0,4)+'|'+e.id];if(dd&&dd.p1&&dd.p1.comp<comp&&dd.p1.valor>0)add('D13P1','',dd.p1.valor,0,1);add('D13INSS','',v.inss13,0,1);add('D13IRRF','',v.irrf13,0,1);base13+=v.d13;inss13+=v.inss13;irrf13+=v.irrf13;}
+    if(v.avisoDesc>0)add('AVISOD','',v.avisoDesc);}
+  // faltas e atrasos
+  const fal=num(L.faltas);if(fal>0)add('FALTAS',fal+' d',r2(sal/30*fal));
+  const atr=num(L.atrasos);if(atr>0)add('ATRASOS',atr+' h',r2(vhSal*atr));
+  // bases
+  let bCP=0,bIR=0,bFG=0,prov=0,desc=0;
+  for(const x of it){const r=x.r;if(x.sep)continue;
+    if(r.tp===1){prov+=x.valor;if(r.incCP!=='00')bCP+=x.valor;if(r.incIRRF!=='00')bIR+=x.valor;if(r.incFGTS!=='00')bFG+=x.valor;}
+    else if(r.tp===2&&r.reduz){desc+=x.valor;bCP-=x.valor;bIR-=x.valor;bFG-=x.valor;}
+  }
+  bCP=r2(Math.max(0,bCP));bIR=r2(Math.max(0,bIR));bFG=r2(Math.max(0,bFG));
+  // salário-família (Lei 8.213/91, art. 65) — limite sobre a remuneração
+  let nSF=0;const refD=comp+'-'+String(dm).padStart(2,'0');
+  (e.deps||[]).forEach(d=>{if(d.sf&&(d.inv||idadeEm(d.nasc,refD)<=P.salFam.idade))nSF++;});
+  const sfOk=nSF>0&&bCP<=P.salFam.limite&&e.categoria!=='103';
+  if(sfOk)add('SALFAM',nSF+' dep',r2(nSF*P.salFam.cota));
+  // descontos legais
+  const inss=calcInss(bCP,P);
+  const nDepIR=(e.deps||[]).filter(d=>d.irrf).length;
+  const pensao=num(e.pensao);
+  const ir=calcIrrf(bIR,inss,nDepIR,pensao,P);
+  if(inss>0)add('INSS',r2(inss/Math.max(bCP,1)*100).toFixed(2)+'%',inss);
+  if(ir.irrf>0)add('IRRF','',ir.irrf);
+  let vt=0;if(e.optaVT&&num(e.vtValor)>0){vt=r2(Math.min(salMes*P.vtPerc/100,num(e.vtValor)));add('VT',P.vtPerc+'%',vt);}
+  add('ADIANT','',num(L.adiant));
+  if(pensao>0)add('PENSAO','',pensao);
+  add('OUTD','',num(L.outd));
+  let totProv=0,totDesc=0;
+  for(const x of it){if(x.tp===1)totProv+=x.valor;else if(x.tp===2)totDesc+=x.valor;}
+  totProv=r2(totProv);totDesc=r2(totDesc);
+  const aliqFg=e.categoria==='103'?P.fgtsAprendiz:P.fgts;
+  return{itens:it.map(({r,...o})=>o),totProv,totDesc,liquido:r2(totProv-totDesc),baseCP:bCP,baseIR:bIR,baseFGTS:bFG,
+    inss:r2(inss+inss13),irrf:r2(ir.irrf+irrf13),irrfInfo:ir,fgts:r2((bFG+base13)*aliqFg/100),aliqFgts:aliqFg,baseCP13:r2(base13),inss13,irrf13,multaFgts,notasRes,sf:sfOk?r2(nSF*P.salFam.cota):0,dias,calculadoEm:agoraISO()};
+}
+/* ---------------- Regimes tributários, estabelecimentos e lotações ---------------- */
+const REGIMES={sn:'Simples Nacional',lp:'Lucro Presumido',lr:'Lucro Real'};
+const ANEXOS={std:'Anexos I, II, III ou V — CPP recolhida no DAS',iv:'Anexo IV (ou atividade vedada) — CPP recolhida fora do DAS',misto:'Misto — há atividades dos Anexos I–III/V e do Anexo IV'};
+/* Tabela 8 do eSocial: 01 substituída; 02 substituída e não substituída; 03 não substituída; 99 demais PJ */
+function classTribDe(E){if(!E)return '';if(E.regime==='sn')return E.anexo==='iv'?'03':E.anexo==='misto'?'02':'01';return '99';}
+const FPAS_REF={'515':{nome:'Comércio, serviços e demais (FPAS 515)',terc:'0115',perc:5.8},'507':{nome:'Indústria (FPAS 507)',terc:'0079',perc:5.8},'566':{nome:'Agroindústria/cooperativas — conferir (FPAS 566)',terc:'',perc:0}};
+function fatorCprb(P,comp){const a=Number((comp||compAtual()).slice(0,4));const f=(P.cprbFrac||{})[a];return f==null?(a<2025?0:100):f;}
+/* Regra de incidência para uma lotação: define quais contribuições patronais incidem na folha */
+function regraLot(E,l,comp,P){
+  P=P||DB.params;if(!E)return{pat:true,rat:true,terc:true,fator:100,nota:''};
+  l=l||{};
+  if(E.regime==='sn'){
+    const nsub=E.anexo==='iv'||(E.anexo==='misto'&&l.atvSimples==='nsub');
+    if(!nsub)return{pat:false,rat:false,terc:false,fator:0,nota:'Simples Nacional — CPP substituída: contribuição patronal e RAT já estão no DAS; terceiros dispensados (LC 123/2006, art. 13, §3º).'};
+    return{pat:true,rat:true,terc:false,fator:100,nota:'Simples Nacional — atividade com CPP não substituída (Anexo IV): CPP 20% e RAT recolhidos em GPS/DARF via eSocial; terceiros dispensados (LC 123/2006, art. 13, §3º e art. 18, §5º-C).'};
+  }
+  const cprb=!!E.cprb&&l.cprb!==false&&l.cprb!=='nao';
+  if(cprb){const f=fatorCprb(P,comp);return{pat:true,rat:true,terc:true,fator:f,nota:'CPRB: a contribuição patronal de 20% sobre a folha é reduzida e reonerada gradualmente (Lei 14.973/2024). Fator desta competência: '+f+'% da CPP. RAT e terceiros incidem normalmente. A CPRB sobre a receita bruta é apurada fora da folha.'};}
+  return{pat:true,rat:true,terc:true,fator:100,nota:(REGIMES[E.regime]||'')+' — incidem CPP 20%, RAT×FAP e terceiros sobre a base previdenciária.'};
+}
+function encargosEmpresa(res,P,emp,e,comp){
+  const est=e?byId(DB.estabs,e.estab):null,lot=e?byId(DB.lotacoes,e.lotacao):null;
+  const R=regraLot(emp,lot,comp,P),base=r2(res.baseCP+num(res.baseCP13));
+  const pat=R.pat?r2(base*num(emp&&emp.patronal!=null&&emp.patronal!==''?emp.patronal:P.patronal)/100*R.fator/100):0;
+  const ratP=est&&est.rat!==''&&est.rat!=null?num(est.rat):num(emp&&emp.rat!=null?emp.rat:P.rat),fapP=est&&est.fap!==''&&est.fap!=null?num(est.fap):num(emp&&emp.fap!=null?emp.fap:P.fap);
+  const rat=R.rat?r2(base*ratP*fapP/100):0;
+  const tp=lot&&lot.terceiros!==''&&lot.terceiros!=null?num(lot.terceiros):num(emp&&emp.terceiros!=null?emp.terceiros:P.terceiros);
+  const terc=R.terc?r2(base*tp/100):0;
+  return{patronal:pat,rat,terc,nota:R.nota,regra:R};
+}
+function calcFolha(comp){
+  const P=DB.params;const c=DB.comps[comp]=DB.comps[comp]||{status:'aberta',lanc:{},res:{}};
+  c.res={};
+  DB.empregados.filter(e=>empAtivoNaComp(e,comp)&&e.situacao!=='desligado'||(e.desligamento&&e.desligamento.slice(0,7)===comp)).forEach(e=>{
+    if(!empAtivoNaComp(e,comp))return;
+    c.res[e.id]=calcEmpregado(e,comp,c.lanc[e.id],P,DB.empresa);
+  });
+  c.status='calculada';c.calcEm=agoraISO();saveDB();return c;
+}
+function totaisComp(comp){
+  const c=DB.comps[comp];const t={n:0,prov:0,desc:0,liq:0,inss:0,irrf:0,fgts:0,pat:0,rat:0,terc:0,sf:0};
+  if(!c)return t;
+  for(const id in c.res){const r=c.res[id];t.n++;t.prov+=r.totProv;t.desc+=r.totDesc;t.liq+=r.liquido;t.inss+=r.inss;t.irrf+=r.irrf;t.fgts+=r.fgts;t.sf+=r.sf;
+    const en=encargosEmpresa(r,DB.params,DB.empresa,byId(DB.empregados,id),comp);t.pat+=en.patronal;t.rat+=en.rat;t.terc+=en.terc;}
+  for(const k in t)t[k]=k==='n'?t[k]:r2(t[k]);return t;
+}
+
+
+/* ---------------- Férias, 13º salário e rescisão ---------------- */
+const remunBase=(e,P,med)=>r2(num(e.salario)+(e.peric?num(e.salario)*P.peric/100:0)+(e.insal?P.salMin*Number(e.insal)/100:0)+num(med));
+/* CLT art. 130: dias de férias conforme faltas injustificadas no período aquisitivo */
+const diasDireitoFerias=f=>{f=num(f);return f<=5?30:f<=14?24:f<=23?18:f<=32?12:0;};
+function calcFerias(e,f,P){const rem=remunBase(e,P,f.media),d=rem/30;const ferias=r2(d*num(f.diasGozo)),terco=r2(ferias/3),abono=r2(d*num(f.diasAbono)),abonoTerco=r2(abono/3);
+  return{rem,ferias,terco,abono,abonoTerco,bruto:r2(ferias+terco+abono+abonoTerco)};}
+function feriasNoMes(e,comp){let n=0;const dm=diasMes(comp);
+  (DB.ferias||[]).filter(f=>f.empId===e.id&&f.ini).forEach(f=>{const ini=new Date(f.ini+'T12:00:00');for(let i=0;i<num(f.diasGozo);i++){const d=new Date(ini.getTime()+i*864e5);const c=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');if(c===comp)n++;}});
+  if(n>=dm)n=30;return{diasGozoMes:Math.min(n,30)};}
+function validarFerias(e,f,P){const m=[];const dir=diasDireitoFerias(f.faltas);
+  if(!f.ini)m.push('Informe o início do gozo.');if(!f.compPgto)m.push('Informe a competência do pagamento.');
+  if(dir===0)m.push('Mais de 32 faltas injustificadas: perda do direito a férias no período (CLT, art. 130, IV).');
+  if(num(f.diasGozo)<5)m.push('Período de gozo inferior a 5 dias não é admitido (CLT, art. 134, §1º).');
+  if(num(f.diasGozo)+num(f.diasAbono)>dir)m.push('Gozo + abono excedem os '+dir+' dias de direito (CLT, art. 130).');
+  if(num(f.diasAbono)>Math.floor(dir/3))m.push('Abono pecuniário limitado a 1/3 do período de férias ('+Math.floor(dir/3)+' dias) (CLT, art. 143).');
+  if(f.ini&&f.compPgto&&f.compPgto>f.ini.slice(0,7))m.push('O pagamento deve ocorrer até 2 dias antes do início do gozo (CLT, art. 145): competência de pagamento posterior ao mês do início.');
+  if(f.ini&&e.admissao&&f.ini<e.admissao)m.push('Início do gozo anterior à admissão.');
+  const dow=f.ini?new Date(f.ini+'T12:00:00').getDay():-1;if(dow===5||dow===6)m.push('AVISO: início do gozo em sábado/domingo ou véspera de repouso/feriado deve ser evitado (CLT, art. 134, §3º — a partir da Lei 13.467/2017, é vedado o início nos dois dias que antecedem feriado ou dia de repouso semanal).');
+  return m;}
+function avos13(e,ano,fimProj){let n=0;const adm=e.admissao?new Date(e.admissao+'T12:00:00'):null;let des=e.desligamento?new Date(e.desligamento+'T12:00:00'):null;if(des&&fimProj)des=fimProj;
+  for(let m=1;m<=12;m++){let a=new Date(ano,m-1,1,12),b=new Date(ano,m,0,12);if(adm&&adm>a)a=adm;if(des&&des<b)b=des;if(b<a)continue;if(Math.round((b-a)/864e5)+1>=15)n++;}return n;}
+function calc13(e,ano,P,media,fimProj){const avos=avos13(e,ano,fimProj),base=remunBase(e,P,media),bruto=r2(base/12*avos),p1v=r2(bruto/2);
+  const nDep=(e.deps||[]).filter(d=>d.irrf).length;const inss13=calcInss(bruto,P);const ir=calcIrrf(bruto,inss13,nDep,0,P,true);
+  return{avos,base,bruto,p1:p1v,inss13,irrf13:ir.irrf,fgts13:r2(bruto*(e.categoria==='103'?P.fgtsAprendiz:P.fgts)/100),liq2:r2(bruto-p1v-inss13-ir.irrf)};}
+const MOTIVOS_RESC={'01':'Justa causa (iniciativa do empregador)','02':'Sem justa causa (iniciativa do empregador)','06':'Término de contrato a termo','07':'Pedido de demissão (iniciativa do empregado)','17':'Rescisão indireta','33':'Acordo entre as partes (CLT, art. 484-A)'};
+const AVISOS={indenizado:'Indenizado (empregador dispensa o cumprimento)',trabalhado:'Trabalhado',nao_cumprido:'Não cumprido pelo empregado (desconto)',dispensado:'Dispensado / não aplicável'};
+function anosCompletos(ini,fim){const a=new Date(ini+'T12:00:00'),b=new Date(fim+'T12:00:00');let n=b.getFullYear()-a.getFullYear();const an=new Date(b.getFullYear(),a.getMonth(),a.getDate(),12);if(b<an)n--;return Math.max(0,n);}
+/* Lei 12.506/2011: 30 dias + 3 por ano completo, até 90 */
+const diasAviso=anos=>Math.min(90,30+3*Math.max(0,anos));
+function calcRescisaoVerbas(e,r,P){const notas=[],mt=r.motivo;const anos=anosCompletos(e.admissao,e.desligamento);
+  const rem=remunBase(e,P,r.media),d=rem/30;let avisoDias=diasAviso(anos),aviso=0,avisoDesc=0;
+  const semJC=['02','17','33'].includes(mt);
+  if(r.aviso==='indenizado'&&semJC){aviso=r2(d*avisoDias*(mt==='33'?0.5:1));if(mt==='33')notas.push('Acordo (art. 484-A, I, a, CLT): aviso prévio indenizado pela metade.');}
+  else if(r.aviso==='nao_cumprido'&&mt==='07'){avisoDesc=r2(rem);notas.push('Aviso prévio não cumprido: desconto de 30 dias de remuneração (CLT, art. 487, §2º).');}
+  if(r.aviso!=='indenizado')avisoDias=0;if(!aviso&&!avisoDesc)avisoDias=0;
+  const proj=aviso>0?avisoDias:0;const fimProj=proj?new Date(new Date(e.desligamento+'T12:00:00').getTime()+proj*864e5):null;
+  if(proj)notas.push('Aviso indenizado projeta o tempo de serviço para 13º e férias proporcionais (CLT, art. 487, §1º; Súmula 371 do TST) [VERIFICAR FONTE OFICIAL].');
+  let avos13c=0,d13=0,inss13=0,irrf13=0;
+  if(mt!=='01'){avos13c=avos13(e,Number(e.desligamento.slice(0,4)),fimProj);d13=r2(rem/12*avos13c);
+    const nDep=(e.deps||[]).filter(x=>x.irrf).length;inss13=calcInss(d13,P);irrf13=calcIrrf(d13,inss13,nDep,0,P,true).irrf;}
+  else notas.push('Justa causa: sem 13º proporcional nem férias proporcionais (Lei 4.090/62, art. 3º; CLT, art. 146, parágrafo único) [VERIFICAR FONTE OFICIAL].');
+  const ferVencPer=num(r.ferVencPer),ferVenc=r2(rem*ferVencPer),ferVencTerco=r2(ferVenc/3);
+  let avosFer=0,ferProp=0,ferPropTerco=0;
+  if(mt!=='01'){const adm=new Date(e.admissao+'T12:00:00'),fim=fimProj||new Date(e.desligamento+'T12:00:00');
+    let ult=new Date(fim.getFullYear(),adm.getMonth(),adm.getDate(),12);if(ult>fim)ult=new Date(fim.getFullYear()-1,adm.getMonth(),adm.getDate(),12);
+    ult=new Date(Math.max(ult.getTime(),adm.getTime()));let m=0,cur=new Date(ult);
+    while(true){const nx=new Date(cur.getFullYear(),cur.getMonth()+1,cur.getDate(),12);if(nx<=new Date(fim.getTime()+864e5)){m++;cur=nx;}else break;}
+    const rest=Math.round((fim-cur)/864e5)+1;avosFer=Math.min(12,m+(rest>=15?1:0));if(avosFer>=12)avosFer=12;
+    ferProp=r2(rem/12*avosFer);ferPropTerco=r2(ferProp/3);}
+  const multaPct=['02','17'].includes(mt)?40:mt==='33'?20:0;
+  const depRes=r2((aviso+d13)*P.fgts/100);const multaFgts=r2((num(r.saldoFgts)+depRes)*multaPct/100);
+  if(multaPct)notas.push('Multa rescisória do FGTS de '+multaPct+(mt==='33'?'% (CLT, art. 484-A, I, b)':'% (Lei 8.036/90, art. 18, §1º)')+', estimada sobre o saldo informado mais os depósitos da rescisão; é paga via FGTS Digital e não integra o líquido [VERIFICAR FONTE OFICIAL].');
+  return{avisoDias:proj||avisoDias,aviso,avisoDesc,avos13:avos13c,d13,inss13,irrf13,ferVenc,ferVencTerco,avosFer,ferProp,ferPropTerco,multaPct,multaFgts,notas,
+    bruto:r2(aviso+d13+ferVenc+ferVencTerco+ferProp+ferPropTerco)};}
+/* resumo por estabelecimento e lotação (guias e conferência) */
+function resumoEstrutura(comp){const c=DB.comps[comp];const out={estab:{},lot:{},tot:{}};if(!c)return out;
+  for(const id in c.res){const r=c.res[id],e=byId(DB.empregados,id);if(!e)continue;const en=encargosEmpresa(r,DB.params,DB.empresa,e,comp);
+    for(const [grp,k] of [['estab',e.estab||'—'],['lot',e.lotacao||'—']]){const o=out[grp][k]=out[grp][k]||{n:0,base:0,inss:0,irrf:0,fgts:0,pat:0,rat:0,terc:0};o.n++;o.base+=r.baseCP+num(r.baseCP13);o.inss+=r.inss;o.irrf+=r.irrf;o.fgts+=r.fgts;o.pat+=en.patronal;o.rat+=en.rat;o.terc+=en.terc;}}
+  for(const g of ['estab','lot'])for(const k in out[g])for(const f in out[g][k])if(f!=='n')out[g][k][f]=r2(out[g][k][f]);
+  return out;}
+
+/* ---------------- eSocial: IDs, XML e eventos ---------------- */
+const XV='v_S_01_03_00';
+const xe=esc;
+const tag=(t,v)=>(v===''||v==null)?'':`<${t}>${xe(v)}</${t}>`;
+function ts14(){const d=new Date();const p=n=>String(n).padStart(2,'0');return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());}
+function novoId(){const cnpj=onlyD(DB.empresa&&DB.empresa.cnpj).padEnd(14,'0');DB.seq=(DB.seq||0)+1;return 'ID1'+cnpj+ts14()+String(DB.seq%100000).padStart(5,'0');}
+const rz=()=>onlyD(DB.empresa&&DB.empresa.cnpj).slice(0,8);
+function ideEmp(){return `<ideEmpregador><tpInsc>1</tpInsc><nrInsc>${rz()}</nrInsc></ideEmpregador>`;}
+function ideEvt(o){o=o||{};return `<ideEvento>${o.retif?`<indRetif>${o.retif.n}</indRetif>${tag('nrRecibo',o.retif.rec)}`:'<indRetif>1</indRetif>'}${o.per?`<indApuracao>1</indApuracao><perApur>${o.per}</perApur>`:''}<tpAmb>${DB.cfg.ambiente}</tpAmb><procEmi>1</procEmi><verProc>FolhaPro-1.0</verProc></ideEvento>`;}
+function ideEvtTab(){return `<ideEvento><tpAmb>${DB.cfg.ambiente}</tpAmb><procEmi>1</procEmi><verProc>FolhaPro-1.0</verProc></ideEvento>`;}
+function envelope(evt,id,corpo){return `<?xml version="1.0" encoding="UTF-8"?>\n<eSocial xmlns="http://www.esocial.gov.br/schema/evt/${evt}/${XV}">\n<${evt} Id="${id}">\n${corpo}\n</${evt}>\n</eSocial>`;}
+// versão simples e segura de indentação
+function fmtXml(xml){
+  const tokens=xml.replace(/>\s*</g,'><').split(/(?=<)|(?<=>)/).filter(Boolean);
+  let out=[],ind=0,i=0;
+  while(i<tokens.length){
+    const t=tokens[i];
+    if(/^<\?/.test(t)){out.push(t);i++;continue;}
+    if(/^<\//.test(t)){ind=Math.max(0,ind-1);out.push('  '.repeat(ind)+t);i++;continue;}
+    if(/^<[^>]+\/>$/.test(t)){out.push('  '.repeat(ind)+t);i++;continue;}
+    if(/^</.test(t)){
+      if(tokens[i+1]&&!/^</.test(tokens[i+1])&&tokens[i+2]&&/^<\//.test(tokens[i+2])){out.push('  '.repeat(ind)+t+tokens[i+1]+tokens[i+2]);i+=3;continue;}
+      out.push('  '.repeat(ind)+t);ind++;i++;continue;}
+    i++;
+  }
+  return out.join('\n');
+}
+const ENDERECO=e=>`<endereco><brasil>${tag('tpLograd',e.tpLograd||'R')}${tag('dscLograd',e.logr)}${tag('nrLograd',e.nr||'S/N')}${tag('complemento',e.compl)}${tag('bairro',e.bairro)}${tag('cep',onlyD(e.cep))}${tag('codMunic',onlyD(e.codMunic))}${tag('uf',e.uf)}</brasil></endereco>`;
+
+const GEN={};
+GEN['S-1000']=(a,o)=>{const E=DB.empresa,id=novoId();
+  const corpo=`${ideEvtTab()}${ideEmp()}<infoEmpregador><${a.alt?'alteracao':'inclusao'}><idePeriodo><iniValid>${E.iniValid||compAtual()}</iniValid></idePeriodo><infoCadastro><classTrib>${classTribDe(E)||E.classTrib}</classTrib><indCoop>0</indCoop><indConstr>${E.construtora?1:0}</indConstr><indDesFolha>${E.regime!=='sn'&&E.cprb?1:0}</indDesFolha><indPorte>${E.porte||'N'}</indPorte><indOptRegEletron>${E.regEletron||0}</indOptRegEletron><contato>${tag('nmCtt',E.ctNome)}${tag('cpfCtt',onlyD(E.ctCpf))}${tag('foneFixo',onlyD(E.ctFone))}${tag('email',E.ctEmail)}</contato></infoCadastro></${a.alt?'alteracao':'inclusao'}></infoEmpregador>`;
+  return{id,evt:'evtInfoEmpregador',titulo:'Informações do empregador — '+E.razao,ref:'',xml:envelope('evtInfoEmpregador',id,corpo)};};
+GEN['S-1005']=(a)=>{const s=byId(DB.estabs,a.id),id=novoId();
+  const corpo=`${ideEvtTab()}${ideEmp()}<infoEstab><inclusao><ideEstab><tpInsc>${s.tpInsc}</tpInsc><nrInsc>${onlyD(s.nrInsc)}</nrInsc><iniValid>${s.iniValid||compAtual()}</iniValid></ideEstab><dadosEstab>${tag('cnaePrep',onlyD(s.cnae))}${ratIncide(DB.empresa)?`<aliqGilrat><aliqRat>${s.rat||'2'}</aliqRat>${tag('fap',s.fap)}</aliqGilrat>`:''}</dadosEstab></inclusao></infoEstab>`;
+  return{id,evt:'evtTabEstab',titulo:'Estabelecimento — '+s.nome,ref:s.nrInsc,xml:envelope('evtTabEstab',id,corpo)};};
+GEN['S-1010']=(a)=>{const r=DB.rubricas.find(x=>x.sys===a.id),id=novoId();
+  const corpo=`${ideEvtTab()}${ideEmp()}<infoRubrica><inclusao><ideRubrica><codRubr>${r.cod}</codRubr><ideTabRubr>FOLHAPRO</ideTabRubr><iniValid>${compAtual()}</iniValid></ideRubrica><dadosRubrica><dscRubr>${xe(r.desc)}</dscRubr><natRubr>${r.nat}</natRubr><tpRubr>${r.tp}</tpRubr><codIncCP>${r.incCP}</codIncCP><codIncIRRF>${r.incIRRF}</codIncIRRF><codIncFGTS>${r.incFGTS}</codIncFGTS></dadosRubrica></inclusao></infoRubrica>`;
+  return{id,evt:'evtTabRubrica',titulo:'Rubrica '+r.cod+' — '+r.desc,ref:r.cod,xml:envelope('evtTabRubrica',id,corpo)};};
+GEN['S-1020']=(a)=>{const l=byId(DB.lotacoes,a.id),id=novoId();
+  const corpo=`${ideEvtTab()}${ideEmp()}<infoLotacao><inclusao><ideLotacao><codLotacao>${xe(l.cod)}</codLotacao><iniValid>${compAtual()}</iniValid></ideLotacao><dadosLotacao><tpLotacao>${l.tpLotacao}</tpLotacao>${tag('tpInsc',l.tpInsc)}${tag('nrInsc',onlyD(l.nrInsc))}<fpasLotacao><fpas>${l.fpas}</fpas><codTercs>${DB.empresa&&DB.empresa.regime==='sn'?'0000':(l.codTercs||'0000')}</codTercs></fpasLotacao></dadosLotacao></inclusao></infoLotacao>`;
+  return{id,evt:'evtTabLotacao',titulo:'Lotação '+l.cod+' — '+l.desc,ref:l.cod,xml:envelope('evtTabLotacao',id,corpo)};};
+GEN['S-2200']=(a,o)=>{const e=byId(DB.empregados,a.id),id=novoId(),car=byId(DB.cargos,e.cargo)||{},lot=byId(DB.lotacoes,e.lotacao)||{},est=byId(DB.estabs,e.estab)||{};
+  const deps=(e.deps||[]).map(d=>`<dependente><tpDep>${d.tp}</tpDep><nmDep>${xe(d.nome)}</nmDep><dtNascto>${d.nasc}</dtNascto>${tag('cpfDep',onlyD(d.cpf))}<depIRRF>${d.irrf?'S':'N'}</depIRRF><depSF>${d.sf?'S':'N'}</depSF><incTrab>N</incTrab></dependente>`).join('');
+  const corpo=`${ideEvt(o)}${ideEmp()}<trabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab><nmTrab>${xe(e.nome)}</nmTrab><sexo>${e.sexo}</sexo><racaCor>${e.racaCor}</racaCor><estCiv>${e.estCiv}</estCiv><grauInstr>${e.grauInstr}</grauInstr><nascimento><dtNascto>${e.nasc}</dtNascto><paisNascto>105</paisNascto><paisNac>105</paisNac>${tag('nmMae',e.mae)}</nascimento>${ENDERECO(e)}${deps}${(e.fone||e.email)?`<contato>${tag('fonePrinc',onlyD(e.fone))}${tag('emailPrinc',e.email)}</contato>`:''}</trabalhador>`+
+  `<vinculo><matricula>${xe(e.mat)}</matricula><tpRegTrab>1</tpRegTrab><tpRegPrev>1</tpRegPrev><cadIni>N</cadIni><infoRegimeTrab><infoCeletista><dtAdm>${e.admissao}</dtAdm><tpAdmissao>1</tpAdmissao><indAdmissao>1</indAdmissao><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}${tag('cnpjSindCategProf',onlyD(e.sindCnpj))}</infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(e.salario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr>${e.tpContr==2?tag('dtTerm',e.dtTerm):''}</duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc></horContratual></infoContrato></vinculo>`;
+  return{id,evt:'evtAdmissao',titulo:'Admissão — '+e.nome,ref:e.mat,xml:envelope('evtAdmissao',id,corpo)};};
+GEN['S-2206']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId(),car=byId(DB.cargos,e.cargo)||{};
+  const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><altContratual><dtAlteracao>${m.data}</dtAlteracao><vinculo><tpRegTrab>1</tpRegTrab><tpRegPrev>1</tpRegPrev><infoRegimeTrab><infoCeletista><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade></infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(m.novoSalario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr></duracao><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc></horContratual></infoContrato></vinculo></altContratual>`;
+  return{id,evt:'evtAltContratual',titulo:'Alteração contratual — '+e.nome,ref:e.mat,xml:envelope('evtAltContratual',id,corpo)};};
+GEN['S-2230']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId();
+  const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><infoAfastamento>${m.fim?`<fimAfastamento><dtTermAfast>${m.fim}</dtTermAfast></fimAfastamento>`:`<iniAfastamento><dtIniAfast>${m.data}</dtIniAfast><codMotAfast>${m.motivo}</codMotAfast>${m.perAqIni?`<perAquis><dtInicio>${m.perAqIni}</dtInicio><dtFim>${m.perAqFim}</dtFim></perAquis>`:''}</iniAfastamento>`}</infoAfastamento>`;
+  return{id,evt:'evtAfastTemp',titulo:'Afastamento — '+e.nome,ref:e.mat,xml:envelope('evtAfastTemp',id,corpo)};};
+GEN['S-2299']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId();
+  const comp=m.data.slice(0,7),c=DB.comps[comp],r=c&&c.res[e.id];const lot=byId(DB.lotacoes,e.lotacao)||{},est=byId(DB.estabs,e.estab)||{};
+  let verbas='';if(r){const dv=r.itens.filter(i=>i.tp===1||i.tp===2).map(i=>{const ru=DB.rubricas.find(x=>x.sys===i.sys);return `<detVerbas><codRubr>${ru.cod}</codRubr><ideTabRubr>FOLHAPRO</ideTabRubr>${/ d$/.test(i.ref)?`<qtdRubr>${num(i.ref)}</qtdRubr>`:''}<vrRubr>${fx(i.valor)}</vrRubr><indApurIR>${i.sep?1:0}</indApurIR></detVerbas>`;}).join('');
+    verbas=`<verbasResc><dmDev><ideDmDev>R${comp.replace('-','')}${e.mat}</ideDmDev><infoPerApur><ideEstabLot><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc><codLotacao>${xe(lot.cod||'')}</codLotacao>${dv}</ideEstabLot></infoPerApur></dmDev></verbasResc>`;}
+  const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><infoDeslig><mtvDeslig>${m.motivo}</mtvDeslig><dtDeslig>${m.data}</dtDeslig><indPagtoAPI>N</indPagtoAPI><pensAlim>0</pensAlim>${verbas}</infoDeslig>`;
+  return{id,evt:'evtDeslig',titulo:'Desligamento — '+e.nome,ref:e.mat,xml:envelope('evtDeslig',id,corpo)};};
+GEN['S-1200']=(a,o)=>{const e=byId(DB.empregados,a.id),c=DB.comps[a.comp],r=c&&c.res[a.id],id=novoId();
+  const lot=byId(DB.lotacoes,e.lotacao)||{},est=byId(DB.estabs,e.estab)||{};
+  const verbas=r.itens.filter(i=>i.tp===1||i.tp===2).map(i=>{const ru=DB.rubricas.find(x=>x.sys===i.sys);return `<detVerbas><codRubr>${ru.cod}</codRubr><ideTabRubr>FOLHAPRO</ideTabRubr>${/h$/.test(i.ref)||/d$/.test(i.ref)?`<qtdRubr>${num(i.ref)}</qtdRubr>`:''}<vrRubr>${fx(i.valor)}</vrRubr><indApurIR>${i.sep?1:0}</indApurIR></detVerbas>`;}).join('');
+  const corpo=`${ideEvt(Object.assign({per:a.comp},o))}${ideEmp()}<ideTrabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab></ideTrabalhador><dmDev><ideDmDev>${a.comp.replace('-','')}${e.mat}</ideDmDev><codCateg>${e.categoria}</codCateg><infoPerApur><ideEstabLot><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc><codLotacao>${xe(lot.cod||'')}</codLotacao>${verbas}</ideEstabLot></infoPerApur></dmDev>`;
+  return{id,evt:'evtRemun',titulo:'Remuneração '+compLabel(a.comp)+' — '+e.nome,ref:a.comp,xml:envelope('evtRemun',id,corpo)};};
+GEN['S-1210']=(a,o)=>{const e=byId(DB.empregados,a.id),c=DB.comps[a.comp],r=c&&c.res[a.id],id=novoId();
+  const corpo=`${ideEvt(Object.assign({per:a.comp},o))}${ideEmp()}<ideBenef><cpfBenef>${onlyD(e.cpf)}</cpfBenef><infoPgto><dtPgto>${c.dtPgto}</dtPgto><tpPgto>1</tpPgto><indResBr>S</indResBr><detPgtoFl><perRef>${a.comp}</perRef><ideDmDev>${rescNoMes(a.id,a.comp)?'R':''}${a.comp.replace('-','')}${e.mat}</ideDmDev><indPgtoTt>S</indPgtoTt><vrLiq>${fx(r.liquido)}</vrLiq></detPgtoFl></infoPgto></ideBenef>`;
+  return{id,evt:'evtPgtos',titulo:'Pagamento '+compLabel(a.comp)+' — '+e.nome,ref:a.comp,xml:envelope('evtPgtos',id,corpo)};};
+GEN['S-1299']=(a,o)=>{const id=novoId();
+  const corpo=`${ideEvt(Object.assign({per:a.comp},o)).replace(/<indRetif>1<\/indRetif>/,'')}${ideEmp()}<infoFech><evtRemun>S</evtRemun><evtPgtos>S</evtPgtos><evtAqProd>N</evtAqProd><evtComProd>N</evtComProd><evtContratAvNP>N</evtContratAvNP><evtInfoComplPer>N</evtInfoComplPer></infoFech>`;
+  return{id,evt:'evtFechaEvPer',titulo:'Fechamento dos eventos periódicos — '+compLabel(a.comp),ref:a.comp,xml:envelope('evtFechaEvPer',id,corpo)};};
+const TIPOS={'S-1000':'Informações do empregador','S-1005':'Estabelecimentos','S-1010':'Rubricas','S-1020':'Lotações tributárias','S-2200':'Admissão','S-2206':'Alteração contratual','S-2230':'Afastamento temporário','S-2299':'Desligamento','S-1200':'Remuneração','S-1210':'Pagamentos','S-1299':'Fechamento periódico'};
+const ratIncide=E=>!E||E.regime!=='sn'||E.anexo==='iv'||E.anexo==='misto';
+const ORDEM=['S-1000','S-1005','S-1020','S-1010','S-2200','S-2206','S-2230','S-2299','S-1200','S-1210','S-1299'];
+
+function criarEvento(tipo,args,opts){
+  const g=GEN[tipo](args,opts);
+  const ev={id:g.id,tipo,evt:g.evt,titulo:g.titulo,ref:g.ref,gen:{tipo,args:JSON.parse(JSON.stringify(args))},xml:fmtXml(g.xml),status:'gerado',criado:agoraISO(),ambiente:DB.cfg.ambiente,
+    retif:opts&&opts.retif?opts.retif.n:0,opts:opts||null,empId:args.id&&tipo.startsWith('S-2')||tipo==='S-1200'||tipo==='S-1210'?args.id:null,comp:args.comp||null,ocorr:[],historico:[{t:agoraISO(),m:'Evento gerado'+(opts&&opts.retif?' (retificação)':'')}]};
+  DB.eventos.unshift(ev);saveDB();return ev;
+}
+const evPorTipoRef=(tipo,pred)=>DB.eventos.find(e=>e.tipo===tipo&&e.status==='processado'&&(!pred||pred(e)));
+/* validação local + dependências (simula a ordem exigida pelo eSocial) */
+function validarBase(ev){
+  const o=[],E=DB.empresa;if(!E){o.push('Empresa não cadastrada.');return o;}
+  if(!cnpjValido(E.cnpj))o.push('CNPJ do empregador inválido.');
+  if(!ev.gen)return o;
+  const{tipo,args}=ev.gen;
+  if(['S-1000'].includes(tipo)&&!E.classTrib)o.push('Informe a classificação tributária (classTrib).');
+  if(tipo==='S-2200'||tipo==='S-2206'||tipo==='S-2230'||tipo==='S-2299'||tipo==='S-1200'||tipo==='S-1210'){
+    const e=byId(DB.empregados,args.id);if(!e){o.push('Empregado não encontrado.');return o;}
+    if(!cpfValido(e.cpf))o.push('CPF do empregado inválido.');
+    if(tipo==='S-2200'){['nome','nasc','admissao','salario','mae','logr','cep','codMunic','uf'].forEach(k=>{if(!e[k]||(k==='salario'&&!num(e[k])))o.push('Campo obrigatório ausente no empregado: '+k);});if(!e.lotacao)o.push('Informe a lotação.');if(!e.estab)o.push('Informe o estabelecimento.');}
+  }
+  if(DB.cfg.modo==='gw'){const rb=DB.rubricas.filter(r=>!r.nat);if(['S-1010','S-1200'].includes(tipo)&&rb.length)o.push('Rubricas sem natureza (Tabela 3 do eSocial): '+rb.map(r=>r.cod).join(', '));}
+  /* dependências */
+  const simOK=(t,f)=>DB.eventos.some(x=>x.tipo===t&&x.status==='processado'&&(!f||f(x)));
+  if(tipo!=='S-1000'&&!simOK('S-1000'))o.push('Dependência: o S-1000 (empregador) ainda não foi processado com sucesso.');
+  if(tipo==='S-1200'&&rescNoMes(args.id,args.comp))o.push('Este trabalhador foi desligado na competência: as verbas vão no S-2299, não no S-1200.');
+  if(tipo==='S-1200'){if(!simOK('S-2200',x=>x.empId===args.id))o.push('Dependência: S-2200 (admissão) do trabalhador ainda não processado.');if(!simOK('S-1010'))o.push('Dependência: tabela de rubricas (S-1010) ainda não processada.');if(!simOK('S-1020'))o.push('Dependência: tabela de lotações (S-1020) ainda não processada.');}
+  if(tipo==='S-1210'){if(rescNoMes(args.id,args.comp)){if(!simOK('S-2299',x=>x.empId===args.id))o.push('Dependência: S-2299 (desligamento, com as verbas rescisórias) ainda não processado.');}else if(!simOK('S-1200',x=>x.empId===args.id&&x.comp===args.comp))o.push('Dependência: S-1200 do trabalhador na competência ainda não processado.');}
+  if(tipo==='S-1299'){const c=DB.comps[args.comp];const ids=c?Object.keys(c.res):[];ids.forEach(id=>{if(rescNoMes(id,args.comp)){if(!simOK('S-2299',x=>x.empId===id))o.push('Dependência: S-2299 pendente de '+(byId(DB.empregados,id)||{}).nome);}else if(!simOK('S-1200',x=>x.empId===id&&x.comp===args.comp))o.push('Dependência: S-1200 pendente de '+(byId(DB.empregados,id)||{}).nome);if(!simOK('S-1210',x=>x.empId===id&&x.comp===args.comp))o.push('Dependência: S-1210 pendente de '+(byId(DB.empregados,id)||{}).nome);});}
+  return o;
+}
+
+const rescNoMes=(id,comp)=>{const e=byId(DB.empregados,id),r=(DB.rescisoes||{})[id];return !!(e&&r&&e.desligamento&&e.desligamento.slice(0,7)===comp);};
+const FPAS_OK=/^\d{3}$/;
+function validarEvento(ev){const o=validarBase(ev),E=DB.empresa;if(!E||!ev.gen)return o;const{tipo,args}=ev.gen;
+  if(tipo==='S-1000'){if(!E.regime)o.push('Informe o regime tributário (Simples Nacional, Lucro Presumido ou Lucro Real).');
+    if(E.regime==='sn'&&!E.anexo)o.push('Simples Nacional: informe o enquadramento da CPP (Anexos I–III/V, Anexo IV ou misto).');
+    if(E.regime==='sn'&&E.cprb)o.push('CPRB (desoneração) é incompatível com o Simples Nacional.');
+    if(E.regime&&E.classTrib&&E.classTrib!==classTribDe(E))o.push('classTrib '+E.classTrib+' não corresponde ao regime informado (esperado '+classTribDe(E)+'). Salve a empresa novamente.');
+    if(E.cprb&&!E.cnae)o.push('CPRB: informe o CNAE principal para conferir o enquadramento na atividade desonerada (Lei 12.546/2011, art. 7º-A) [VERIFICAR FONTE OFICIAL].');}
+  if(tipo==='S-1005'){const s=byId(DB.estabs,args.id);if(s){
+    if(String(s.tpInsc)==='1'&&!cnpjValido(s.nrInsc))o.push('CNPJ do estabelecimento inválido.');
+    if(String(s.tpInsc)==='1'&&onlyD(s.nrInsc).slice(0,8)!==onlyD(E.cnpj).slice(0,8))o.push('O CNPJ do estabelecimento deve ter a mesma raiz (8 primeiros dígitos) do empregador.');
+    if(onlyD(s.cnae).length!==7)o.push('CNAE do estabelecimento deve ter 7 dígitos.');
+    if(ratIncide(E)){if(![1,2,3].includes(Number(s.rat)))o.push('RAT (grau de risco) deve ser 1, 2 ou 3 conforme o CNAE (Decreto 3.048/99, Anexo V) [VERIFICAR FONTE OFICIAL].');
+      const f=num(s.fap);if(!(f>=0.5&&f<=2))o.push('FAP deve estar entre 0,5000 e 2,0000 (Lei 10.666/2003, art. 10).');}
+    if(DB.estabs.filter(x=>x.tpInsc==s.tpInsc&&onlyD(x.nrInsc)===onlyD(s.nrInsc)).length>1)o.push('Inscrição de estabelecimento duplicada.');}}
+  if(tipo==='S-1020'){const l=byId(DB.lotacoes,args.id);if(l){
+    if(!FPAS_OK.test(String(l.fpas||'')))o.push('FPAS deve ter 3 dígitos (Tabela 4).');
+    if(!/^\d{4}$/.test(String(l.codTercs||'')))o.push('Código de terceiros deve ter 4 dígitos (Tabela 4); use 0000 quando não houver recolhimento a terceiros.');
+    if(E.regime==='sn'&&String(l.codTercs)!=='0000')o.push('Simples Nacional: terceiros dispensados — use código 0000 (LC 123/2006, art. 13, §3º).');
+    if(E.regime!=='sn'&&String(l.codTercs)==='0000')o.push('Lucro Presumido/Real: informe o código de terceiros do FPAS (ex.: 0115 para FPAS 515; 0079 para FPAS 507) [VERIFICAR FONTE OFICIAL — Tabela 4].');
+    if(E.regime==='sn'&&E.anexo==='misto'&&!l.atvSimples)o.push('Simples misto: indique se a lotação é de atividade com CPP substituída ou não substituída.');
+    if(DB.lotacoes.filter(x=>String(x.cod)===String(l.cod)).length>1)o.push('Código de lotação duplicado.');}}
+  if(tipo==='S-2200'){const e=byId(DB.empregados,args.id);if(e){const l=byId(DB.lotacoes,e.lotacao),s=byId(DB.estabs,e.estab);
+    if(!l)o.push('Lotação do empregado não existe mais no cadastro.');if(!s)o.push('Estabelecimento do empregado não existe mais no cadastro.');
+    if(l&&!DB.eventos.some(x=>x.tipo==='S-1020'&&x.status==='processado'&&x.gen.args.id===l.id))o.push('Dependência: a lotação '+l.cod+' (S-1020) ainda não foi processada.');
+    if(s&&!DB.eventos.some(x=>x.tipo==='S-1005'&&x.status==='processado'&&x.gen.args.id===s.id))o.push('Dependência: o estabelecimento '+s.nome+' (S-1005) ainda não foi processado.');}}
+  return o;}
+
+/* ===================== UI: infraestrutura ===================== */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const SC={},ACT={},CR={};
+let NAV={stack:[],cur:{name:'home',params:{}}},DIRTY=false;
+function toast(m,t){const d=document.createElement('div');d.className='tst '+(t||'');d.textContent=m;$('#toast').appendChild(d);setTimeout(()=>d.remove(),t==='err'?7000:3500);}
+function modal(html,o){o=o||{};$('#modal').innerHTML=`<div class="mbox ${o.wide?'wide':''}">${o.title?`<div class="row sp"><h2>${esc(o.title)}</h2><button class="btn sm" data-act="closeModal">Fechar ✕</button></div>`:''}${html}</div>`;$('#modal').classList.add('on');}
+function closeModal(){$('#modal').classList.remove('on');$('#modal').innerHTML='';}
+function modalConfirm(msg,yes,o){o=o||{};modal(`<h2>${esc(o.title||'Confirmar')}</h2><p>${msg}</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeModal">${o.no||'Cancelar'}</button><button class="btn pri" id="mcy">${o.yes||'Confirmar'}</button></div>`);$('#mcy').onclick=()=>{closeModal();yes();};}
+function guard(fn){if(!DIRTY)return fn();modalConfirm('Há alterações não salvas nesta tela. Deseja descartá-las?',()=>{DIRTY=false;fn();},{title:'Alterações não salvas',yes:'Descartar e continuar',no:'Ficar na tela'});}
+function go(n,p){guard(()=>{NAV.stack.push(NAV.cur);NAV.cur={name:n,params:p||{}};render();});}
+function back(){guard(()=>{const p=NAV.stack.pop();NAV.cur=p||{name:'home',params:{}};render();});}
+function home(){guard(()=>{NAV.stack=[];NAV.cur={name:'home',params:{}};render();});}
+function refresh(p){if(p)NAV.cur.params=Object.assign({},NAV.cur.params,p);const y=window.scrollY;render();window.scrollTo(0,y);}
+const MENU=[['','home','⌂ Início'],['Cadastros','empresa','Empresa e regime (S-1000)'],['','estabs','Estabelecimentos (S-1005)'],['','lotacoes','Lotações tributárias (S-1020)'],['','estrutura','Mapa da estrutura e regras'],['','cargos','Cargos e CBO'],['','rubricas','Rubricas (S-1010)'],
+ ['Departamento Pessoal','empregados','Empregados (S-2200)'],['','movs','Movimentações (S-2206/2230/2299)'],
+ ['Folha de pagamento','lanc','Lançamentos do mês'],['','folha','Cálculo da folha'],['','ferias','Férias'],['','d13','13º salário'],['','resc','Rescisão (S-2299)'],['','holerite','Contracheques'],['','relat','Relatórios e guias'],
+ ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','integr','Webservice / Integração'],
+ ['Sistema','params','Parâmetros legais'],['','backup','Backup e dados']];
+function renderSide(){const cur=NAV.cur.name==='empForm'?'empregados':NAV.cur.name;let h='';MENU.forEach(([g,k,l])=>{if(g)h+=`<h6>${g}</h6>`;h+=`<a data-act="nav" data-to="${k}" class="${k===cur?'on':''}">${l}</a>`;});$('#side').innerHTML=h;
+  $('#topemp').innerHTML=DB.empresa?`<b>${esc(DB.empresa.razao)}</b><br>CNPJ ${fmtCNPJ(DB.empresa.cnpj)} · eSocial: ${DB.cfg.ambiente==1?'Produção':'Produção restrita'} · ${DB.cfg.modo==='sim'?'modo simulação':'webservice'}`:'Empresa não cadastrada';}
+function renderBar(sc){const acts=(sc.actions?sc.actions(NAV.cur.params):[])||[];
+  $('#bar').innerHTML=`<button class="btn" data-act="back" title="Alt+V">◀ Voltar</button><button class="btn" data-act="home" title="Alt+I">⌂ Tela inicial</button><span class="sp"></span><span class="hint">Alt+V voltar · Alt+I início · Alt+S salvar · Alt+E enviar</span>`+
+  acts.map(a=>`<button class="btn ${a.cls||''}" data-act="${a.act}" ${a.arg!=null?`data-arg="${esc(a.arg)}"`:''} ${a.key?`data-primary="${a.key}"`:''}>${a.label}</button>`).join('');}
+function render(){const sc=SC[NAV.cur.name];DIRTY=false;$('#main').innerHTML=sc.view(NAV.cur.params);renderBar(sc);renderSide();sc.mount&&sc.mount(NAV.cur.params);}
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;if(ACT[a]){e.preventDefault();ACT[a](el,e);}});
+document.addEventListener('input',e=>{if(e.target.closest('[data-form]'))DIRTY=true;});
+document.addEventListener('focusout',e=>{const el=e.target;if(!el.dataset)return;const m=el.dataset.mask;if(m==='cpf')el.value=fmtCPF(el.value);else if(m==='cnpj')el.value=fmtCNPJ(el.value);else if(m==='cep')el.value=fmtCEP(el.value);if(el.dataset.t==='money'&&el.value!=='')el.value=brIn(num(el.value));});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();if(!e.altKey)return;const k=e.key.toLowerCase();
+  if(k==='v'||e.key==='ArrowLeft'){back();e.preventDefault();}else if(k==='i'||e.key==='Home'){home();e.preventDefault();}
+  else if(k==='s'){const b=$('[data-primary="save"]');b&&b.click();e.preventDefault();}else if(k==='e'){const b=$('[data-primary="send"]');b&&b.click();e.preventDefault();}});
+ACT.back=()=>back();ACT.home=()=>home();ACT.closeModal=()=>closeModal();ACT.nav=el=>go(el.dataset.to);
+ACT.go=el=>go(el.dataset.to,el.dataset.p?JSON.parse(el.dataset.p):{});
+
+/* ---------- helpers de formulário ---------- */
+function F(label,name,val,o){o=o||{};const t=o.t||'text',span=o.w?` style="grid-column:span ${o.w}"`:'';const v=val==null?'':val;
+  const c=`name="${name}" ${o.req?'required':''} ${o.ro?'readonly':''} ${o.ph?`placeholder="${esc(o.ph)}"`:''} ${o.mask?`data-mask="${o.mask}"`:''} ${o.max?`maxlength="${o.max}"`:''}`;
+  let inp;
+  if(t==='select')inp=`<select ${c}>${(o.opts||[]).map(x=>{const [k,l]=Array.isArray(x)?x:[x,x];return `<option value="${esc(k)}" ${String(k)===String(v)?'selected':''}>${esc(l)}</option>`;}).join('')}</select>`;
+  else if(t==='money')inp=`<input type="text" inputmode="decimal" data-t="money" ${c} value="${v===''?'':brIn(num(v))}">`;
+  else if(t==='check')inp=`<label class="chk"><input type="checkbox" name="${name}" ${v?'checked':''}> ${esc(o.cl||'Sim')}</label>`;
+  else if(t==='textarea')inp=`<textarea ${c} rows="${o.rows||3}">${esc(v)}</textarea>`;
+  else inp=`<input type="${t}" ${c} ${o.list?`list="${o.list}"`:''} value="${esc(v)}">`;
+  return `<div class="f"${span}><label>${esc(label)}${o.req?' <b class="rq">*</b>':''}</label>${inp}${o.hint?`<small>${o.hint}</small>`:''}</div>`;}
+function readForm(root){const o={};$$('[name]',root).forEach(el=>{const n=el.name;if(el.type==='checkbox')o[n]=el.checked;else if(el.dataset.t==='money')o[n]=num(el.value);else o[n]=el.value.trim();});return o;}
+function faltando(root){const m=[];$$('[required]',root).forEach(el=>{if(!el.value.trim()){const l=el.closest('.f');m.push(l?l.querySelector('label').textContent.replace('*','').trim():el.name);}});return m;}
+const badge=(t,c)=>`<span class="badge b-${c||'gray'}">${esc(t)}</span>`;
+const ST={gerado:['Gerado','gray'],enviado:['Enviado','blue'],processado:['Processado','ok'],rejeitado:['Rejeitado','err']};
+const stBadge=ev=>ev?badge(ST[ev.status][0],ST[ev.status][1]):badge('Não enviado','warn');
+const ultEv=(tipo,pred)=>DB.eventos.find(e=>e.tipo===tipo&&(!pred||pred(e)));
+const compInput=(val)=>`<input type="month" id="compSel" value="${val}" style="padding:7px 9px;border:1px solid #c7d0d9;border-radius:6px;font:inherit">`;
+const exigeEmpresa=()=>DB.empresa?'':`<div class="note err">Cadastre primeiro a <a style="cursor:pointer;text-decoration:underline" data-act="nav" data-to="empresa">empresa</a> (S-1000) — ela é a base de todo o sistema.</div>`;
+
+/* ---------- opções (enumerações do leiaute) ---------- */
+const O={
+ sexo:[['M','Masculino'],['F','Feminino']],
+ raca:[['1','Branca'],['2','Preta'],['3','Parda'],['4','Amarela'],['5','Indígena'],['6','Não informado']],
+ estCiv:[['1','Solteiro(a)'],['2','Casado(a)'],['3','Divorciado(a)'],['4','Separado(a)'],['5','Viúvo(a)']],
+ instr:[['01','Analfabeto'],['02','Até o 5º ano incompleto'],['03','5º ano completo'],['04','6º ao 9º ano'],['05','Fundamental completo'],['06','Médio incompleto'],['07','Médio completo'],['08','Superior incompleto'],['09','Superior completo'],['10','Pós-graduação'],['11','Mestrado'],['12','Doutorado']],
+ categ:[['101','101 – Empregado geral (CLT)'],['103','103 – Aprendiz'],['105','105 – Contrato a termo (Lei 9.601/98)'],['106','106 – Trabalhador temporário']],
+ classTrib:[['99','99 – Pessoas jurídicas em geral'],['01','01 – Simples Nacional, tributação previdenciária substituída'],['02','02 – Simples Nacional, tributação previdenciária substituída e não substituída'],['03','03 – Simples Nacional, tributação previdenciária não substituída'],],
+ jornada:[['2','2 – Horário diário fixo, folga fixa (domingo)'],['3','3 – Horário diário fixo, folga fixa (exceto domingo)'],['4','4 – Horário diário fixo, folga variável'],['5','5 – Turno ininterrupto de revezamento'],['9','9 – Demais tipos de jornada']],
+ tpDep:[['01','01 – Cônjuge'],['02','02 – Companheiro(a)'],['03','03 – Filho(a) ou enteado(a)'],['04','04 – Filho(a)/enteado(a) até 24 anos (universitário/técnico)']],
+ uf:['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
+};
+const optSel=(arr,v)=>arr.map(x=>{const [k,l]=Array.isArray(x)?x:[x,x];return `<option value="${esc(k)}" ${String(k)===String(v)?'selected':''}>${esc(l)}</option>`;}).join('');
+
+/* ===================== CRUD genérico (cadastros auxiliares) ===================== */
+function crud(name,cfg){
+  CR[name]=cfg;
+  SC[name]={
+    view(p){const rows=cfg.list();const ed=p.edit!=null?cfg.list().find(x=>x[cfg.key]===p.edit):null;
+      const showForm=p.novo||ed;
+      return `<h1>${cfg.title}</h1><p class="sub">${cfg.sub||''}</p>${exigeEmpresa()}${cfg.note?`<div class="note info">${typeof cfg.note==='function'?cfg.note():cfg.note}</div>`:''}
+      ${showForm?`<div class="card" data-form id="f"><h2>${ed?'Editar':'Novo'} registro</h2><div class="grid">${cfg.fields(ed||cfg.novo&&cfg.novo()||{},!!ed)}</div></div>`:''}
+      <div class="card"><div class="row sp"><h2>Registros (${rows.length})</h2>${cfg.noAdd?'':`<button class="btn pri" data-act="crudNovo">＋ Novo</button>`}</div>
+      <div class="tw"><table class="t"><thead><tr>${cfg.cols.map(c=>`<th>${c[1]}</th>`).join('')}${cfg.tipo?'<th>eSocial</th>':''}<th></th></tr></thead><tbody>
+      ${rows.map(r=>`<tr>${cfg.cols.map(c=>`<td>${c[2]?c[2](r):esc(r[c[0]])}</td>`).join('')}${cfg.tipo?`<td>${stBadge(ultEv(cfg.tipo,e=>e.gen.args.id===r[cfg.key]))}</td>`:''}
+      <td class="r"><button class="btn sm" data-act="crudEdit" data-id="${esc(r[cfg.key])}">Editar</button> ${cfg.tipo?`<button class="btn sm send" data-act="crudSend" data-id="${esc(r[cfg.key])}">Enviar ${cfg.tipo}</button> `:''}${cfg.noDel?'':`<button class="btn sm danger" data-act="crudDel" data-id="${esc(r[cfg.key])}">Excluir</button>`}</td></tr>`).join('')||`<tr><td colspan="${cfg.cols.length+2}" class="c" style="color:var(--mut);padding:18px">Nenhum registro cadastrado.</td></tr>`}
+      </tbody></table></div></div>`;},
+    actions(p){const a=[];if(p.novo||p.edit!=null){a.push({label:'Cancelar edição',act:'crudCancel'},{label:'💾 Salvar',act:'crudSave',cls:'pri',key:'save'});if(cfg.tipo)a.push({label:'Salvar e enviar '+cfg.tipo+' ao eSocial',act:'crudSaveSend',cls:'send',key:'send'});}
+      else if(cfg.tipo)a.push({label:'Enviar todos ('+cfg.tipo+') ao eSocial',act:'crudSendAll',cls:'send',key:'send'});return a;}
+  };
+}
+const crudCfg=()=>CR[NAV.cur.name];
+ACT.crudNovo=()=>refresh({novo:true,edit:null});
+ACT.crudCancel=()=>guard(()=>refresh({novo:false,edit:null}));
+ACT.crudEdit=el=>refresh({edit:el.dataset.id,novo:false});
+ACT.crudDel=el=>{const cfg=crudCfg();modalConfirm('Excluir este registro? Eventos já enviados ao eSocial não são desfeitos por esta ação.',()=>{const a=cfg.list();const i=a.findIndex(x=>String(x[cfg.key])===el.dataset.id);if(i>=0)a.splice(i,1);saveDB();refresh();toast('Registro excluído.');},{yes:'Excluir'});};
+function crudSalvar(){const cfg=crudCfg(),f=$('#f');if(!f)return null;const mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return null;}
+  const o=readForm(f),p=NAV.cur.params;if(cfg.validate){const m=cfg.validate(o);if(m){toast(m,'err');return null;}}
+  const arr=cfg.list();let rec;if(p.edit!=null){rec=arr.find(x=>String(x[cfg.key])===String(p.edit));Object.assign(rec,o);}else{rec=Object.assign({[cfg.key]:uid('r')},o);arr.push(rec);}
+  saveDB();DIRTY=false;toast('Registro salvo.','ok');return rec;}
+ACT.crudSave=()=>{if(crudSalvar())refresh({novo:false,edit:null});};
+ACT.crudSaveSend=async()=>{const cfg=crudCfg();const r=crudSalvar();if(!r)return;refresh({novo:false,edit:null});await enviarRegistro(cfg.tipo,r[cfg.key]);};
+ACT.crudSend=async el=>{await enviarRegistro(crudCfg().tipo,el.dataset.id);};
+ACT.crudSendAll=async()=>{const cfg=crudCfg();for(const r of cfg.list())await enviarRegistro(cfg.tipo,r[cfg.key],true);toast('Envio concluído. Veja a Biblioteca de eventos.','ok');refresh();};
+async function enviarRegistro(tipo,id,quiet){if(!DB.empresa){toast('Cadastre a empresa primeiro.','err');return;}
+  const ev=criarEvento(tipo,{id});const r=await enviarEventos([ev]);if(!quiet)resumoEnvio(r,[ev]);refresh();}
+function resumoEnvio(r,evs){if(r.rej||r.err){modal(`<div class="note err">Envio com ocorrências.</div>${evs.filter(e=>e.status==='rejeitado'||e.status==='gerado').map(e=>`<p><b>${esc(e.tipo)} — ${esc(e.titulo)}</b><br>${(e.ocorr||[]).map(o=>'• '+esc(o)).join('<br>')||'Sem detalhes.'}</p>`).join('')}<div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeModal">Fechar</button><button class="btn pri" data-act="nav" data-to="biblioteca">Abrir biblioteca</button></div>`,{title:'Retorno do envio'});}
+  else toast(`Enviado: ${r.ok} evento(s) processado(s) com sucesso${DB.cfg.modo==='sim'?' (simulação)':''}.`,'ok');}
+
+/* ---- cadastros auxiliares ---- */
+const regimeTxt=E=>E&&E.regime?REGIMES[E.regime]+(E.regime==='sn'?' — '+({std:'Anexos I–III/V',iv:'Anexo IV',misto:'misto'})[E.anexo]:E.cprb?' — com CPRB':''):'regime não informado';
+const TPEST={matriz:'Matriz',filial:'Filial',obra:'Obra (CNO)'};
+function infoRatEstab(){const E=DB.empresa;if(!E)return '';if(ratIncide(E))return 'RAT e FAP incidem sobre a folha deste estabelecimento: grau de risco do CNAE (1, 2 ou 3) e FAP do ano.';return 'Simples Nacional (Anexos I–III/V): RAT já está no DAS; os campos ficam apenas como referência e não são enviados no S-1005.';}
+crud('estabs',{title:'Estabelecimentos (S-1005)',sub:'Matriz, filiais e obras (CNO) onde há trabalhadores. É aqui que ficam o CNAE preponderante, o grau de risco (RAT) e o FAP.',tipo:'S-1005',key:'id',list:()=>DB.estabs,
+  note:()=>`<b>Regras de estabelecimento.</b> (1) Deve existir uma única <b>matriz</b>, com o mesmo CNPJ do empregador. (2) <b>Filiais</b> têm o mesmo CNPJ-base (8 primeiros dígitos) e ordem diferente de 0001. (3) <b>Obras</b> usam o CNO (tipo 4). (4) Cada empregado é vinculado a um estabelecimento: é ele que define o <b>RAT×FAP</b> e o local de trabalho do S-2200. (5) ${infoRatEstab()} <br>Regime da empresa: <b>${esc(regimeTxt(DB.empresa))}</b>.`,
+  cols:[['nome','Nome'],['tipoEstab','Natureza',r=>TPEST[r.tipoEstab]||'—'],['nrInsc','Inscrição',r=>r.tpInsc==1?fmtCNPJ(r.nrInsc):esc(r.nrInsc)],['cnae','CNAE'],['rat','RAT %',r=>ratIncide(DB.empresa)?esc(r.rat):'—'],['fap','FAP',r=>ratIncide(DB.empresa)?esc(r.fap):'—'],['n','Empregados',r=>String(DB.empregados.filter(e=>e.estab===r.id).length)]],
+  novo:()=>({tipoEstab:DB.estabs.some(x=>x.tipoEstab==='matriz')?'filial':'matriz',tpInsc:'1',rat:2,fap:1,iniValid:DB.empresa?DB.empresa.iniValid:compAtual()}),
+  fields:r=>F('Nome / identificação','nome',r.nome,{req:1,w:3})+F('Natureza','tipoEstab',r.tipoEstab||'matriz',{t:'select',opts:Object.entries(TPEST),w:2})+F('Tipo de inscrição','tpInsc',r.tpInsc,{t:'select',opts:[['1','1 – CNPJ'],['4','4 – CNO']],w:2})+F('Nº de inscrição','nrInsc',r.nrInsc,{req:1,w:3})+F('CNAE preponderante (7 dígitos)','cnae',r.cnae,{req:1,w:3})+F('Grau de risco / RAT (%)','rat',r.rat,{w:2,hint:'1, 2 ou 3'})+F('FAP','fap',r.fap,{w:2,hint:'0,5 a 2,0'})+F('Início de validade (AAAA-MM)','iniValid',r.iniValid,{t:'month',req:1,w:3})+`<div class="note info" style="grid-column:span 12">${infoRatEstab()}</div>`,
+  validate:o=>{const E=DB.empresa;if(!E)return 'Cadastre a empresa antes.';const ed=NAV.cur.params.edit;
+    o.nrInsc=onlyD(o.nrInsc);
+    if(o.tpInsc==='1'){if(!cnpjValido(o.nrInsc))return 'CNPJ do estabelecimento inválido.';
+      if(o.nrInsc.slice(0,8)!==onlyD(E.cnpj).slice(0,8))return 'O CNPJ do estabelecimento deve ter a mesma raiz (8 primeiros dígitos) do CNPJ do empregador.';
+      if(o.tipoEstab==='matriz'&&o.nrInsc!==onlyD(E.cnpj))return 'A matriz deve ter o mesmo CNPJ do empregador ('+fmtCNPJ(E.cnpj)+').';
+      if(o.tipoEstab==='filial'&&o.nrInsc===onlyD(E.cnpj))return 'Filial não pode ter o CNPJ da matriz.';
+      if(o.tipoEstab==='obra')return 'Obra deve ser cadastrada com inscrição tipo 4 (CNO).';}
+    else{if(o.tipoEstab!=='obra')return 'Inscrição CNO (tipo 4) só se aplica a obras.';if(o.nrInsc.length!==12)return 'O CNO deve ter 12 dígitos.';}
+    if(onlyD(o.cnae).length!==7)return 'O CNAE deve ter 7 dígitos.';
+    if(DB.estabs.some(x=>x.id!==ed&&x.tpInsc===o.tpInsc&&onlyD(x.nrInsc)===o.nrInsc))return 'Já existe estabelecimento com esta inscrição.';
+    if(o.tipoEstab==='matriz'&&DB.estabs.some(x=>x.id!==ed&&x.tipoEstab==='matriz'))return 'Já existe uma matriz cadastrada.';
+    if(ratIncide(E)){if(![1,2,3].includes(Number(o.rat)))return 'Informe o grau de risco (RAT) 1, 2 ou 3.';const f=num(o.fap);if(!(f>=0.5&&f<=2))return 'FAP deve estar entre 0,5 e 2,0.';}
+    return null;}});
+const TPLOT=[['01','01 – Atividade econômica da empresa (FPAS do enquadramento)'],['02','02 – Obra de construção civil, empreitada total'],['03','03 – Obra de construção civil, empreitada parcial']];
+function infoLotacao(){const E=DB.empresa;if(!E||!E.regime)return 'Defina o regime tributário na tela da empresa.';
+  if(E.regime==='sn'){const m=E.anexo==='misto';return `<b>Simples Nacional.</b> Terceiros: sempre 0000 (dispensados). ${E.anexo==='iv'?'Anexo IV: CPP 20% e RAT incidem na folha.':m?'Misto: marque em cada lotação se a atividade tem CPP <b>substituída</b> (sem CPP/RAT na folha) ou <b>não substituída</b> (CPP e RAT na folha).':'Anexos I–III/V: CPP e RAT já estão no DAS; nada de patronal é calculado na folha.'}`;}
+  return `<b>${REGIMES[E.regime]}.</b> CPP 20%, RAT×FAP e terceiros incidem sobre a base previdenciária. O FPAS e o código de terceiros dependem do enquadramento (ex.: FPAS 515 → terceiros 0115; FPAS 507 → 0079 [VERIFICAR FONTE OFICIAL — Tabela 4]).${E.cprb?' Com CPRB, indique em cada lotação se a atividade é desonerada.':''}`;}
+crud('lotacoes',{title:'Lotações tributárias e departamentos (S-1020)',sub:'A lotação define como a folha é tributada para o grupo de empregados: FPAS, terceiros, atividade substituída (Simples misto) e CPRB.',tipo:'S-1020',key:'id',list:()=>DB.lotacoes,
+  note:()=>`<b>Regras de lotação.</b> (1) Todo empregado precisa estar vinculado a uma lotação — é ela que vai no S-1200. (2) O <b>código</b> é único. (3) O <b>FPAS</b> (3 dígitos) e o <b>código de terceiros</b> (4 dígitos, Tabela 4) devem ser coerentes com o regime. (4) ${infoLotacao()}`,
+  cols:[['cod','Código'],['desc','Departamento / descrição'],['tpLotacao','Tipo'],['fpas','FPAS'],['codTercs','Terceiros'],['inc','Incidências na folha',r=>{const R=regraLot(DB.empresa,r,compAtual(),DB.params);return [R.pat?badge('CPP'+(R.fator<100?' '+R.fator+'%':''),'blue'):'',R.rat?badge('RAT','blue'):'',R.terc?badge('Terceiros','blue'):''].join(' ')||badge('Só FGTS/segurado','gray');}],['n','Empregados',r=>String(DB.empregados.filter(e=>e.lotacao===r.id).length)]],
+  novo:()=>({tpLotacao:'01',fpas:DB.empresa&&DB.empresa.regime==='sn'?'515':(DB.empresa&&DB.empresa.fpas)||'515',codTercs:DB.empresa&&DB.empresa.regime==='sn'?'0000':(FPAS_REF[(DB.empresa&&DB.empresa.fpas)||'515']||{terc:''}).terc,terceiros:DB.empresa&&DB.empresa.regime==='sn'?0:(DB.empresa&&DB.empresa.terceiros)||5.8,atvSimples:'sub',cprb:'sim'}),
+  fields:r=>{const E=DB.empresa||{};return F('Código da lotação','cod',r.cod,{req:1,w:2})+F('Departamento / descrição','desc',r.desc,{req:1,w:4})+F('Tipo de lotação (Tabela 10)','tpLotacao',r.tpLotacao,{req:1,w:2,list:'dlTpLot',hint:'01 = atividade econômica da empresa'})+'<datalist id="dlTpLot">'+TPLOT.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('')+'</datalist>'
+   +F('FPAS (3 dígitos)','fpas',r.fpas,{req:1,w:2,list:'dlFpas',max:3})+'<datalist id="dlFpas">'+Object.entries(FPAS_REF).map(([k,v])=>`<option value="${k}">${k} – ${v.nome}</option>`).join('')+'</datalist>'
+   +F('Cód. terceiros (4 dígitos)','codTercs',r.codTercs,{req:1,w:2,max:4,hint:E.regime==='sn'?'Simples: 0000':'Tabela 4 do eSocial'})+F('Terceiros (%) p/ cálculo','terceiros',r.terceiros,{w:2,hint:E.regime==='sn'?'Simples: 0':'Soma das entidades do FPAS'})
+   +(E.regime==='sn'&&E.anexo==='misto'?F('Atividade no Simples misto','atvSimples',r.atvSimples||'sub',{t:'select',opts:[['sub','CPP substituída (Anexos I–III/V)'],['nsub','CPP não substituída (Anexo IV)']],w:4,req:1}):'')
+   +(E.regime!=='sn'&&E.cprb?F('Atividade desonerada (CPRB)','cprb',r.cprb||'sim',{t:'select',opts:[['sim','Sim — sujeita à CPRB'],['nao','Não — CPP integral']],w:4}):'')
+   +`<div class="note info" style="grid-column:span 12">${infoLotacao()}</div>`;},
+  validate:o=>{const E=DB.empresa;if(!E)return 'Cadastre a empresa antes.';const ed=NAV.cur.params.edit;
+    if(DB.lotacoes.some(x=>x.id!==ed&&String(x.cod)===String(o.cod)))return 'Já existe lotação com este código.';
+    if(!/^\d{3}$/.test(o.fpas))return 'FPAS deve ter exatamente 3 dígitos.';if(!/^\d{4}$/.test(o.codTercs))return 'Código de terceiros deve ter 4 dígitos (use 0000 se não houver).';
+    if(E.regime==='sn'&&o.codTercs!=='0000')return 'Simples Nacional: terceiros dispensados — o código deve ser 0000 (LC 123/2006, art. 13, §3º).';
+    if(E.regime!=='sn'&&o.codTercs==='0000')return 'Lucro Presumido/Real: informe o código de terceiros do FPAS (Tabela 4). 0000 só se a entidade não tiver terceiros.';
+    if(E.regime==='sn')o.terceiros=0;
+    return null;}});
+
+crud('cargos',{title:'Cargos e CBO',sub:'Cadastro interno de cargos/funções. Para empresas privadas o eSocial recebe o cargo e o CBO dentro do S-2200 (não há tabela S-1030 para o setor privado).',key:'id',list:()=>DB.cargos,
+  cols:[['cod','Código'],['nome','Cargo'],['cbo','CBO'],['sumula','Descrição sumária']],
+  fields:r=>F('Código','cod',r.cod,{req:1,w:2})+F('Cargo / função','nome',r.nome,{req:1,w:4})+F('CBO (6 dígitos)','cbo',r.cbo,{req:1,w:2})+F('Descrição sumária','sumula',r.sumula,{w:4})});
+crud('rubricas',{title:'Rubricas da folha (S-1010)',sub:'Verbas usadas pelo cálculo. Natureza (Tabela 3) e códigos de incidência (CP, IRRF, FGTS) precisam ser conferidos nas tabelas oficiais antes do envio em produção.',tipo:'S-1010',key:'sys',list:()=>DB.rubricas,noAdd:true,noDel:true,
+  note:'As naturezas 1000 (salário), 1409 (salário-família), 9200 (desconto de adiantamentos), 9201 (contribuição previdenciária) e 9203 (IRRF) já vêm preenchidas conforme a Tabela 3. <b>As demais estão em branco de propósito</b>: preencha após consultar o Anexo I dos leiautes (Tabelas 3, 20, 21 e 22) e marque “conferida”. No modo webservice, o envio é bloqueado enquanto houver natureza em branco.',
+  cols:[['cod','Cód.'],['desc','Descrição'],['tp','Tipo',r=>r.tp===1?'Provento':r.tp===2?'Desconto':'Informativa'],['nat','Natureza',r=>r.nat?esc(r.nat):badge('preencher','warn')],['incCP','CP'],['incIRRF','IRRF'],['incFGTS','FGTS'],['conf','Conferida',r=>r.conf?badge('Sim','ok'):badge('Não','gray')]],
+  fields:r=>F('Código','cod',r.cod,{req:1,w:2})+F('Descrição','desc',r.desc,{req:1,w:4})+F('Natureza (Tabela 3)','nat',r.nat,{w:2})+F('Incidência CP','incCP',r.incCP,{req:1,w:1})+F('Incidência IRRF','incIRRF',r.incIRRF,{req:1,w:1})+F('Incidência FGTS','incFGTS',r.incFGTS,{req:1,w:1})+F('Conferida nas tabelas oficiais','conf',r.conf,{t:'check',w:3,cl:'Natureza e incidências conferidas'})});
+
+/* ===================== EMPRESA (S-1000) ===================== */
+SC.empresa={view(){const E=DB.empresa||{regime:'lp',anexo:'std',iniValid:compAtual(),classTrib:'99',rat:2,fap:1,terceiros:5.8,patronal:20,fpas:'515',codTercs:'0000',porte:'N',regEletron:'0',ctNome:'',uf:'PR'};
+  return `<h1>Cadastro da empresa (evento S-1000)</h1><p class="sub">Informações do empregador. Base do eSocial, do cálculo dos encargos e do cabeçalho do contracheque.</p>
+  <div data-form id="f">
+  <div class="card"><h2>Identificação</h2><div class="grid">${F('CNPJ','cnpj',fmtCNPJ(E.cnpj),{req:1,w:3,mask:'cnpj'})+F('Razão social','razao',E.razao,{req:1,w:5})+F('Nome fantasia','fantasia',E.fantasia,{w:4})+F('Natureza jurídica (4 dígitos)','natJurid',E.natJurid,{w:3,list:'dlNat',hint:'Ex.: 2062 Sociedade Empresária Limitada'})+F('CNAE principal','cnae',E.cnae,{w:3})+F('Regime tributário','regime',E.regime||'lp',{t:'select',opts:Object.entries(REGIMES),w:3,req:1})+F('Enquadramento da CPP (Simples)','anexo',E.anexo||'std',{t:'select',opts:Object.entries(ANEXOS),w:5})+F('CPRB (desoneração da folha)','cprb',E.cprb,{t:'check',cl:'Atividade sujeita à CPRB (Lucro Presumido/Real)',w:4})+F('classTrib (derivado do regime)','classTribV',classTribDe(E)||'—',{ro:1,w:3,hint:'Tabela 8 do eSocial — calculado automaticamente'})+F('Porte','porte',E.porte,{t:'select',opts:[['N','Demais'],['S','ME/EPP']],w:2})+F('Entrega eletrônica obrigatória','regEletron',E.regEletron,{t:'select',opts:[['0','0 – Não'],['1','1 – Sim']],w:3})+F('Construtora','construtora',E.construtora,{t:'check',cl:'Empresa de construção civil (indConstr)',w:3})+F('Início de validade (AAAA-MM)','iniValid',E.iniValid,{t:'month',req:1,w:3})}</div><datalist id="dlNat"><option value="2062">2062 – Sociedade Empresária Limitada</option><option value="2135">2135 – Empresário (Individual)</option><option value="2305">2305 – Empresa Individual de Responsabilidade Limitada</option><option value="2054">2054 – Sociedade Anônima Fechada</option></datalist></div>
+  <div class="card"><h2>Endereço</h2><div class="grid">${F('CEP','cep',fmtCEP(E.cep),{w:2,mask:'cep'})+F('Tipo','tpLograd',E.tpLograd||'R',{w:1})+F('Logradouro','logr',E.logr,{w:4})+F('Número','nr',E.nr,{w:1})+F('Complemento','compl',E.compl,{w:2})+F('Bairro','bairro',E.bairro,{w:3})+F('Município','municipio',E.municipio,{w:3})+F('Cód. IBGE (7 dígitos)','codMunic',E.codMunic,{w:2})+F('UF','uf',E.uf,{t:'select',opts:O.uf,w:1})}</div></div>
+  <div class="card"><h2>Contato e responsável pelo envio</h2><div class="grid">${F('Nome do contato','ctNome',E.ctNome,{req:1,w:4})+F('CPF do contato','ctCpf',fmtCPF(E.ctCpf),{req:1,w:3,mask:'cpf'})+F('Telefone','ctFone',E.ctFone,{w:2})+F('E-mail','ctEmail',E.ctEmail,{w:3})}</div></div>
+  <div class="card"><h2>Regras de incidência para o regime escolhido</h2><div id="regraBox">${regraPanel(E)}</div></div>
+  <div class="card"><h2>Valores de referência (usados quando o estabelecimento ou a lotação não informa os seus)</h2><div class="grid">${F('CPP patronal (%)','patronal',E.patronal,{w:2})+F('RAT (%)','rat',E.rat,{w:2})+F('FAP','fap',E.fap,{w:2})+F('Terceiros (%)','terceiros',E.terceiros,{w:2})+F('FPAS padrão','fpas',E.fpas,{w:2})+F('Terceiros padrão','codTercs',E.codTercs,{w:2})}</div><p class="sub" style="margin:8px 0 0">O RAT×FAP efetivo vem do <b>estabelecimento</b> do empregado; FPAS, terceiros, atividade substituída e CPRB vêm da <b>lotação</b>. Estes valores servem só de padrão para novos cadastros.</p></div>
+  <div class="card"><h2>Certificado digital (e-CNPJ / e-CPF do procurador)</h2><div class="grid">${F('Tipo','certTipo',E.certTipo||'A1',{t:'select',opts:['A1','A3'],w:2})+F('Titular','certTitular',E.certTitular,{w:5})+F('Validade','certVal',E.certVal,{t:'date',w:2})}</div><div class="note info" style="margin:10px 0 0">O arquivo do certificado e sua senha <b>não são armazenados</b> neste sistema. A assinatura XML e a conexão com certificado ocorrem no serviço de integração (aba Webservice).</div></div></div>`;},
+  actions:()=>[{label:'💾 Salvar empresa',act:'empSave',cls:'pri',key:'save'},{label:'Salvar e enviar S-1000 ao eSocial',act:'empSend',cls:'send',key:'send'}]};
+function regraPanel(E){E=E||{};const rg=E.regime||'lp',an=E.anexo||'std',cp=!!E.cprb&&rg!=='sn';
+  const T=(n,inc,base)=>`<tr><td>${n}</td><td class="c">${inc}</td><td>${base}</td></tr>`;const sim=badge('Sim','ok'),nao=badge('Não','gray'),par=(x)=>badge(x,'warn');
+  let rows='',txt='';
+  if(rg==='sn'){const iv=an==='iv',mx=an==='misto';
+    rows=T('CPP patronal 20%',iv?sim:mx?par('só lotações não substituídas'):nao,'LC 123/2006, art. 13, §3º e art. 18, §5º-C (Anexo IV e atividades vedadas)')+T('RAT × FAP',iv?sim:mx?par('só lotações não substituídas'):nao,'Mesmo tratamento da CPP')+T('Terceiros (Sistema S, salário-educação, INCRA)',nao,'LC 123/2006, art. 13, §3º')+T('FGTS 8%',sim,'Lei 8.036/90, art. 15')+T('INSS do empregado e IRRF',sim,'Lei 8.212/91, art. 20; Lei 7.713/88');
+    txt=`classTrib <b>${classTribDe(E)||classTribDe({regime:'sn',anexo:an})}</b>. `+(iv?'Anexo IV: a CPP não está no DAS; a folha apura CPP 20% e RAT.':mx?'Misto: a classificação 02 exige que cada lotação diga se a atividade é de CPP substituída ou não.':'A CPP está no DAS; a folha só apura FGTS, INSS do empregado e IRRF.');}
+  else{rows=T('CPP patronal 20%',cp?par('reduzida (reoneração gradual)'):sim,cp?'Lei 14.973/2024 (reoneração progressiva da folha: 25% em 2025, 50% em 2026, 75% em 2027) [VERIFICAR FONTE OFICIAL]':'Lei 8.212/91, art. 22, I')+T('RAT × FAP',sim,'Lei 8.212/91, art. 22, II; Lei 10.666/2003, art. 10')+T('Terceiros (conforme FPAS)',sim,'Tabela 4 do eSocial')+T('FGTS 8%',sim,'Lei 8.036/90, art. 15')+T('INSS do empregado e IRRF',sim,'Lei 8.212/91, art. 20; Lei 7.713/88');
+    txt=`classTrib <b>99</b>. ${REGIMES[rg]}: a folha tem a mesma incidência previdenciária; o regime afeta IRPJ/CSLL/PIS/COFINS, que não são tratados aqui. ${cp?'No S-1000, indDesFolha = 1.':'No S-1000, indDesFolha = 0.'}`;}
+  return `<div class="tw"><table class="t"><thead><tr><th>Contribuição</th><th class="c">Incide na folha?</th><th>Base legal</th></tr></thead><tbody>${rows}</tbody></table></div><p class="sub" style="margin:8px 0 0">${txt}</p>`;}
+SC.empresa.mount=()=>{const f=$('#f');if(!f)return;const upd=()=>{const o=readForm(f);const E={regime:o.regime,anexo:o.anexo,cprb:o.cprb&&o.regime!=='sn'};
+  const an=f.querySelector('[name=anexo]').closest('.f'),cb=f.querySelector('[name=cprb]').closest('.f');an.style.display=o.regime==='sn'?'':'none';cb.style.display=o.regime==='sn'?'none':'';
+  f.querySelector('[name=classTribV]').value=classTribDe(E);$('#regraBox').innerHTML=regraPanel(E);
+  if(o.regime==='sn'){f.querySelector('[name=cprb]').checked=false;}};
+  ['regime','anexo','cprb'].forEach(n=>f.querySelector('[name='+n+']').addEventListener('change',upd));upd();DIRTY=false;};
+function empSalvar(){const f=$('#f'),mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return false;}const o=readForm(f);
+  if(!cnpjValido(o.cnpj)){toast('CNPJ inválido.','err');return false;}if(!cpfValido(o.ctCpf)){toast('CPF do contato inválido.','err');return false;}
+  o.cnpj=onlyD(o.cnpj);o.ctCpf=onlyD(o.ctCpf);delete o.classTribV;if(o.regime==='sn')o.cprb=false;else o.anexo='std';o.classTrib=classTribDe(o);DB.empresa=Object.assign(DB.empresa||{},o);
+  if(!DB.estabs.length)DB.estabs.push({id:uid('e'),nome:'Matriz',tipoEstab:'matriz',tpInsc:'1',nrInsc:o.cnpj,cnae:o.cnae||'',rat:o.rat,fap:o.fap,iniValid:o.iniValid});
+  saveDB();DIRTY=false;toast('Empresa salva.','ok');return true;}
+ACT.empSave=()=>{if(empSalvar())refresh();};
+ACT.empSend=async()=>{if(!empSalvar())return;const alt=DB.eventos.some(e=>e.tipo==='S-1000'&&e.status==='processado');const ev=criarEvento('S-1000',{alt});const r=await enviarEventos([ev]);resumoEnvio(r,[ev]);refresh();};
+
+/* ===================== EMPREGADOS (S-2200) ===================== */
+SC.empregados={view(){const L=DB.empregados;
+  return `<h1>Empregados — Departamento Pessoal</h1><p class="sub">Cadastro de trabalhadores e contratos. A admissão é comunicada pelo evento S-2200.</p>${exigeEmpresa()}
+  <div class="card"><div class="row sp"><input id="busca" placeholder="Buscar por nome, CPF ou matrícula…" style="padding:8px 10px;border:1px solid #c7d0d9;border-radius:6px;min-width:300px;font:inherit"><button class="btn pri" data-act="empNovo">＋ Novo empregado</button></div>
+  <div class="tw" style="margin-top:12px"><table class="t"><thead><tr><th>Mat.</th><th>Nome</th><th>CPF</th><th>Cargo</th><th>Admissão</th><th class="r">Salário</th><th>Situação</th><th>S-2200</th><th></th></tr></thead><tbody>
+  ${L.map(e=>{const c=byId(DB.cargos,e.cargo)||{};return `<tr data-q="${esc((e.nome+' '+e.cpf+' '+e.mat).toLowerCase())}"><td>${esc(e.mat)}</td><td><b>${esc(e.nome)}</b></td><td>${fmtCPF(e.cpf)}</td><td>${esc(c.nome||'')}</td><td>${fmtData(e.admissao)}</td><td class="r">${brl(num(e.salario))}</td><td>${badge(e.situacao==='ativo'?'Ativo':e.situacao==='afastado'?'Afastado':'Desligado',e.situacao==='ativo'?'ok':e.situacao==='afastado'?'warn':'gray')}</td><td>${stBadge(ultEv('S-2200',x=>x.gen.args.id===e.id))}</td>
+  <td class="r"><button class="btn sm" data-act="empEdit" data-id="${e.id}">Editar</button> <button class="btn sm send" data-act="empSend2200" data-id="${e.id}">Enviar S-2200</button> <button class="btn sm danger" data-act="empDel" data-id="${e.id}">Excluir</button></td></tr>`;}).join('')||'<tr><td colspan="9" class="c" style="padding:20px;color:var(--mut)">Nenhum empregado cadastrado.</td></tr>'}
+  </tbody></table></div></div>`;},
+  mount(){const b=$('#busca');b&&b.addEventListener('input',()=>{const q=b.value.toLowerCase();$$('#main tbody tr[data-q]').forEach(tr=>tr.style.display=tr.dataset.q.includes(q)?'':'none');});},
+  actions:()=>[{label:'＋ Novo empregado',act:'empNovo',cls:'pri',key:'save'},{label:'Enviar S-2200 pendentes ao eSocial',act:'empSendAll',cls:'send',key:'send'}]};
+ACT.empNovo=()=>go('empForm',{});
+ACT.empEdit=el=>go('empForm',{id:el.dataset.id});
+ACT.empDel=el=>modalConfirm('Excluir o empregado e seus lançamentos? Não afeta eventos já enviados ao eSocial.',()=>{DB.empregados=DB.empregados.filter(e=>e.id!==el.dataset.id);saveDB();refresh();toast('Empregado excluído.');},{yes:'Excluir'});
+ACT.empSend2200=async el=>{const ev=criarEvento('S-2200',{id:el.dataset.id});const r=await enviarEventos([ev]);resumoEnvio(r,[ev]);refresh();};
+ACT.empSendAll=async()=>{const evs=[];for(const e of DB.empregados){const u=ultEv('S-2200',x=>x.gen.args.id===e.id);if(!u||u.status==='rejeitado'||u.status==='gerado')evs.push(u&&u.status==='gerado'?u:criarEvento('S-2200',{id:e.id}));}
+  if(!evs.length){toast('Nenhum S-2200 pendente.');return;}const r=await enviarEventos(evs);resumoEnvio(r,evs);refresh();};
+
+const depRow=d=>`<div class="dep"><div class="f"><label>Nome</label><input data-d="nome" value="${esc(d.nome||'')}"></div><div class="f"><label>CPF</label><input data-d="cpf" data-mask="cpf" value="${fmtCPF(d.cpf||'')}"></div><div class="f"><label>Nascimento</label><input type="date" data-d="nasc" value="${d.nasc||''}"></div><div class="f"><label>Tipo</label><select data-d="tp">${optSel(O.tpDep,d.tp||'03')}</select></div>
+  <label class="chk"><input type="checkbox" data-d="irrf" ${d.irrf?'checked':''}> IRRF</label><label class="chk"><input type="checkbox" data-d="sf" ${d.sf?'checked':''}> Sal.-família</label><label class="chk"><input type="checkbox" data-d="inv" ${d.inv?'checked':''}> Inválido</label><button class="btn sm danger" data-act="depDel">✕</button></div>`;
+const lstOpts=(arr,lab)=>[['','Selecione…']].concat(arr.map(x=>[x.id,lab(x)]));
+SC.empForm={view(p){const n=!p.id;const e=n?{mat:String((DB.empregados.reduce((m,x)=>Math.max(m,parseInt(x.mat)||0),0))+1).padStart(4,'0'),admissao:hoje(),categoria:'101',tpContr:'1',tpRegJor:'1',natAtividade:'1',hrsSem:44,divisor:220,tpJornada:'2',undSalFixo:'5',situacao:'ativo',racaCor:'6',grauInstr:'07',estCiv:'1',sexo:'M',estab:(DB.estabs[0]||{}).id,uf:DB.empresa?DB.empresa.uf:'PR',tpLograd:'R',deps:[]}:byId(DB.empregados,p.id);
+  const tab=p.tab||'pess';const T=(k,l)=>`<a data-act="empTab" data-t="${k}" class="${tab===k?'on':''}">${l}</a>`;
+  return `<h1>${n?'Novo empregado':'Empregado — '+esc(e.nome)}</h1><p class="sub">Matrícula ${esc(e.mat)} · preencha todas as abas antes de gerar o S-2200.</p>${exigeEmpresa()}
+  <div class="tabs">${T('pess','Dados pessoais')}${T('end','Endereço')}${T('cont','Contrato')}${T('rem','Remuneração e benefícios')}${T('dep','Dependentes')}${T('banc','Pagamento')}</div>
+  <div data-form id="f">
+  <div class="card" data-tab="pess" ${tab!=='pess'?'hidden':''}><div class="grid">${F('Matrícula','mat',e.mat,{req:1,w:2})+F('Nome completo','nome',e.nome,{req:1,w:6})+F('CPF','cpf',fmtCPF(e.cpf),{req:1,w:4,mask:'cpf'})+F('Data de nascimento','nasc',e.nasc,{t:'date',req:1,w:3})+F('Sexo','sexo',e.sexo,{t:'select',opts:O.sexo,w:3})+F('Raça/cor','racaCor',e.racaCor,{t:'select',opts:O.raca,w:3})+F('Estado civil','estCiv',e.estCiv,{t:'select',opts:O.estCiv,w:3})+F('Grau de instrução','grauInstr',e.grauInstr,{t:'select',opts:O.instr,w:4})+F('Nome da mãe','mae',e.mae,{req:1,w:5})+F('PIS/NIS','pis',e.pis,{w:3})+F('CTPS (nº/série/UF)','ctps',e.ctps,{w:4})+F('Telefone','fone',e.fone,{w:3})+F('E-mail','email',e.email,{t:'email',w:5})}</div></div>
+  <div class="card" data-tab="end" ${tab!=='end'?'hidden':''}><div class="grid">${F('CEP','cep',fmtCEP(e.cep),{req:1,w:2,mask:'cep'})+F('Tipo','tpLograd',e.tpLograd,{w:1})+F('Logradouro','logr',e.logr,{req:1,w:5})+F('Número','nr',e.nr,{w:1})+F('Complemento','compl',e.compl,{w:3})+F('Bairro','bairro',e.bairro,{w:3})+F('Município','municipio',e.municipio,{w:3})+F('Cód. IBGE (7 díg.)','codMunic',e.codMunic,{req:1,w:3})+F('UF','uf',e.uf,{t:'select',opts:O.uf,w:2,req:1})}</div></div>
+  <div class="card" data-tab="cont" ${tab!=='cont'?'hidden':''}><div class="grid">${F('Data de admissão','admissao',e.admissao,{t:'date',req:1,w:3})+F('Categoria (Tabela 1)','categoria',e.categoria,{t:'select',opts:O.categ,w:5})+F('Estabelecimento','estab',e.estab,{t:'select',opts:lstOpts(DB.estabs,x=>x.nome),w:4,req:1})+F('Departamento / lotação','lotacao',e.lotacao,{t:'select',opts:lstOpts(DB.lotacoes,x=>x.cod+' – '+x.desc),w:4,req:1})+F('Cargo','cargo',e.cargo,{t:'select',opts:lstOpts(DB.cargos,x=>x.nome+' (CBO '+x.cbo+')'),w:4,req:1})+F('Tipo de contrato','tpContr',e.tpContr,{t:'select',opts:[['1','1 – Prazo indeterminado'],['2','2 – Prazo determinado']],w:4})+F('Término (se determinado)','dtTerm',e.dtTerm,{t:'date',w:3})+F('Regime de jornada','tpRegJor',e.tpRegJor,{t:'select',opts:[['1','1 – Submetido a horário de trabalho'],['2','2 – Atividade externa'],['3','3 – Jornada 12x36']],w:4})+F('Natureza da atividade','natAtividade',e.natAtividade,{t:'select',opts:[['1','1 – Urbano'],['2','2 – Rural']],w:3})+F('Tipo de jornada','tpJornada',e.tpJornada,{t:'select',opts:O.jornada,w:5})+F('Horas semanais','hrsSem',e.hrsSem,{t:'number',w:2})+F('Divisor mensal','divisor',e.divisor,{t:'number',w:2})+F('CNPJ do sindicato','sindCnpj',e.sindCnpj,{w:3})+F('Data-base (mês)','dtBase',e.dtBase,{t:'number',w:2,ph:'1 a 12'})+F('Situação','situacao',e.situacao,{t:'select',opts:[['ativo','Ativo'],['afastado','Afastado'],['desligado','Desligado']],w:3})}</div></div>
+  <div class="card" data-tab="rem" ${tab!=='rem'?'hidden':''}><div class="grid">${F('Salário contratual (mensal)','salario',e.salario,{t:'money',req:1,w:3})+F('Unidade de pagamento','undSalFixo',e.undSalFixo,{t:'select',opts:[['5','5 – Mensal']],w:3})+F('Insalubridade','insal',e.insal||'',{t:'select',opts:[['','Não'],['10','10% (mínimo)'],['20','20% (médio)'],['40','40% (máximo)']],w:3,hint:'Base: salário mínimo (CLT, art. 192)'})+F('Periculosidade','peric',e.peric,{t:'check',cl:'30% sobre o salário (CLT, art. 193, §1º)',w:3})+F('Vale-transporte','optaVT',e.optaVT,{t:'check',cl:'Optante pelo VT (desconto até 6%)',w:3})+F('Custo mensal do VT','vtValor',e.vtValor,{t:'money',w:3})+F('Pensão alimentícia (valor mensal)','pensao',e.pensao,{t:'money',w:3,hint:'Deduzida da base do IRRF'})}</div></div>
+  <div class="card" data-tab="dep" ${tab!=='dep'?'hidden':''}><div class="row sp"><h2>Dependentes</h2><button class="btn pri sm" data-act="depAdd">＋ Adicionar dependente</button></div><p class="sub">Marque “IRRF” para dedução na base do imposto e “Sal.-família” para filhos de até 14 anos (ou inválidos).</p><div id="deps">${(e.deps||[]).map(depRow).join('')}</div></div>
+  <div class="card" data-tab="banc" ${tab!=='banc'?'hidden':''}><div class="grid">${F('Forma de pagamento','formaPgto',e.formaPgto||'cc',{t:'select',opts:[['cc','Crédito em conta'],['din','Dinheiro'],['pix','PIX']],w:3})+F('Banco','banco',e.banco,{w:3})+F('Agência','agencia',e.agencia,{w:2})+F('Conta','conta',e.conta,{w:2})+F('Chave PIX','pix',e.pix,{w:4})}</div></div>
+  </div>`;},
+  actions:()=>[{label:'💾 Salvar empregado',act:'empSalvar',cls:'pri',key:'save'},{label:'Salvar e enviar S-2200 ao eSocial',act:'empSalvarEnviar',cls:'send',key:'send'}]};
+ACT.empTab=el=>{const t=el.dataset.t;NAV.cur.params.tab=t;$$('[data-tab]').forEach(d=>d.hidden=d.dataset.tab!==t);$$('.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.t===t));};
+ACT.depAdd=()=>{$('#deps').insertAdjacentHTML('beforeend',depRow({}));DIRTY=true;};
+ACT.depDel=el=>{el.closest('.dep').remove();DIRTY=true;};
+function lerDeps(){return $$('#deps .dep').map(r=>{const g=k=>r.querySelector('[data-d="'+k+'"]');return{nome:g('nome').value.trim(),cpf:onlyD(g('cpf').value),nasc:g('nasc').value,tp:g('tp').value,irrf:g('irrf').checked,sf:g('sf').checked,inv:g('inv').checked};}).filter(d=>d.nome);}
+function empSalvarForm(){const f=$('#f');
+  // os campos obrigatórios de abas ocultas também precisam ser validados
+  const mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return null;}
+  const o=readForm(f);if(!cpfValido(o.cpf)){toast('CPF inválido.','err');return null;}if(!num(o.salario)){toast('Informe o salário.','err');return null;}
+  o.cpf=onlyD(o.cpf);const p=NAV.cur.params;
+  if(DB.empregados.some(x=>x.cpf===o.cpf&&x.id!==p.id)){toast('Já existe empregado com este CPF.','err');return null;}
+  if(DB.empregados.some(x=>x.mat===o.mat&&x.id!==p.id)){toast('Matrícula já utilizada.','err');return null;}
+  o.deps=lerDeps();for(const d of o.deps){if(d.cpf&&!cpfValido(d.cpf)){toast('CPF inválido do dependente '+d.nome,'err');return null;}}
+  let rec;if(p.id){rec=byId(DB.empregados,p.id);Object.assign(rec,o);}else{rec=Object.assign({id:uid('emp')},o);DB.empregados.push(rec);NAV.cur.params.id=rec.id;}
+  saveDB();DIRTY=false;toast('Empregado salvo.','ok');return rec;}
+ACT.empSalvar=()=>{if(empSalvarForm())refresh();};
+ACT.empSalvarEnviar=async()=>{const r=empSalvarForm();if(!r)return;const ev=criarEvento('S-2200',{id:r.id});const x=await enviarEventos([ev]);resumoEnvio(x,[ev]);refresh();};
+
+/* ===================== MOVIMENTAÇÕES ===================== */
+SC.movs={view(p){const tab=p.tab||'sal';const T=(k,l)=>`<a data-act="movTab" data-t="${k}" class="${tab===k?'on':''}">${l}</a>`;
+  const ativos=DB.empregados.filter(e=>e.situacao!=='desligado');const eo=[['','Selecione o empregado…']].concat(ativos.map(e=>[e.id,e.mat+' – '+e.nome]));
+  let form='';
+  if(tab==='sal')form=F('Empregado','empId','',{t:'select',opts:eo,req:1,w:5})+F('Data da alteração','data',hoje(),{t:'date',req:1,w:3})+F('Novo salário','novoSalario','',{t:'money',req:1,w:4})+F('Motivo / observação','obs','',{w:12});
+  if(tab==='afast')form=F('Empregado','empId','',{t:'select',opts:eo,req:1,w:5})+F('Início do afastamento','data',hoje(),{t:'date',req:1,w:3})+F('Motivo (Tabela 18)','motivo','',{req:1,w:4,list:'dlAf',hint:'Código da Tabela 18 do eSocial'})+F('Afastado até a competência','ate','',{t:'month',w:3,hint:'Em branco = sem previsão (não calcula a folha)'})+'<datalist id="dlAf"><option value="01">01 – Acidente/doença do trabalho</option><option value="03">03 – Acidente/doença não relacionada ao trabalho</option><option value="16">16 – Licença remunerada</option><option value="17">17 – Licença-maternidade</option><option value="18">18 – Prorrogação da licença-maternidade (Empresa Cidadã)</option><option value="19">19 – Licença-maternidade por aborto não criminoso</option></datalist>';
+  if(tab==='deslig')form=`<div class="note info" style="grid-column:span 12">O desligamento agora é feito na tela <b>Rescisão</b>, que calcula aviso prévio, 13º e férias proporcionais, multa do FGTS, lança tudo na folha do mês e gera o S-2299 com as verbas. <button class="btn sm pri" data-act="nav" data-to="resc" style="margin-left:8px">Abrir Rescisão</button></div>`;
+  const L=DB.movs.slice().reverse();
+  return `<h1>Movimentações do contrato</h1><p class="sub">Alteração salarial/contratual (S-2206), afastamentos (S-2230) e desligamentos (S-2299).</p>${exigeEmpresa()}
+  <div class="tabs">${T('sal','Alteração salarial (S-2206)')}${T('afast','Afastamento (S-2230)')}${T('deslig','Desligamento (S-2299)')}</div>
+  <div class="card" data-form id="f"><div class="grid">${form}</div></div>
+  <div class="card"><h2>Movimentações registradas</h2><div class="tw"><table class="t"><thead><tr><th>Data</th><th>Evento</th><th>Empregado</th><th>Detalhe</th><th>eSocial</th></tr></thead><tbody>${L.map(m=>{const e=byId(DB.empregados,m.empId)||{};const ev=DB.eventos.find(x=>x.id===m.evId);return `<tr><td>${fmtData(m.data)}</td><td>${m.tipo}</td><td>${esc(e.nome||'—')}</td><td>${esc(m.det)}</td><td>${stBadge(ev)}</td></tr>`;}).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Sem movimentações.</td></tr>'}</tbody></table></div></div>`;},
+  actions:()=>[{label:'💾 Registrar',act:'movSave',cls:'pri',key:'save',arg:'0'},{label:'Registrar e enviar ao eSocial',act:'movSave',cls:'send',key:'send',arg:'1'}]};
+ACT.movTab=el=>{NAV.cur.params.tab=el.dataset.t;refresh();};
+ACT.movSave=async el=>{if((NAV.cur.params.tab||'sal')==='deslig'){go('resc');return;}const f=$('#f'),mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return;}const o=readForm(f),tab=NAV.cur.params.tab||'sal',e=byId(DB.empregados,o.empId);let tipo,det;
+  if(tab==='sal'){tipo='S-2206';det='Salário '+brl(num(e.salario))+' → '+brl(o.novoSalario)+(o.obs?' · '+o.obs:'');e.salario=o.novoSalario;}
+  else if(tab==='afast'){tipo='S-2230';det='Motivo '+o.motivo+(o.ate?' · até '+o.ate:' · sem previsão');e.situacao='afastado';e.afastAteComp=o.ate||'9999-12';}
+  else{tipo='S-2299';det='Motivo '+o.motivo;e.situacao='desligado';e.desligamento=o.data;}
+  const mov={id:uid('m'),tipo,empId:e.id,data:o.data,det,novoSalario:o.novoSalario,motivo:o.motivo};DB.movs.push(mov);
+  const ev=criarEvento(tipo,{id:e.id,mov});mov.evId=ev.id;saveDB();DIRTY=false;
+  if(el.dataset.arg==='1'){const r=await enviarEventos([ev]);resumoEnvio(r,[ev]);}else toast('Movimentação registrada; evento gerado na biblioteca.','ok');refresh();};
+
+/* ===================== LANÇAMENTOS ===================== */
+const proxMes=(c,d)=>{const [a,m]=c.split('-').map(Number);const n=new Date(a,m,1);return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');};
+const compCtx=c=>DB.comps[c]=DB.comps[c]||{status:'aberta',lanc:{},res:{}};
+const statusComp={aberta:['Aberta','gray'],calculada:['Calculada','blue'],fechada:['Fechada','ok']};
+const compBar=(comp)=>`<div class="row" style="margin-bottom:12px"><b>Competência:</b>${compInput(comp)}${badge(statusComp[(DB.comps[comp]||{status:'aberta'}).status][0],statusComp[(DB.comps[comp]||{status:'aberta'}).status][1])}</div>`;
+function bindComp(){const s=$('#compSel');s&&s.addEventListener('change',()=>{if(!s.value)return;DB.cfg.comp=s.value;saveDB();DIRTY=false;refresh({comp:s.value});});}
+const compSel=p=>p.comp||DB.cfg.comp;
+SC.lanc={view(p){const comp=compSel(p),c=DB.comps[comp]||{},fech=c.status==='fechada';const emps=DB.empregados.filter(e=>empAtivoNaComp(e,comp));
+  return `<h1>Lançamentos do mês</h1><p class="sub">Eventos variáveis (horas extras, faltas, comissões, descontos) e parâmetros da competência.</p>${exigeEmpresa()}${compBar(comp)}
+  ${fech?'<div class="note">Competência fechada: reabra a folha para alterar os lançamentos.</div>':''}
+  <div data-form id="f"><div class="card"><h2>Parâmetros da competência</h2><div class="grid">${F('Dias úteis (seg–sáb, sem feriados)','diasUteis',c.diasUteis!=null?c.diasUteis:'',{t:'number',w:3,hint:'Para o DSR sobre horas extras'})+F('Domingos e feriados','domFer',c.domFer!=null?c.domFer:'',{t:'number',w:3})+F('Data de pagamento','dtPgto',c.dtPgto||proxMes(comp,5),{t:'date',w:3,req:1,hint:'Usada no S-1210'})}</div></div>
+  <div class="card"><h2>Lançamentos por empregado</h2><div class="tw"><table class="t mat"><thead><tr><th>Mat.</th><th>Empregado</th>${LANC_CAMPOS.map(x=>`<th class="r">${x[1]}</th>`).join('')}</tr></thead><tbody>
+  ${emps.map(e=>{const l=(c.lanc||{})[e.id]||{};return `<tr><td>${esc(e.mat)}</td><td>${esc(e.nome)}</td>${LANC_CAMPOS.map(([k])=>`<td class="r"><input data-e="${e.id}" data-k="${k}" value="${esc(l[k]||'')}" ${fech?'disabled':''}></td>`).join('')}</tr>`;}).join('')||'<tr><td colspan="12" class="c" style="padding:18px;color:var(--mut)">Nenhum empregado ativo nesta competência.</td></tr>'}
+  </tbody></table></div><p class="sub" style="margin:8px 0 0">Horas e dias em decimal (ex.: 10 ou 7,5). Salário, adicionais, salário-família, INSS, IRRF, FGTS e vale-transporte são calculados automaticamente a partir do cadastro.</p></div></div>`;},
+  mount(){bindComp();},
+  actions:p=>[{label:'💾 Salvar lançamentos',act:'lancSave',cls:'pri',key:'save'},{label:'Calcular folha →',act:'lancCalc',cls:'send',key:'send'}]};
+function lancSalvar(){const comp=compSel(NAV.cur.params),c=compCtx(comp);if(c.status==='fechada'){toast('Competência fechada.','err');return false;}
+  const f=readForm($('#f'));if(!f.dtPgto){toast('Informe a data de pagamento.','err');return false;}
+  c.diasUteis=f.diasUteis;c.domFer=f.domFer;c.dtPgto=f.dtPgto;c.lanc={};
+  $$('#f input[data-e]').forEach(i=>{if(i.value.trim()){(c.lanc[i.dataset.e]=c.lanc[i.dataset.e]||{})[i.dataset.k]=i.value.trim();}});
+  c.status='aberta';saveDB();DIRTY=false;return true;}
+ACT.lancSave=()=>{if(lancSalvar()){toast('Lançamentos salvos. Recalcule a folha.','ok');refresh();}};
+ACT.lancCalc=()=>{if(lancSalvar())go('folha',{comp:compSel(NAV.cur.params),calc:true});};
+
+/* ===================== FOLHA ===================== */
+function detalheCalc(empId,comp){const e=byId(DB.empregados,empId),r=DB.comps[comp].res[empId],I=r.irrfInfo;
+  modal(`<table class="t"><thead><tr><th>Cód.</th><th>Descrição</th><th>Ref.</th><th class="r">Vencimentos</th><th class="r">Descontos</th></tr></thead><tbody>${r.itens.map(i=>`<tr><td>${i.cod}</td><td>${esc(i.desc)}</td><td>${esc(i.ref)}</td><td class="r">${i.tp===1?brl(i.valor):''}</td><td class="r">${i.tp===2?brl(i.valor):''}</td></tr>`).join('')}</tbody><tfoot><tr><th colspan="3">Totais</th><th class="r">${brl(r.totProv)}</th><th class="r">${brl(r.totDesc)}</th></tr></tfoot></table>
+  <p><b>Líquido: R$ ${brl(r.liquido)}</b></p><div class="note info"><b>Memória de cálculo</b><br>Base INSS: R$ ${brl(r.baseCP)} · INSS: R$ ${brl(r.inss)}<br>Base IRRF (${I.simplificado?'desconto simplificado':'deduções legais'}): R$ ${brl(I.base)} · imposto pela tabela: R$ ${brl(I.imposto)} · redução Lei 15.270/2025: R$ ${brl(I.reducao)} · <b>IRRF: R$ ${brl(r.irrf)}</b><br>Base FGTS: R$ ${brl(r.baseFGTS)} · FGTS (${r.aliqFgts}%): R$ ${brl(r.fgts)} (encargo do empregador, não descontado)</div>`,{title:'Cálculo — '+e.nome+' — '+compLabel(comp),wide:true});}
+SC.folha={view(p){const comp=compSel(p),c=DB.comps[comp],t=totaisComp(comp);const has=c&&Object.keys(c.res||{}).length;
+  return `<h1>Cálculo da folha de pagamento</h1><p class="sub">Apuração mensal: proventos, INSS, IRRF, FGTS, salário-família, vale-transporte e encargos do empregador.</p>${exigeEmpresa()}${compBar(comp)}
+  ${!has?`<div class="note">Folha ainda não calculada para ${compLabel(comp)}. Lance os eventos variáveis (se houver) e clique em <b>Calcular folha</b>.</div>`:''}
+  ${has?`<div class="kpis"><div class="kpi"><span>Empregados</span><b>${t.n}</b></div><div class="kpi"><span>Proventos</span><b>R$ ${brl(t.prov)}</b></div><div class="kpi"><span>Descontos</span><b>R$ ${brl(t.desc)}</b></div><div class="kpi"><span>Líquido a pagar</span><b>R$ ${brl(t.liq)}</b></div><div class="kpi"><span>INSS segurados</span><b>R$ ${brl(t.inss)}</b></div><div class="kpi"><span>IRRF</span><b>R$ ${brl(t.irrf)}</b></div><div class="kpi"><span>FGTS do mês</span><b>R$ ${brl(t.fgts)}</b></div></div>
+  <div class="card"><div class="tw"><table class="t"><thead><tr><th>Mat.</th><th>Empregado</th><th class="r">Proventos</th><th class="r">Descontos</th><th class="r">Líquido</th><th class="r">INSS</th><th class="r">IRRF</th><th class="r">FGTS</th><th></th></tr></thead><tbody>
+  ${Object.keys(c.res).map(id=>{const e=byId(DB.empregados,id),r=c.res[id];return `<tr><td>${esc(e.mat)}</td><td>${esc(e.nome)}</td><td class="r">${brl(r.totProv)}</td><td class="r">${brl(r.totDesc)}</td><td class="r"><b>${brl(r.liquido)}</b></td><td class="r">${brl(r.inss)}</td><td class="r">${brl(r.irrf)}</td><td class="r">${brl(r.fgts)}</td><td class="r"><button class="btn sm" data-act="folhaDet" data-id="${id}">Ver cálculo</button> <button class="btn sm" data-act="folhaHol" data-id="${id}">Contracheque</button></td></tr>`;}).join('')}
+  </tbody><tfoot><tr><th colspan="2">Totais</th><th class="r">${brl(t.prov)}</th><th class="r">${brl(t.desc)}</th><th class="r">${brl(t.liq)}</th><th class="r">${brl(t.inss)}</th><th class="r">${brl(t.irrf)}</th><th class="r">${brl(t.fgts)}</th><th></th></tr></tfoot></table></div></div>
+  <div class="card"><h2>Encargos patronais estimados (sobre a base previdenciária)</h2><div class="kpis" style="margin:0"><div class="kpi"><span>CPP patronal</span><b>R$ ${brl(t.pat)}</b></div><div class="kpi"><span>RAT/FAP</span><b>R$ ${brl(t.rat)}</b></div><div class="kpi"><span>Terceiros</span><b>R$ ${brl(t.terc)}</b></div><div class="kpi"><span>FGTS</span><b>R$ ${brl(t.fgts)}</b></div></div>${DB.empresa&&DB.empresa.classTrib==='01'?'<p class="sub" style="margin:8px 0 0">Tributação previdenciária substituída (Simples Nacional): CPP, RAT e terceiros não são apurados na folha.</p>':''}<p class="sub" style="margin:8px 0 0">Valores estimativos; a apuração oficial é retornada pelo eSocial (S-5011) e recolhida via DCTFWeb/DAE.</p></div>`:''}`;},
+  mount(p){bindComp();if(p.calc){NAV.cur.params.calc=false;ACT.folhaCalc();}},
+  actions:p=>{const c=DB.comps[compSel(p)]||{};const a=[];
+    if(c.status==='fechada')a.push({label:'Reabrir competência',act:'folhaReabrir'});else a.push({label:'Fechar competência',act:'folhaFechar'});
+    a.push({label:'Contracheques →',act:'folhaHolGo'},{label:'⚙ Calcular folha',act:'folhaCalc',cls:'pri',key:'save'},{label:'Enviar ao eSocial →',act:'folhaEnvioGo',cls:'send',key:'send'});return a;}};
+ACT.folhaCalc=()=>{const comp=compSel(NAV.cur.params);if(!DB.empresa){toast('Cadastre a empresa.','err');return;}const c=compCtx(comp);if(c.status==='fechada'){toast('Competência fechada: reabra para recalcular.','err');return;}
+  if(!DB.empregados.length){toast('Cadastre empregados.','err');return;}if(!c.dtPgto)c.dtPgto=proxMes(comp,5);calcFolha(comp);toast('Folha de '+compLabel(comp)+' calculada.','ok');refresh({comp});};
+ACT.folhaDet=el=>detalheCalc(el.dataset.id,compSel(NAV.cur.params));
+ACT.folhaHol=el=>go('holerite',{comp:compSel(NAV.cur.params),empId:el.dataset.id});
+ACT.folhaHolGo=()=>go('holerite',{comp:compSel(NAV.cur.params)});
+ACT.folhaEnvioGo=()=>go('envio',{comp:compSel(NAV.cur.params)});
+ACT.folhaFechar=()=>{const comp=compSel(NAV.cur.params),c=DB.comps[comp];if(!c||c.status!=='calculada'){toast('Calcule a folha antes de fechar.','err');return;}
+  modalConfirm('Fechar a competência '+compLabel(comp)+'? Os valores ficam travados para o envio ao eSocial (S-1200/S-1210/S-1299).',()=>{c.status='fechada';c.fechadaEm=agoraISO();saveDB();refresh();toast('Competência fechada.','ok');},{yes:'Fechar competência'});};
+ACT.folhaReabrir=()=>{const comp=compSel(NAV.cur.params),c=DB.comps[comp];const env=DB.eventos.some(e=>e.comp===comp&&e.status==='processado');
+  modalConfirm('Reabrir a competência '+compLabel(comp)+'?'+(env?' <b>Há eventos desta competência já processados no eSocial</b>: alterações exigirão retificação e, após o S-1299, a reabertura (S-1298).':''),()=>{c.status='calculada';saveDB();refresh();},{yes:'Reabrir'});};
+
+/* ===================== CONTRACHEQUE ===================== */
+function holeriteHTML(e,comp){const r=DB.comps[comp].res[e.id],E=DB.empresa,c=DB.comps[comp],cg=byId(DB.cargos,e.cargo)||{},lo=byId(DB.lotacoes,e.lotacao)||{};const I=r.irrfInfo;
+  const itens=r.itens.filter(i=>i.tp!==3);
+  return `<div class="hol"><div class="hd"><div><h4 style="text-align:left">${esc(E.razao)}</h4>CNPJ ${fmtCNPJ(E.cnpj)}<br>${esc(E.logr||'')}, ${esc(E.nr||'')} ${esc(E.bairro||'')} — ${esc(E.municipio||'')}/${esc(E.uf||'')}</div><div style="text-align:right"><h4>RECIBO DE PAGAMENTO DE SALÁRIO</h4>Competência: <b>${compLabel(comp)}</b><br>Pagamento: ${fmtData(c.dtPgto)}</div></div>
+  <table style="margin-bottom:8px"><tr><td><small>Matrícula</small><br><b>${esc(e.mat)}</b></td><td colspan="2"><small>Nome</small><br><b>${esc(e.nome)}</b></td><td><small>CPF</small><br>${fmtCPF(e.cpf)}</td></tr><tr><td><small>Cargo</small><br>${esc(cg.nome||'')}</td><td><small>CBO</small><br>${esc(cg.cbo||'')}</td><td><small>Departamento</small><br>${esc(lo.desc||'')}</td><td><small>Admissão</small><br>${fmtData(e.admissao)}</td></tr></table>
+  <table><thead><tr><th style="width:52px">Cód.</th><th>Descrição</th><th style="width:70px">Ref.</th><th style="width:100px">Vencimentos</th><th style="width:100px">Descontos</th></tr></thead><tbody>${itens.map(i=>`<tr><td>${i.cod}</td><td>${esc(i.desc)}</td><td>${esc(i.ref)}</td><td style="text-align:right">${i.tp===1?brl(i.valor):''}</td><td style="text-align:right">${i.tp===2?brl(i.valor):''}</td></tr>`).join('')}</tbody>
+  <tfoot><tr><th colspan="3" style="text-align:right">Totais</th><th style="text-align:right">${brl(r.totProv)}</th><th style="text-align:right">${brl(r.totDesc)}</th></tr><tr><th colspan="4" style="text-align:right;font-size:13px">LÍQUIDO A RECEBER</th><th style="text-align:right;font-size:13px">R$ ${brl(r.liquido)}</th></tr></tfoot></table>
+  <div class="bx"><div><small>Salário contratual</small>${brl(num(e.salario))}</div><div><small>Base INSS</small>${brl(r.baseCP)}</div><div><small>Base FGTS</small>${brl(r.baseFGTS)}</div><div><small>FGTS do mês (${r.aliqFgts}%)</small>${brl(r.fgts)}</div><div><small>Base IRRF</small>${brl(I.base)}</div><div><small>IRRF (tabela − redução)</small>${brl(I.imposto)} − ${brl(I.reducao)}</div><div><small>Dependentes IRRF</small>${(e.deps||[]).filter(d=>d.irrf).length}</div><div><small>Crédito em</small>${esc(e.banco||'')} ${e.agencia?'ag. '+esc(e.agencia):''} ${e.conta?'c/c '+esc(e.conta):''}</div></div>
+  <div class="ass"><div>Declaro ter recebido a importância líquida acima discriminada.<br>Assinatura do empregado — Data: ____/____/______</div><div>${esc(E.razao)}</div></div></div>`;}
+SC.holerite={view(p){const comp=compSel(p),c=DB.comps[comp],ids=c?Object.keys(c.res||{}):[];const empId=p.empId&&ids.includes(p.empId)?p.empId:ids[0];
+  if(!ids.length)return `<h1>Contracheques</h1><p class="sub">Recibos de pagamento da competência.</p>${compBar(comp)}<div class="note">A folha de ${compLabel(comp)} ainda não foi calculada. <a style="cursor:pointer;text-decoration:underline" data-act="go" data-to="folha" data-p='{"comp":"${comp}"}'>Ir para o cálculo da folha</a>.</div>`;
+  const e=byId(DB.empregados,empId),ent=DB.entregues[comp+'|'+empId];
+  return `<h1>Contracheques</h1><p class="sub">Visualize, imprima e registre a entrega do recibo de pagamento.</p>${compBar(comp)}
+  <div class="row" style="margin-bottom:12px"><b>Empregado:</b><select id="empSel" style="padding:7px 9px;border:1px solid #c7d0d9;border-radius:6px;font:inherit">${ids.map(id=>`<option value="${id}" ${id===empId?'selected':''}>${esc(byId(DB.empregados,id).mat+' – '+byId(DB.empregados,id).nome)}</option>`).join('')}</select><button class="btn sm" data-act="holPrev">◀ Anterior</button><button class="btn sm" data-act="holNext">Próximo ▶</button>${ent?badge('Entregue em '+fmtData(ent.data.slice(0,10)),'ok'):badge('Entrega não registrada','warn')}</div>
+  ${holeriteHTML(e,comp)}`;},
+  mount(p){bindComp();const s=$('#empSel');s&&s.addEventListener('change',()=>refresh({empId:s.value}));},
+  actions:p=>[{label:'🖨 Imprimir este',act:'holPrint',arg:'1'},{label:'🖨 Imprimir todos',act:'holPrint',arg:'all'},{label:'✔ Registrar entrega',act:'holEntrega',cls:'pri',key:'save'},{label:'Enviar competência ao eSocial →',act:'folhaEnvioGo',cls:'send',key:'send'}]};
+const holIds=()=>{const comp=compSel(NAV.cur.params),c=DB.comps[comp];return c?Object.keys(c.res):[];};
+const holCur=()=>{const ids=holIds();const p=NAV.cur.params;return ids.includes(p.empId)?p.empId:ids[0];};
+ACT.holPrev=()=>{const ids=holIds(),i=ids.indexOf(holCur());refresh({empId:ids[(i-1+ids.length)%ids.length]});};
+ACT.holNext=()=>{const ids=holIds(),i=ids.indexOf(holCur());refresh({empId:ids[(i+1)%ids.length]});};
+ACT.holPrint=el=>{const comp=compSel(NAV.cur.params),ids=el.dataset.arg==='all'?holIds():[holCur()];if(!ids.length)return;
+  $('#printarea').innerHTML=ids.map(id=>holeriteHTML(byId(DB.empregados,id),comp)).join('');document.body.classList.add('printing');
+  try{window.print();}catch(e){toast('Impressão indisponível neste ambiente. Abra o arquivo HTML no navegador para imprimir ou salvar em PDF.','err');}
+  setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};
+ACT.holEntrega=()=>{const comp=compSel(NAV.cur.params),id=holCur();if(!id)return;DB.entregues[comp+'|'+id]={data:agoraISO(),forma:'registro manual'};saveDB();toast('Entrega registrada.','ok');refresh();};
+
+/* ===================== ENVIO eSocial ===================== */
+const GRUPO={'S-1000':1,'S-1005':1,'S-1010':1,'S-1020':1,'S-2200':2,'S-2206':2,'S-2230':2,'S-2299':2,'S-1200':3,'S-1210':3,'S-1299':3};
+const hist=(ev,m)=>{(ev.historico=ev.historico||[]).push({t:agoraISO(),m});};
+function refazerXml(ev){const g=GEN[ev.tipo](ev.gen.args,ev.opts||undefined);const old=ev.id;ev.id=g.id;ev.xml=fmtXml(g.xml);ev.titulo=g.titulo;DB.movs.forEach(m=>{if(m.evId===old)m.evId=ev.id;});}
+async function enviarEventos(evs,log){const res={ok:0,rej:0,err:0};log=log||(()=>{});
+  const prontos=[];
+  for(const ev of evs){if(ev.status==='processado')continue;
+    if(ev.status==='gerado'||ev.status==='rejeitado'){try{refazerXml(ev);}catch(e){}}
+    const oc=validarEvento(ev);
+    if(oc.length){ev.status='rejeitado';ev.ocorr=oc;hist(ev,'Rejeitado na validação local ('+oc.length+' ocorrência(s))');res.rej++;log(`✖ ${ev.tipo} ${ev.titulo}: ${oc[0]}`);saveDB();continue;}
+    ev.ocorr=[];prontos.push(ev);}
+  if(DB.cfg.modo==='gw'){
+    for(let i=0;i<prontos.length;i+=50){const lote=prontos.slice(i,i+50);const grupos=[...new Set(lote.map(e=>GRUPO[e.tipo]))];
+      for(const g of grupos){const L=lote.filter(e=>GRUPO[e.tipo]===g);
+        try{const r=await fetch(DB.cfg.gateway.replace(/\/$/,'')+'/lotes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ambiente:DB.cfg.ambiente,grupo:g,empregador:{tpInsc:1,nrInsc:onlyD(DB.empresa.cnpj)},eventos:L.map(e=>({id:e.id,tipo:e.tipo,xml:e.xml}))})});
+          if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();L.forEach(e=>{e.status='enviado';e.protocolo=j.protocolo;e.enviadoEm=agoraISO();hist(e,'Lote enviado — protocolo '+j.protocolo);});saveDB();
+          let ok=false;for(let t=0;t<5&&!ok;t++){await sleep(1500);const q=await fetch(DB.cfg.gateway.replace(/\/$/,'')+'/lotes/'+encodeURIComponent(j.protocolo));const qj=await q.json();if(qj.status==='processado'){ok=true;(qj.eventos||[]).forEach(x=>{const e=L.find(y=>y.id===x.id);if(!e)return;if(x.situacao==='sucesso'){e.status='processado';e.recibo=x.recibo;e.processadoEm=agoraISO();hist(e,'Processado — recibo '+x.recibo);res.ok++;log('✔ '+e.tipo+' '+e.titulo);}else{e.status='rejeitado';e.ocorr=(x.ocorrencias||[]).map(o=>(o.codigo?o.codigo+' – ':'')+o.descricao);hist(e,'Rejeitado pelo eSocial');res.rej++;log('✖ '+e.tipo+' '+e.titulo);}});}}
+          if(!ok)log('… lote '+j.protocolo+' ainda em processamento; use “Consultar” na biblioteca.');
+        }catch(err){L.forEach(e=>{if(e.status!=='enviado'){e.status='gerado';hist(e,'Falha de comunicação com o gateway: '+err.message);}});res.err+=L.length;log('✖ Falha de comunicação: '+err.message+' (em páginas publicadas como artefato o navegador bloqueia chamadas externas; use o arquivo HTML local)');}
+        saveDB();}}
+  }else{
+    for(const ev of prontos){ev.status='enviado';ev.protocolo='SIM-'+ts14()+String(Math.floor(Math.random()*9000)+1000);ev.enviadoEm=agoraISO();hist(ev,'Enviado (SIMULAÇÃO) — protocolo '+ev.protocolo);saveDB();await sleep(60);
+      ev.status='processado';ev.recibo='SIM-1.2.'+ts14()+String(Math.floor(Math.random()*90000)+10000);ev.processadoEm=agoraISO();hist(ev,'Processado (SIMULAÇÃO) — recibo '+ev.recibo);res.ok++;log('✔ '+ev.tipo+' '+ev.titulo);saveDB();}
+  }
+  return res;}
+function plano(comp){const c=DB.comps[comp],ids=c?Object.keys(c.res||{}):[],P=[];
+  const add=(tipo,args,label,match)=>P.push({tipo,args,label,ev:ultEv(tipo,e=>!e.retif&&match(e))});
+  add('S-1000',{},'Informações do empregador',()=>true);
+  DB.estabs.forEach(s=>add('S-1005',{id:s.id},'Estabelecimento '+s.nome,e=>e.gen.args.id===s.id));
+  DB.lotacoes.forEach(l=>add('S-1020',{id:l.id},'Lotação '+l.cod+' '+l.desc,e=>e.gen.args.id===l.id));
+  DB.rubricas.filter(r=>r.tp!==3).forEach(r=>add('S-1010',{id:r.sys},'Rubrica '+r.cod+' '+r.desc,e=>e.gen.args.id===r.sys));
+  DB.empregados.forEach(e=>add('S-2200',{id:e.id},'Admissão '+e.nome,x=>x.gen.args.id===e.id));
+  ids.filter(id=>!rescNoMes(id,comp)).forEach(id=>add('S-1200',{id,comp},'Remuneração '+byId(DB.empregados,id).nome,x=>x.gen.args.id===id&&x.comp===comp));
+  ids.forEach(id=>add('S-1210',{id,comp},'Pagamento '+byId(DB.empregados,id).nome,x=>x.gen.args.id===id&&x.comp===comp));
+  ids.filter(id=>rescNoMes(id,comp)).forEach(id=>{const mv=DB.movs.find(m=>m.tipo==='S-2299'&&m.empId===id);if(mv)add('S-2299',{id,mov:mv},'Desligamento '+byId(DB.empregados,id).nome,x=>x.gen.args.id===id);});
+  if(ids.length)add('S-1299',{comp},'Fechamento da competência',x=>x.comp===comp);
+  return P;}
+SC.envio={view(p){const comp=compSel(p),c=DB.comps[comp]||{status:'aberta'},P=plano(comp);const grp={};P.forEach(x=>{(grp[x.tipo]=grp[x.tipo]||[]).push(x);});
+  return `<h1>Envio ao eSocial — ${compLabel(comp)}</h1><p class="sub">Ordem de transmissão: tabelas → admissões → remuneração (S-1200) → pagamentos (S-1210) → fechamento (S-1299). O envio cria os eventos que ainda faltam e respeita as dependências.</p>${exigeEmpresa()}${compBar(comp)}
+  <div class="note ${DB.cfg.modo==='sim'?'':'info'}">${DB.cfg.modo==='sim'?'<b>Modo simulação:</b> os eventos são validados e “processados” localmente, com protocolos e recibos prefixados SIM-. Nada é transmitido à Receita. Configure o webservice na aba Integração.':'<b>Modo webservice:</b> envio via gateway configurado ('+esc(DB.cfg.gateway||'sem URL')+') — ambiente '+(DB.cfg.ambiente==1?'<b>PRODUÇÃO</b>':'produção restrita')+'.'}</div>
+  ${c.status==='aberta'?'<div class="note">A folha desta competência não está calculada; S-1200, S-1210 e S-1299 serão gerados após o cálculo e o fechamento.</div>':c.status==='calculada'?'<div class="note">Folha calculada, mas não fechada: o S-1299 só será enviado após <b>fechar a competência</b>.</div>':''}
+  <div class="card"><div class="tw"><table class="t"><thead><tr><th>Evento</th><th>Descrição</th><th class="c">Total</th><th class="c">Processados</th><th class="c">Pendentes</th><th class="c">Rejeitados</th><th></th></tr></thead><tbody>
+  ${ORDEM.filter(t=>grp[t]).map(t=>{const g=grp[t];const ok=g.filter(x=>x.ev&&x.ev.status==='processado').length,rj=g.filter(x=>x.ev&&x.ev.status==='rejeitado').length;return `<tr><td><b>${t}</b></td><td>${TIPOS[t]}</td><td class="c">${g.length}</td><td class="c">${ok?badge(ok,'ok'):'0'}</td><td class="c">${g.length-ok-rj}</td><td class="c">${rj?badge(rj,'err'):'0'}</td><td class="r"><button class="btn sm send" data-act="envioTipo" data-t="${t}" ${ok===g.length?'disabled':''}>Enviar ${t}</button></td></tr>`;}).join('')}
+  </tbody></table></div></div>
+  <div class="card"><h2>Andamento</h2><pre class="xml" id="log" style="max-height:220px;min-height:60px">Aguardando envio…</pre></div>`;},
+  mount(){bindComp();},
+  actions:()=>[{label:'Biblioteca de eventos',act:'go',arg:'',cls:''},{label:'🚀 Enviar tudo em ordem',act:'envioTudo',cls:'send',key:'send'}]};
+ACT.go=el=>{if(el.dataset.to)go(el.dataset.to,el.dataset.p?JSON.parse(el.dataset.p):{});else go('biblioteca',{});};
+let ENVIANDO=false;
+async function executarPlano(comp,tipos){if(ENVIANDO)return;if(!DB.empresa){toast('Cadastre a empresa.','err');return;}ENVIANDO=true;const lg=$('#log');lg.textContent='';const L=m=>{lg.textContent+=m+'\n';lg.scrollTop=lg.scrollHeight;};const tot={ok:0,rej:0,err:0};
+  try{const c=DB.comps[comp]||{status:'aberta'};
+    for(const t of ORDEM){if(tipos&&!tipos.includes(t))continue;const itens=plano(comp).filter(x=>x.tipo===t);if(!itens.length)continue;
+      if(['S-1200','S-1210'].includes(t)&&c.status==='aberta'){L('— '+t+' ignorado: folha não calculada.');continue;}
+      if(t==='S-1299'&&c.status!=='fechada'){L('— S-1299 ignorado: feche a competência antes.');continue;}
+      const evs=[];for(const it of itens){const u=it.ev;if(u&&u.status==='processado')continue;if(u&&(u.status==='gerado'||u.status==='enviado')){if(u.status==='gerado')evs.push(u);continue;}evs.push(criarEvento(t,it.args));}
+      if(!evs.length)continue;L(`▸ ${t} — ${TIPOS[t]} (${evs.length})`);const r=await enviarEventos(evs,L);tot.ok+=r.ok;tot.rej+=r.rej;tot.err+=r.err;
+      if(r.rej||r.err){L('■ Interrompido: corrija as ocorrências deste grupo antes de seguir (há dependências entre eventos).');break;}}
+    L(`\nConcluído — ${tot.ok} processado(s), ${tot.rej} rejeitado(s), ${tot.err} falha(s).`);
+  }finally{ENVIANDO=false;}
+  toast(tot.rej||tot.err?'Envio com ocorrências — veja o andamento.':'Envio concluído.',tot.rej||tot.err?'err':'ok');renderSide();}
+ACT.envioTudo=()=>executarPlano(compSel(NAV.cur.params));
+ACT.envioTipo=el=>executarPlano(compSel(NAV.cur.params),[el.dataset.t]);
+
+/* ===================== BIBLIOTECA ===================== */
+SC.biblioteca={view(p){const q=(p.q||'').toLowerCase();let L=DB.eventos.filter(e=>(!p.tipo||e.tipo===p.tipo)&&(!p.status||e.status===p.status)&&(!p.comp||e.comp===p.comp)&&(!q||(e.titulo+e.id+(e.recibo||'')+(e.protocolo||'')).toLowerCase().includes(q)));
+  const cnt=s=>DB.eventos.filter(e=>e.status===s).length;
+  return `<h1>Biblioteca de dados enviados ao eSocial</h1><p class="sub">Todos os eventos gerados: XML, protocolo, recibo, ocorrências e histórico. Permite reenviar, consultar e retificar.</p>
+  <div class="kpis"><div class="kpi"><span>Total</span><b>${DB.eventos.length}</b></div><div class="kpi"><span>Processados</span><b style="color:var(--ok)">${cnt('processado')}</b></div><div class="kpi"><span>Enviados (aguardando)</span><b style="color:var(--blue)">${cnt('enviado')}</b></div><div class="kpi"><span>Gerados (não enviados)</span><b>${cnt('gerado')}</b></div><div class="kpi"><span>Rejeitados</span><b style="color:var(--err)">${cnt('rejeitado')}</b></div></div>
+  <div class="card"><div class="row" id="flt"><select id="fTipo" style="padding:7px;border:1px solid #c7d0d9;border-radius:6px"><option value="">Todos os tipos</option>${optSel(Object.keys(TIPOS).map(k=>[k,k+' – '+TIPOS[k]]),p.tipo||'')}</select>
+  <select id="fSt" style="padding:7px;border:1px solid #c7d0d9;border-radius:6px"><option value="">Todos os status</option>${optSel(Object.keys(ST).map(k=>[k,ST[k][0]]),p.status||'')}</select><input id="fComp" type="month" value="${p.comp||''}" style="padding:6px;border:1px solid #c7d0d9;border-radius:6px"><input id="fQ" placeholder="Buscar (título, ID, recibo…)" value="${esc(p.q||'')}" style="padding:8px;border:1px solid #c7d0d9;border-radius:6px;min-width:220px"><button class="btn sm" data-act="bibLimpar">Limpar</button></div>
+  <div class="tw" style="margin-top:12px"><table class="t"><thead><tr><th><input type="checkbox" id="selAll"></th><th>Evento</th><th>Descrição</th><th>Comp.</th><th>Status</th><th>Recibo / protocolo</th><th>Data</th><th></th></tr></thead><tbody>
+  ${L.map(e=>`<tr><td><input type="checkbox" class="sel" value="${e.id}"></td><td><b>${e.tipo}</b>${e.retif?' <span class="badge b-warn">retif.</span>':''}</td><td>${esc(e.titulo)}</td><td>${e.comp?compLabel(e.comp):''}</td><td>${stBadge(e)}</td><td class="mono">${esc(e.recibo||e.protocolo||'')}</td><td>${dtHora(e.processadoEm||e.enviadoEm||e.criado)}</td>
+  <td class="r"><button class="btn sm" data-act="bibVer" data-id="${e.id}">XML / detalhes</button> ${e.status==='processado'?`<button class="btn sm" data-act="bibRetif" data-id="${e.id}" ${['S-1299'].includes(e.tipo)?'disabled':''}>Retificar</button>`:e.status==='enviado'?`<button class="btn sm" data-act="bibCons" data-id="${e.id}">Consultar</button>`:`<button class="btn sm send" data-act="bibEnv" data-id="${e.id}">${e.status==='rejeitado'?'Reenviar':'Enviar'}</button>`} ${e.status==='processado'?'':`<button class="btn sm danger" data-act="bibDel" data-id="${e.id}">✕</button>`}</td></tr>`).join('')||'<tr><td colspan="8" class="c" style="padding:20px;color:var(--mut)">Nenhum evento encontrado.</td></tr>'}
+  </tbody></table></div></div>`;},
+  mount(){const f=()=>{NAV.cur.params=Object.assign({},NAV.cur.params,{tipo:$('#fTipo').value,status:$('#fSt').value,comp:$('#fComp').value,q:$('#fQ').value});};
+    ['fTipo','fSt','fComp'].forEach(i=>$('#'+i).addEventListener('change',()=>{f();render();}));let tm;$('#fQ').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>{f();render();$('#fQ').focus();$('#fQ').setSelectionRange(99,99);},350);});
+    $('#selAll').addEventListener('change',e=>$$('.sel').forEach(c=>c.checked=e.target.checked));},
+  actions:()=>[{label:'Exportar biblioteca (JSON)',act:'bibExport'},{label:'Enviar selecionados',act:'bibEnvSel'},{label:'🚀 Enviar todos os pendentes',act:'bibEnvPend',cls:'send',key:'send'}]};
+ACT.bibLimpar=()=>{NAV.cur.params={};render();};
+ACT.bibVer=el=>{const e=byId(DB.eventos,el.dataset.id);
+  modal(`<div class="grid" style="margin-bottom:10px"><div class="f" style="grid-column:span 6"><label>ID do evento</label><div class="mono" style="word-break:break-all">${e.id}</div></div><div class="f" style="grid-column:span 3"><label>Status</label>${stBadge(e)}</div><div class="f" style="grid-column:span 3"><label>Ambiente</label>${e.ambiente==1?'Produção':'Produção restrita'}</div><div class="f" style="grid-column:span 6"><label>Protocolo</label><span class="mono">${esc(e.protocolo||'—')}</span></div><div class="f" style="grid-column:span 6"><label>Recibo</label><span class="mono">${esc(e.recibo||'—')}</span></div></div>
+  ${(e.ocorr||[]).length?`<div class="note err"><b>Ocorrências</b><br>${e.ocorr.map(o=>'• '+esc(o)).join('<br>')}</div>`:''}
+  <h3>Histórico</h3><div class="tw" style="margin-bottom:10px"><table class="t"><tbody>${(e.historico||[]).map(h=>`<tr><td style="width:140px">${dtHora(h.t)}</td><td>${esc(h.m)}</td></tr>`).join('')}</tbody></table></div>
+  <div class="row sp"><h3>XML do evento</h3><span><button class="btn sm" data-act="bibCopy" data-id="${e.id}">Copiar XML</button> <button class="btn sm" data-act="bibDown" data-id="${e.id}">Baixar .xml</button></span></div><pre class="xml">${esc(e.xml)}</pre><p class="sub" style="margin:8px 0 0">Minuta gerada pelo sistema, sem assinatura digital. A assinatura (XMLDSig) e a validação contra os XSD oficiais do leiaute ocorrem no gateway de integração.</p>`,{title:e.tipo+' — '+e.titulo,wide:true});};
+ACT.bibCopy=async el=>{const e=byId(DB.eventos,el.dataset.id);try{await navigator.clipboard.writeText(e.xml);toast('XML copiado.','ok');}catch(x){toast('Não foi possível copiar; selecione o texto manualmente.','err');}};
+function baixar(nome,txt,mime){try{const b=new Blob([txt],{type:mime||'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=nome;document.body.appendChild(a);a.click();a.remove();toast('Download iniciado (se o navegador permitir).');}catch(x){toast('Download indisponível aqui; use “Copiar”.','err');}}
+ACT.bibDown=el=>{const e=byId(DB.eventos,el.dataset.id);baixar(e.tipo+'_'+e.id+'.xml',e.xml,'application/xml');};
+ACT.bibEnv=async el=>{const e=byId(DB.eventos,el.dataset.id);const r=await enviarEventos([e]);resumoEnvio(r,[e]);refresh();};
+ACT.bibCons=async el=>{const e=byId(DB.eventos,el.dataset.id);
+  if(DB.cfg.modo==='sim'){e.status='processado';e.recibo='SIM-1.2.'+ts14()+'00001';e.processadoEm=agoraISO();hist(e,'Consulta (SIMULAÇÃO): processado');saveDB();refresh();toast('Evento processado (simulação).','ok');return;}
+  try{const q=await fetch(DB.cfg.gateway.replace(/\/$/,'')+'/lotes/'+encodeURIComponent(e.protocolo));const j=await q.json();if(j.status!=='processado'){toast('Lote ainda em processamento.');return;}const x=(j.eventos||[]).find(y=>y.id===e.id);if(x&&x.situacao==='sucesso'){e.status='processado';e.recibo=x.recibo;e.processadoEm=agoraISO();hist(e,'Processado — recibo '+x.recibo);}else if(x){e.status='rejeitado';e.ocorr=(x.ocorrencias||[]).map(o=>(o.codigo?o.codigo+' – ':'')+o.descricao);hist(e,'Rejeitado pelo eSocial');}saveDB();refresh();}catch(err){toast('Falha na consulta: '+err.message,'err');}};
+ACT.bibRetif=el=>{const e=byId(DB.eventos,el.dataset.id);modalConfirm('Gerar a retificação (indRetif=2) do evento <b>'+esc(e.tipo+' — '+e.titulo)+'</b> com os dados atuais, referenciando o recibo '+esc(e.recibo)+'?',()=>{try{criarEvento(e.tipo,e.gen.args,{retif:{n:2,rec:e.recibo}});toast('Retificação gerada: envie-a pela biblioteca.','ok');refresh();}catch(x){toast('Não foi possível gerar a retificação: '+x.message,'err');}},{yes:'Gerar retificação'});};
+ACT.bibDel=el=>modalConfirm('Excluir este evento da biblioteca (somente eventos não processados)?',()=>{DB.eventos=DB.eventos.filter(x=>x.id!==el.dataset.id);saveDB();refresh();},{yes:'Excluir'});
+ACT.bibEnvSel=async()=>{const ids=$$('.sel:checked').map(c=>c.value);if(!ids.length){toast('Selecione eventos.');return;}const evs=ids.map(i=>byId(DB.eventos,i)).sort((a,b)=>ORDEM.indexOf(a.tipo)-ORDEM.indexOf(b.tipo));const r=await enviarEventos(evs);resumoEnvio(r,evs);refresh();};
+ACT.bibEnvPend=async()=>{const evs=DB.eventos.filter(e=>e.status==='gerado'||e.status==='rejeitado').sort((a,b)=>ORDEM.indexOf(a.tipo)-ORDEM.indexOf(b.tipo));if(!evs.length){toast('Nenhum evento pendente.');return;}const r=await enviarEventos(evs);resumoEnvio(r,evs);refresh();};
+ACT.bibExport=()=>modal(`<p class="sub">Biblioteca completa (metadados e XML) em JSON.</p><textarea style="width:100%;height:300px" class="mono" readonly>${esc(JSON.stringify(DB.eventos,null,1))}</textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="cpx">Copiar</button><button class="btn" id="dlx">Baixar .json</button></div>`,{title:'Exportar biblioteca',wide:true})||(setTimeout(()=>{$('#cpx').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(DB.eventos,null,1));toast('Copiado.','ok');}catch(e){toast('Falha ao copiar.','err');}};$('#dlx').onclick=()=>baixar('biblioteca_esocial.json',JSON.stringify(DB.eventos,null,1),'application/json');},0));
+/* ===================== Estrutura (estabelecimentos x lotações x regime) ===================== */
+function checarEstrutura(){const E=DB.empresa,o=[];const add=(n,t)=>o.push({n,t});
+  if(!E){add('err','Empresa não cadastrada.');return o;}
+  if(!E.regime)add('err','Regime tributário não informado na empresa.');else add('ok','Regime: '+regimeTxt(E)+' (classTrib '+classTribDe(E)+').');
+  const ms=DB.estabs.filter(x=>x.tipoEstab==='matriz');
+  if(ms.length===1)add('ok','Uma matriz cadastrada.');else add('err',ms.length?'Há mais de uma matriz.':'Nenhuma matriz cadastrada.');
+  DB.estabs.forEach(s=>{if(s.tpInsc==='1'&&onlyD(s.nrInsc).slice(0,8)!==onlyD(E.cnpj).slice(0,8))add('err','Estabelecimento '+s.nome+': raiz do CNPJ diferente da do empregador.');
+    if(ratIncide(E)&&![1,2,3].includes(Number(s.rat)))add('err','Estabelecimento '+s.nome+': grau de risco (RAT) deve ser 1, 2 ou 3.');
+    if(!DB.empregados.some(e=>e.estab===s.id))add('warn','Estabelecimento '+s.nome+' sem empregados vinculados.');});
+  DB.lotacoes.forEach(l=>{if(E.regime==='sn'&&String(l.codTercs)!=='0000')add('err','Lotação '+l.cod+': Simples Nacional exige terceiros 0000.');
+    if(E.regime&&E.regime!=='sn'&&String(l.codTercs)==='0000')add('warn','Lotação '+l.cod+': terceiros 0000 em empresa de Presumido/Real — confira o FPAS.');
+    if(E.regime==='sn'&&E.anexo==='misto'&&!l.atvSimples)add('err','Lotação '+l.cod+': indique se a atividade é de CPP substituída ou não (Simples misto).');
+    if(!DB.empregados.some(e=>e.lotacao===l.id))add('warn','Lotação '+l.cod+' sem empregados vinculados.');});
+  if(!DB.lotacoes.length)add('err','Nenhuma lotação cadastrada: o S-1200 exige lotação.');
+  const sem=DB.empregados.filter(e=>!byId(DB.estabs,e.estab)||!byId(DB.lotacoes,e.lotacao));
+  if(sem.length)add('err',sem.length+' empregado(s) sem estabelecimento ou lotação válidos: '+sem.map(e=>e.nome).join(', ')+'.');
+  if(E.regime==='sn'&&E.cprb)add('err','CPRB é incompatível com o Simples Nacional.');
+  if(E.regime&&E.regime!=='sn'&&E.cprb&&DB.lotacoes.every(l=>l.cprb==='nao'))add('warn','CPRB marcada na empresa, mas nenhuma lotação é desonerada.');
+  if(!o.some(x=>x.n==='err'))add('ok','Nenhuma inconsistência impeditiva encontrada.');
+  return o;}
+SC.estrutura={view(){const E=DB.empresa,comp=compAtual();const ck=checarEstrutura();const C={ok:['OK','ok'],warn:['Atenção','warn'],err:['Corrigir','err']};
+  return `<h1>Mapa da estrutura e regras de tributação</h1><p class="sub">Como o regime da empresa, cada estabelecimento e cada lotação se combinam no cálculo e no eSocial.</p>${exigeEmpresa()}
+  <div class="card"><h2>Quem define o quê</h2><div class="tw"><table class="t"><thead><tr><th>Nível</th><th>Define</th><th>Eventos</th></tr></thead><tbody>
+  <tr><td><b>Empresa</b></td><td>Regime (Simples, Presumido, Real), enquadramento da CPP, CPRB, classTrib e indDesFolha.</td><td>S-1000</td></tr>
+  <tr><td><b>Estabelecimento</b></td><td>CNAE preponderante, grau de risco (RAT) e FAP; local de trabalho do empregado.</td><td>S-1005, S-2200</td></tr>
+  <tr><td><b>Lotação tributária</b></td><td>FPAS, código de terceiros, atividade substituída (Simples misto) e atividade desonerada (CPRB).</td><td>S-1020, S-1200</td></tr>
+  <tr><td><b>Empregado</b></td><td>Vincula-se a um estabelecimento e a uma lotação; cada folha usa as regras da combinação.</td><td>S-2200, S-1200</td></tr></tbody></table></div></div>
+  <div class="card"><h2>Regime da empresa</h2><p style="margin:0 0 8px"><b>${esc(regimeTxt(E))}</b></p>${E?regraPanel(E):''}</div>
+  <div class="card"><h2>Conferência de consistência</h2>${ck.map(x=>`<p style="margin:4px 0">${badge(C[x.n][0],C[x.n][1])} ${esc(x.t)}</p>`).join('')}</div>
+  <div class="card"><div class="row sp"><h2>Estabelecimentos</h2><button class="btn sm" data-act="nav" data-to="estabs">Cadastrar / editar</button></div><div class="tw"><table class="t"><thead><tr><th>Nome</th><th>Natureza</th><th>Inscrição</th><th>CNAE</th><th>RAT×FAP</th><th class="c">Empregados</th><th>S-1005</th></tr></thead><tbody>
+  ${DB.estabs.map(s=>`<tr><td>${esc(s.nome)}</td><td>${TPEST[s.tipoEstab]||'—'}</td><td>${s.tpInsc==1?fmtCNPJ(s.nrInsc):esc(s.nrInsc)}</td><td>${esc(s.cnae)}</td><td>${ratIncide(E)?esc(s.rat)+' × '+esc(s.fap):'no DAS'}</td><td class="c">${DB.empregados.filter(e=>e.estab===s.id).length}</td><td>${stBadge(ultEv('S-1005',x=>x.gen.args.id===s.id))}</td></tr>`).join('')||'<tr><td colspan="7" class="c" style="color:var(--mut)">Nenhum estabelecimento.</td></tr>'}</tbody></table></div></div>
+  <div class="card"><div class="row sp"><h2>Lotações tributárias</h2><button class="btn sm" data-act="nav" data-to="lotacoes">Cadastrar / editar</button></div><div class="tw"><table class="t"><thead><tr><th>Lotação</th><th>FPAS / terceiros</th><th>Regra aplicada nesta lotação</th><th class="c">Empregados</th><th>S-1020</th></tr></thead><tbody>
+  ${DB.lotacoes.map(l=>{const R=regraLot(E,l,comp,DB.params);return `<tr><td><b>${esc(l.cod)}</b> ${esc(l.desc)}</td><td>${esc(l.fpas)} / ${esc(l.codTercs)}</td><td style="font-size:12.5px">${esc(R.nota)}</td><td class="c">${DB.empregados.filter(e=>e.lotacao===l.id).length}</td><td>${stBadge(ultEv('S-1020',x=>x.gen.args.id===l.id))}</td></tr>`;}).join('')||'<tr><td colspan="5" class="c" style="color:var(--mut)">Nenhuma lotação.</td></tr>'}</tbody></table></div></div>`;},
+  actions:()=>[{label:'Estabelecimentos',act:'nav',cls:'',arg:''}]};
+SC.estrutura.actions=()=>[];
+
+/* ===================== Férias ===================== */
+const empOpts=(only)=>[['','Selecione o empregado…']].concat(DB.empregados.filter(e=>e.situacao!=='desligado').map(e=>[e.id,e.mat+' – '+e.nome]));
+const addDias=(iso,n)=>{const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
+SC.ferias={view(p){const L=(DB.ferias||[]).slice().reverse();
+  return `<h1>Férias</h1><p class="sub">Programação, cálculo (CLT, arts. 129 a 145) e eSocial S-2230 (motivo 15). O valor é pago na folha da competência de pagamento; os dias gozados saem do salário do mês do gozo.</p>${exigeEmpresa()}
+  <div class="card" data-form id="f"><h2>Nova programação de férias</h2><div class="grid">${F('Empregado','empId','',{t:'select',opts:empOpts(),req:1,w:4})+F('Período aquisitivo — início','perAqIni','',{t:'date',req:1,w:2})+F('Período aquisitivo — fim','perAqFim','',{t:'date',req:1,w:2})+F('Faltas injustificadas no período','faltas',0,{w:2,hint:'Define os dias de direito (art. 130)'})+F('Média de variáveis (R$)','media','',{t:'money',w:2,hint:'Horas extras, comissões etc.'})
+  +F('Início do gozo','ini','',{t:'date',req:1,w:2})+F('Dias de gozo','diasGozo',30,{req:1,w:2})+F('Dias de abono pecuniário','diasAbono',0,{w:2,hint:'Até 1/3 (art. 143)'})+F('Competência do pagamento','compPgto','',{t:'month',req:1,w:3,hint:'Até 2 dias antes do gozo (art. 145)'})}</div>
+  <p class="sub" style="margin:8px 0 0">O período aquisitivo é preenchido automaticamente ao escolher o empregado (ano da admissão). Fracionamento: até 3 períodos, um com no mínimo 14 dias e os demais com no mínimo 5 (art. 134, §1º).</p></div>
+  <div class="card"><h2>Férias programadas (${L.length})</h2><div class="tw"><table class="t"><thead><tr><th>Empregado</th><th>Gozo</th><th class="r">Férias + 1/3</th><th class="r">Abono + 1/3</th><th>Pagamento</th><th>S-2230 início</th><th>S-2230 término</th><th></th></tr></thead><tbody>
+  ${L.map(f=>{const e=byId(DB.empregados,f.empId)||{};const c=f.calc;return `<tr><td>${esc(e.nome||'—')}</td><td>${fmtData(f.ini)} a ${fmtData(f.fim)} (${f.diasGozo} d)</td><td class="r">${brl(c.ferias+c.terco)}</td><td class="r">${c.abono?brl(c.abono+c.abonoTerco):'—'}</td><td>${compLabel(f.compPgto)}</td><td>${stBadge(DB.eventos.find(x=>x.id===f.evId))}</td><td>${stBadge(DB.eventos.find(x=>x.id===f.evFimId))}</td><td class="r"><button class="btn sm send" data-act="ferSend" data-id="${f.id}">Enviar início</button> <button class="btn sm send" data-act="ferFim" data-id="${f.id}">Enviar término</button> <button class="btn sm danger" data-act="ferDel" data-id="${f.id}">Excluir</button></td></tr>`;}).join('')||'<tr><td colspan="8" class="c" style="padding:16px;color:var(--mut)">Nenhuma férias programada.</td></tr>'}</tbody></table></div></div>`;},
+  mount(){const f=$('#f');if(!f)return;f.querySelector('[name=empId]').addEventListener('change',e=>{const emp=byId(DB.empregados,e.target.value);if(!emp||!emp.admissao)return;const hoje_=hoje();let ini=emp.admissao;while(addDias(ini,365)<=hoje_&&addDias(ini,365)<hoje_)ini=addDias(ini,365);
+    f.querySelector('[name=perAqIni]').value=ini;f.querySelector('[name=perAqFim]').value=addDias(ini,364);DIRTY=true;});
+    f.querySelector('[name=ini]').addEventListener('change',e=>{const c=f.querySelector('[name=compPgto]');if(!c.value&&e.target.value)c.value=e.target.value.slice(0,7);});},
+  actions:()=>[{label:'💾 Calcular e salvar férias',act:'ferSave',cls:'pri',key:'save'},{label:'Salvar e enviar S-2230',act:'ferSave',cls:'send',key:'send',arg:'1'}]};
+ACT.ferSave=async el=>{const f=$('#f'),mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return;}const o=readForm(f),e=byId(DB.empregados,o.empId);
+  o.diasGozo=Number(o.diasGozo)||0;o.diasAbono=Number(o.diasAbono)||0;o.faltas=Number(o.faltas)||0;o.fim=addDias(o.ini,o.diasGozo-1);
+  const m=validarFerias(e,o,DB.params),erros=m.filter(x=>!x.startsWith('AVISO')),avs=m.filter(x=>x.startsWith('AVISO'));
+  if(erros.length){modal('<div class="note err">Corrija antes de salvar:</div>'+erros.map(x=>'<p>• '+esc(x)+'</p>').join('')+'<div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeModal">Fechar</button></div>',{title:'Férias — validação'});return;}
+  const rec=Object.assign({id:uid('f')},o);rec.calc=calcFerias(e,rec,DB.params);(DB.ferias=DB.ferias||[]).push(rec);
+  const c=DB.comps[o.compPgto];if(c&&c.status==='fechada')toast('Atenção: a competência de pagamento está fechada. Reabra e recalcule para incluir as férias.','err');else if(c&&c.status==='calculada')toast('Recalcule a folha de '+compLabel(o.compPgto)+' para incluir as férias.');
+  saveDB();DIRTY=false;if(avs.length)toast(avs[0].replace('AVISO: ',''),'err');toast('Férias calculadas: '+brl(rec.calc.bruto)+' (bruto).','ok');
+  if(el.dataset.arg==='1')await ACT.ferSend({dataset:{id:rec.id}});refresh();};
+ACT.ferSend=async el=>{const f=DB.ferias.find(x=>x.id===el.dataset.id);if(!f)return;const ev=criarEvento('S-2230',{id:f.empId,mov:{data:f.ini,motivo:'15',perAqIni:f.perAqIni,perAqFim:f.perAqFim}});f.evId=ev.id;saveDB();const r=await enviarEventos([ev]);resumoEnvio(r,[ev]);refresh();};
+ACT.ferFim=async el=>{const f=DB.ferias.find(x=>x.id===el.dataset.id);if(!f)return;const ev=criarEvento('S-2230',{id:f.empId,mov:{data:f.fim,fim:f.fim,motivo:'15'}});f.evFimId=ev.id;saveDB();const r=await enviarEventos([ev]);resumoEnvio(r,[ev]);refresh();};
+ACT.ferDel=el=>modalConfirm('Excluir esta programação de férias? Eventos já enviados ao eSocial não são desfeitos.',()=>{DB.ferias=DB.ferias.filter(x=>x.id!==el.dataset.id);saveDB();refresh();},{yes:'Excluir'});
+
+/* ===================== 13º salário ===================== */
+SC.d13={view(p){const ano=p.ano||String(new Date().getFullYear()),p1=p.p1||ano+'-11',p2=p.p2||ano+'-12';
+  const elig=DB.empregados.filter(e=>e.admissao&&e.admissao.slice(0,4)<=ano&&(!e.desligamento||e.desligamento.slice(0,4)>=ano)&&e.situacao!=='desligado');
+  return `<h1>13º salário</h1><p class="sub">Lei 4.090/62 e Lei 4.749/65. A 1ª parcela (50%) não sofre INSS nem IRRF; na 2ª parcela incidem INSS e IRRF sobre o valor total, separados do salário do mês, descontada a 1ª parcela.</p>${exigeEmpresa()}
+  <div class="card" data-form id="f"><div class="grid">${F('Ano-base','ano',ano,{w:2})+F('Competência da 1ª parcela','p1',p1,{t:'month',w:3,hint:'Entre fevereiro e novembro (Lei 4.749/65, art. 2º)'})+F('Competência da 2ª parcela','p2',p2,{t:'month',w:3,hint:'Até 20 de dezembro (art. 1º)'})}</div></div>
+  <div class="card"><h2>Empregados (${elig.length})</h2><div class="tw"><table class="t"><thead><tr><th>Empregado</th><th class="c">Avos</th><th class="r">Média variáveis R$</th><th class="r">13º bruto</th><th class="r">1ª parcela</th><th class="r">INSS</th><th class="r">IRRF</th><th class="r">Líquido 2ª</th><th>Competências</th></tr></thead><tbody>
+  ${elig.map(e=>{const d=(DB.decimo||{})[ano+'|'+e.id];return `<tr><td>${esc(e.nome)}</td><td class="c">${d?d.avos:'—'}</td><td class="r"><input data-m="${e.id}" value="${d?brIn(num(d.media)):''}" style="width:90px;text-align:right;padding:4px;border:1px solid #c7d0d9;border-radius:5px"></td><td class="r">${d?brl(d.bruto):'—'}</td><td class="r">${d?brl(d.p1.valor):'—'}</td><td class="r">${d?brl(d.inss13):'—'}</td><td class="r">${d?brl(d.irrf13):'—'}</td><td class="r">${d?brl(d.liq2):'—'}</td><td>${d?compLabel(d.p1.comp)+' / '+compLabel(d.p2.comp):'—'}</td></tr>`;}).join('')||'<tr><td colspan="9" class="c" style="padding:16px;color:var(--mut)">Nenhum empregado elegível no ano.</td></tr>'}</tbody></table></div>
+  <div class="note info" style="margin-top:10px">O IRRF do 13º é calculado sobre o valor total, com dedução do INSS do 13º e dependentes (ou desconto simplificado, se mais vantajoso), <b>sem o redutor da Lei 15.270/2025</b> [VERIFICAR FONTE OFICIAL — IN RFB]. A competência de pagamento deve ser recalculada na aba Cálculo da folha.</div></div>`;},
+  mount(){const f=$('#f');['ano','p1','p2'].forEach(n=>f.querySelector('[name='+n+']').addEventListener('change',e=>{const o=readForm(f);const np={ano:o.ano,p1:o.p1,p2:o.p2};if(n==='ano'){np.p1=o.ano+'-11';np.p2=o.ano+'-12';}DIRTY=false;refresh(np);}));},
+  actions:()=>[{label:'💾 Calcular 13º do ano',act:'d13Calc',cls:'pri',key:'save'},{label:'Ir para o cálculo da folha',act:'nav',cls:'',arg:'',key:''}]};
+SC.d13.actions=()=>[{label:'💾 Calcular 13º do ano',act:'d13Calc',cls:'pri',key:'save'}];
+ACT.d13Calc=()=>{const f=$('#f'),o=readForm(f),ano=o.ano;if(!/^\d{4}$/.test(ano)||!o.p1||!o.p2){toast('Informe ano e competências.','err');return;}
+  if(o.p1>o.p2){toast('A 1ª parcela não pode ser posterior à 2ª.','err');return;}
+  if(o.p2>ano+'-12'||o.p2.slice(0,4)!==ano){toast('A 2ª parcela deve ser paga até dezembro do ano-base.','err');return;}
+  const av=[];if(o.p1<ano+'-02'||o.p1>ano+'-11')av.push('A 1ª parcela deve ser paga entre fevereiro e novembro (Lei 4.749/65, art. 2º).');
+  let n=0;const med={};$$('[data-m]').forEach(i=>med[i.dataset.m]=num(i.value));
+  DB.empregados.filter(e=>e.admissao&&e.admissao.slice(0,4)<=ano&&(!e.desligamento||e.desligamento.slice(0,4)>=ano)&&e.situacao!=='desligado').forEach(e=>{const c=calc13(e,Number(ano),DB.params,med[e.id]);if(c.avos<=0)return;
+    (DB.decimo=DB.decimo||{})[ano+'|'+e.id]=Object.assign(c,{ano,empId:e.id,media:med[e.id]||0,p1:{comp:o.p1,valor:c.p1},p2:{comp:o.p2}});n++;});
+  saveDB();DIRTY=false;toast(n+' empregado(s) calculado(s). Recalcule a folha de '+compLabel(o.p1)+' e '+compLabel(o.p2)+'.','ok');if(av.length)toast(av[0],'err');refresh({ano,p1:o.p1,p2:o.p2});};
+
+/* ===================== Rescisão ===================== */
+SC.resc={view(p){const sel=p.empId||'';const e=byId(DB.empregados,sel);const rs=e&&DB.rescisoes[e.id];
+  const ativos=DB.empregados.filter(x=>x.situacao!=='desligado'||(DB.rescisoes||{})[x.id]);
+  const dat=p.data||hoje();let prev='';
+  if(e&&p.prev){const tmp=Object.assign({},e,{desligamento:dat});const r={motivo:p.motivo,aviso:p.aviso,ferVencPer:p.ferVencPer,saldoFgts:p.saldoFgts,media:p.media};const v=calcRescisaoVerbas(tmp,r,DB.params);
+    const sd=Number(dat.slice(8,10));const saldo=r2(num(e.salario)/30*Math.min(30,sd));
+    prev=`<div class="card"><h2>Prévia das verbas — ${esc(e.nome)}</h2><div class="tw"><table class="t"><thead><tr><th>Verba</th><th>Referência</th><th class="r">Valor</th></tr></thead><tbody>
+    <tr><td>Saldo de salário (estimado)</td><td>${Math.min(30,sd)} d</td><td class="r">${brl(saldo)}</td></tr>
+    ${v.aviso?`<tr><td>Aviso prévio indenizado</td><td>${v.avisoDias} d</td><td class="r">${brl(v.aviso)}</td></tr>`:''}${v.d13?`<tr><td>13º salário proporcional</td><td>${v.avos13}/12</td><td class="r">${brl(v.d13)}</td></tr>`:''}
+    ${v.ferVenc?`<tr><td>Férias vencidas + 1/3</td><td>${p.ferVencPer} per</td><td class="r">${brl(v.ferVenc+v.ferVencTerco)}</td></tr>`:''}${v.ferProp?`<tr><td>Férias proporcionais + 1/3</td><td>${v.avosFer}/12</td><td class="r">${brl(v.ferProp+v.ferPropTerco)}</td></tr>`:''}
+    ${v.avisoDesc?`<tr><td>(−) Aviso prévio não cumprido</td><td></td><td class="r">${brl(v.avisoDesc)}</td></tr>`:''}${v.d13?`<tr><td>(−) INSS e IRRF sobre o 13º</td><td></td><td class="r">${brl(v.inss13+v.irrf13)}</td></tr>`:''}
+    ${v.multaPct?`<tr><td>Multa do FGTS ${v.multaPct}% (informativa — paga via FGTS Digital)</td><td></td><td class="r">${brl(v.multaFgts)}</td></tr>`:''}</tbody></table></div>${v.notas.map(n=>`<p class="sub" style="margin:6px 0 0">• ${esc(n)}</p>`).join('')}<p class="sub">INSS e IRRF do saldo de salário são calculados na folha ao registrar a rescisão.</p></div>`;}
+  return `<h1>Rescisão do contrato (S-2299)</h1><p class="sub">Calcula as verbas rescisórias, registra o desligamento, inclui os valores na folha do mês e gera o S-2299 com as verbas. Motivos suportados no cálculo automático: ${Object.keys(MOTIVOS_RESC).join(', ')}.</p>${exigeEmpresa()}
+  <div class="card" data-form id="f"><div class="grid">${F('Empregado','empId',sel,{t:'select',opts:[['','Selecione…']].concat(ativos.map(x=>[x.id,x.mat+' – '+x.nome])),req:1,w:4})+F('Data do desligamento (último dia trabalhado)','data',dat,{t:'date',req:1,w:3})+F('Motivo (Tabela 19)','motivo',p.motivo||'02',{t:'select',opts:Object.entries(MOTIVOS_RESC).map(([k,v])=>[k,k+' – '+v]),w:5})
+  +F('Aviso prévio','aviso',p.aviso||'indenizado',{t:'select',opts:Object.entries(AVISOS),w:4})+F('Períodos de férias vencidas','ferVencPer',p.ferVencPer||0,{w:2,hint:'Completos e não gozados'})+F('Média de variáveis (R$)','media',p.media||'',{t:'money',w:2})+F('Saldo do FGTS (R$) p/ multa','saldoFgts',p.saldoFgts||'',{t:'money',w:4,hint:'Extrato do FGTS'})}</div>
+  ${rs?`<div class="note ok" style="margin-top:10px">Rescisão registrada em ${fmtData(e.desligamento)} — motivo ${esc(rs.motivo)}. Veja o demonstrativo na folha da competência.</div>`:''}</div>${prev}`;},
+  mount(p){const f=$('#f');if(!f)return;f.querySelector('[name=empId]').addEventListener('change',e=>{DIRTY=false;refresh({empId:e.target.value,prev:false});});},
+  actions:(p)=>{const a=[{label:'Calcular prévia',act:'rescPrev',cls:''},{label:'Registrar rescisão',act:'rescSave',cls:'pri',key:'save',arg:'0'},{label:'Registrar e enviar S-2299',act:'rescSave',cls:'send',key:'send',arg:'1'}];if(p.empId&&DB.rescisoes[p.empId])a.unshift({label:'Imprimir demonstrativo',act:'rescPrint'},{label:'Desfazer rescisão',act:'rescUndo',cls:'danger'});return a;}};
+ACT.rescPrev=()=>{const f=$('#f'),mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return;}const o=readForm(f);o.prev=true;DIRTY=false;refresh(o);};
+ACT.rescSave=async el=>{const f=$('#f'),mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return;}const o=readForm(f),e=byId(DB.empregados,o.empId);
+  if(!MOTIVOS_RESC[o.motivo]){toast('Motivo não suportado no cálculo automático.','err');return;}
+  if(e.admissao&&o.data<e.admissao){toast('Data do desligamento anterior à admissão.','err');return;}
+  const comp=o.data.slice(0,7),c=DB.comps[comp];if(c&&c.status==='fechada'){toast('A competência '+compLabel(comp)+' está fechada. Reabra-a para registrar a rescisão.','err');return;}
+  if(DB.rescisoes[e.id]){toast('Já existe rescisão registrada para este empregado. Desfaça-a antes.','err');return;}
+  e.desligamento=o.data;e.situacao='desligado';DB.rescisoes[e.id]={empId:e.id,motivo:o.motivo,aviso:o.aviso,ferVencPer:o.ferVencPer,saldoFgts:o.saldoFgts,media:o.media,data:o.data};
+  const mov={id:uid('m'),tipo:'S-2299',empId:e.id,data:o.data,det:'Motivo '+o.motivo+' · '+MOTIVOS_RESC[o.motivo],motivo:o.motivo};DB.movs.push(mov);
+  const cc=DB.comps[comp]=DB.comps[comp]||{status:'aberta',lanc:{},res:{}};calcFolha(comp);
+  const ev=criarEvento('S-2299',{id:e.id,mov});mov.evId=ev.id;saveDB();DIRTY=false;toast('Rescisão registrada e folha de '+compLabel(comp)+' recalculada.','ok');
+  if(el.dataset.arg==='1'){const r=await enviarEventos([ev]);resumoEnvio(r,[ev]);}refresh({empId:e.id,prev:false});};
+ACT.rescUndo=()=>{const id=NAV.cur.params.empId,e=byId(DB.empregados,id);if(!e)return;const mv=DB.movs.find(m=>m.tipo==='S-2299'&&m.empId===id),ev=mv&&DB.eventos.find(x=>x.id===mv.evId);
+  if(ev&&ev.status==='processado'){toast('O S-2299 já foi processado no eSocial: use a retificação/exclusão (S-3000) na biblioteca.','err');return;}
+  modalConfirm('Desfazer a rescisão de '+esc(e.nome)+'? O empregado volta a ativo e o evento ainda não processado é removido.',()=>{const comp=e.desligamento.slice(0,7);if(ev)DB.eventos=DB.eventos.filter(x=>x.id!==ev.id);DB.movs=DB.movs.filter(m=>m!==mv);delete DB.rescisoes[id];e.desligamento='';e.situacao='ativo';if(DB.comps[comp]&&DB.comps[comp].status!=='fechada')calcFolha(comp);saveDB();toast('Rescisão desfeita.','ok');refresh();},{yes:'Desfazer'});};
+ACT.rescPrint=()=>{const id=NAV.cur.params.empId,e=byId(DB.empregados,id);if(!e)return;const comp=e.desligamento.slice(0,7);if(!DB.comps[comp]||!DB.comps[comp].res[id]){toast('Calcule a folha da competência.','err');return;}
+  $('#printarea').innerHTML=holeriteHTML(e,comp);document.body.classList.add('printing');try{window.print();}catch(x){toast('Impressão indisponível neste ambiente.','err');}setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};
+
+/* ===================== Relatórios e guias ===================== */
+SC.relat={view(p){const comp=compSel(p),c=DB.comps[comp];const R=c&&c.status!=='aberta'?resumoEstrutura(comp):null;const T=totaisComp(comp);const E=DB.empresa||{};
+  const tab=(grp,nome,mapa)=>{const keys=Object.keys(R[grp]);return `<div class="card"><h2>Por ${nome}</h2><div class="tw"><table class="t"><thead><tr><th>${nome[0].toUpperCase()+nome.slice(1)}</th><th class="c">Empregados</th><th class="r">Base prev.</th><th class="r">INSS seg.</th><th class="r">IRRF</th><th class="r">FGTS</th><th class="r">CPP</th><th class="r">RAT</th><th class="r">Terceiros</th></tr></thead><tbody>${keys.map(k=>{const o=R[grp][k];return `<tr><td>${esc(mapa(k))}</td><td class="c">${o.n}</td><td class="r">${brl(o.base)}</td><td class="r">${brl(o.inss)}</td><td class="r">${brl(o.irrf)}</td><td class="r">${brl(o.fgts)}</td><td class="r">${brl(o.pat)}</td><td class="r">${brl(o.rat)}</td><td class="r">${brl(o.terc)}</td></tr>`;}).join('')}</tbody></table></div></div>`;};
+  return `<h1>Relatórios e guias — ${compLabel(comp)}</h1><p class="sub">Totais por estabelecimento e por lotação, e o resumo do que deve ser recolhido, conforme o regime (${esc(regimeTxt(DB.empresa))}).</p>${exigeEmpresa()}${compBar(comp)}
+  ${R?`<div class="card"><h2>Resumo dos recolhimentos</h2><div class="tw"><table class="t"><thead><tr><th>Recolhimento</th><th class="r">Valor</th><th>Onde / como</th></tr></thead><tbody>
+  <tr><td>INSS dos empregados</td><td class="r">${brl(T.inss)}</td><td>DCTFWeb (DARF numerado) — apurado pelo S-1200 [VERIFICAR FONTE OFICIAL]</td></tr>
+  <tr><td>CPP patronal + RAT + terceiros</td><td class="r">${brl(T.pat+T.rat+T.terc)}</td><td>${E.regime==='sn'?(E.anexo==='std'?'Já incluídos no DAS (PGDAS-D); nada na DCTFWeb':'Somente lotações de CPP não substituída, na DCTFWeb'):'DCTFWeb (DARF numerado)'}</td></tr>
+  <tr><td>IRRF sobre rendimentos do trabalho</td><td class="r">${brl(T.irrf)}</td><td>DCTFWeb — código de receita 0561 [VERIFICAR FONTE OFICIAL]</td></tr>
+  <tr><td>FGTS</td><td class="r">${brl(T.fgts)}</td><td>FGTS Digital, até o dia 20 do mês seguinte (Lei 8.036/90, art. 15) [VERIFICAR FONTE OFICIAL]</td></tr>
+  <tr><td>Salário-família (compensável)</td><td class="r">${brl(T.sf)}</td><td>Abatido das contribuições previdenciárias (Lei 8.213/91, art. 68)</td></tr></tbody></table></div></div>
+  ${tab('estab','estabelecimento',k=>(byId(DB.estabs,k)||{nome:k}).nome)}${tab('lot','lotação',k=>{const l=byId(DB.lotacoes,k);return l?l.cod+' – '+l.desc:k;})}`:'<div class="note">Calcule a folha da competência para ver os relatórios.</div>'}`;},
+  mount(){bindComp();},
+  actions:()=>[{label:'Imprimir',act:'relPrint'}]};
+ACT.relPrint=()=>{$('#printarea').innerHTML='<div style="padding:12px">'+$('#main').innerHTML+'</div>';document.body.classList.add('printing');try{window.print();}catch(e){toast('Impressão indisponível neste ambiente.','err');}setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};
+
+/* ===================== INTEGRAÇÃO ===================== */
+SC.integr={view(){const C=DB.cfg;
+  return `<h1>Webservice do eSocial / Integração</h1><p class="sub">Configuração do ambiente e do serviço de transmissão.</p>
+  <div data-form id="f"><div class="card"><h2>Ambiente e modo de envio</h2><div class="grid">${F('Ambiente do eSocial','ambiente',C.ambiente,{t:'select',opts:[['2','2 – Produção restrita (testes)'],['1','1 – Produção (valor jurídico)']],w:4})+F('Modo de envio','modo',C.modo,{t:'select',opts:[['sim','Simulação local (sem transmissão)'],['gw','Webservice via gateway']],w:4})+F('URL do gateway de integração','gateway',C.gateway,{w:4,ph:'https://seu-servidor/esocial'})}</div></div></div>
+  <div class="card"><h2>Como a transmissão real funciona</h2><p>O eSocial exige <b>comunicação segura com certificado digital (e-CNPJ ou e-CPF de procurador)</b> e <b>assinatura XMLDSig</b> em cada evento — operações que um navegador não executa com segurança nem consegue sempre realizar por restrição de CORS. Por isso este sistema separa as responsabilidades:</p>
+  <p><b>1. Este sistema (front-end)</b> cadastra, calcula, gera o XML de cada evento (leiaute S-1.3), mantém a biblioteca e controla status, recibo e retificações.<br><b>2. Gateway de integração (servidor seu)</b> valida o XML contra os XSD oficiais, assina com o certificado A1, monta o <span class="mono">envioLoteEventos</span> e chama os serviços SOAP do eSocial.</p>
+  <h3>Serviços do eSocial (conferir no Manual de Orientação do Desenvolvedor, seção “URL dos Web Services”)</h3>
+  <div class="tw"><table class="t"><tbody><tr><td>Envio de lote — produção restrita</td><td class="mono">https://webservices.producaorestrita.esocial.gov.br/servicos/empregador/enviarloteeventos/WsEnviarLoteEventos.svc</td></tr><tr><td>Consulta de lote — produção restrita</td><td class="mono">https://webservices.producaorestrita.esocial.gov.br/servicos/empregador/consultarloteeventos/WsConsultarLoteEventos.svc</td></tr><tr><td>Envio / consulta — produção</td><td class="mono">https://webservices.envio.esocial.gov.br/servicos/empregador/… (mesmos nomes de serviço)</td></tr></tbody></table></div>
+  <h3 style="margin-top:14px">Contrato que o gateway deve expor para este sistema</h3>
+  <pre class="xml">POST {gateway}/lotes
+{ "ambiente": 2, "grupo": 1|2|3,           // 1 tabelas/iniciais · 2 não periódicos · 3 periódicos
+  "empregador": {"tpInsc":1,"nrInsc":"CNPJ14"},
+  "eventos": [ {"id":"ID1…","tipo":"S-1200","xml":"&lt;eSocial …&gt;"} ]  // até 50 por lote
+}  →  200 {"protocolo":"…"}
+
+GET {gateway}/lotes/{protocolo}
+  →  {"status":"processando"|"processado",
+      "eventos":[{"id":"ID1…","situacao":"sucesso"|"rejeitado","recibo":"…",
+                  "ocorrencias":[{"codigo":"…","descricao":"…"}]}]}
+
+GET {gateway}/status   →  200 (teste de conexão)</pre>
+  <div class="note">Em páginas publicadas como artefato do Claude o navegador bloqueia chamadas a outros domínios; o modo webservice funciona quando o arquivo HTML é aberto localmente ou hospedado no seu domínio (com CORS liberado no gateway). Antes de usar em <b>produção</b>, valide todos os eventos em produção restrita.</div></div>`;},
+  actions:()=>[{label:'Testar conexão',act:'intTest'},{label:'💾 Salvar configuração',act:'intSave',cls:'pri',key:'save'}]};
+ACT.intSave=()=>{const o=readForm($('#f'));DB.cfg.ambiente=Number(o.ambiente);DB.cfg.modo=o.modo;DB.cfg.gateway=o.gateway;if(o.modo==='gw'&&!o.gateway){toast('Informe a URL do gateway.','err');return;}saveDB();DIRTY=false;toast('Configuração salva.','ok');refresh();};
+ACT.intTest=async()=>{const u=($('[name=gateway]').value||'').replace(/\/$/,'');if(!u){toast('Informe a URL do gateway.','err');return;}try{const r=await fetch(u+'/status');toast(r.ok?'Gateway respondeu normalmente.':'Gateway respondeu HTTP '+r.status,r.ok?'ok':'err');}catch(e){toast('Sem conexão com o gateway: '+e.message,'err');}};
+
+/* ===================== PARÂMETROS LEGAIS ===================== */
+const getP=(o,pth)=>pth.split('.').reduce((a,k)=>a[k],o);
+const setP=(o,pth,v)=>{const k=pth.split('.');const l=k.pop();k.reduce((a,x)=>a[x],o)[l]=v;};
+const pin=(pth,w)=>`<input data-pp="${pth}" value="${String(getP(DB.params,pth)).replace('.',',')}" style="width:${w||90}px;padding:5px;border:1px solid #c7d0d9;border-radius:5px;text-align:right">`;
+SC.params={view(){const P=DB.params;
+  return `<h1>Parâmetros legais (2026)</h1><p class="sub">Tabelas usadas pelo cálculo. Edite quando houver nova portaria ou lei.</p>
+  <div data-form id="f"><div class="card"><h2>INSS do empregado — contribuição progressiva</h2><div class="tw"><table class="t"><thead><tr><th>Faixa</th><th class="r">Até (R$)</th><th class="r">Alíquota (%)</th></tr></thead><tbody>${P.inss.map((f,i)=>`<tr><td>${i+1}ª</td><td class="r">${pin('inss.'+i+'.0')}</td><td class="r">${pin('inss.'+i+'.1',60)}</td></tr>`).join('')}</tbody></table></div>
+  <div class="grid" style="margin-top:10px"><div class="f" style="grid-column:span 3"><label>Salário mínimo</label>${pin('salMin')}</div><div class="f" style="grid-column:span 3"><label>Teto do salário de contribuição</label>${pin('tetoInss')}</div></div><p class="sub" style="margin:8px 0 0">Base: Portaria Interministerial MPS/MF nº 13/2026 (faixas e teto) e Decreto nº 12.797/2025 (salário mínimo); Lei nº 8.212/1991, art. 28 (salário de contribuição) e EC nº 103/2019, art. 28 (alíquotas progressivas).</p></div>
+  <div class="card"><h2>CPRB — reoneração gradual da contribuição patronal (Lei 14.973/2024)</h2><div class="grid"><div class="f" style="grid-column:span 3"><label>2025 — % da CPP devida</label>${pin('cprbFrac.2025')}</div><div class="f" style="grid-column:span 3"><label>2026 — % da CPP devida</label>${pin('cprbFrac.2026')}</div><div class="f" style="grid-column:span 3"><label>2027 — % da CPP devida</label>${pin('cprbFrac.2027')}</div></div><p class="sub" style="margin:8px 0 0">Percentual da contribuição patronal de 20% que volta a incidir sobre a folha das atividades desoneradas; a CPRB sobre a receita bruta é apurada fora da folha. [VERIFICAR FONTE OFICIAL]</p></div>
+  <div class="card"><h2>IRRF — tabela mensal, deduções e redução</h2><div class="tw"><table class="t"><thead><tr><th>Faixa</th><th class="r">Base até (R$)</th><th class="r">Alíquota (%)</th><th class="r">Parcela a deduzir (R$)</th></tr></thead><tbody>${P.irrf.map((f,i)=>`<tr><td>${i+1}ª</td><td class="r">${pin('irrf.'+i+'.0')}</td><td class="r">${pin('irrf.'+i+'.1',60)}</td><td class="r">${pin('irrf.'+i+'.2')}</td></tr>`).join('')}</tbody></table></div>
+  <div class="grid" style="margin-top:10px"><div class="f" style="grid-column:span 3"><label>Dedução por dependente</label>${pin('depIr')}</div><div class="f" style="grid-column:span 3"><label>Desconto simplificado</label>${pin('simpl')}</div><div class="f" style="grid-column:span 3"><label>Redução total até (rendimento)</label>${pin('redutor.isento')}</div><div class="f" style="grid-column:span 3"><label>Redução parcial até</label>${pin('redutor.teto')}</div><div class="f" style="grid-column:span 3"><label>Redução: constante A</label>${pin('redutor.a')}</div><div class="f" style="grid-column:span 3"><label>Redução: coeficiente B</label>${pin('redutor.b',110)}</div></div>
+  <p class="sub" style="margin:8px 0 0">Redução mensal: rendimento tributável até R$ 5.000,00 zera o imposto; entre R$ 5.000,01 e R$ 7.350,00, redução = A − (B × rendimento), limitada ao imposto apurado — Lei nº 15.270/2025. Dedução por dependente e desconto simplificado conforme tabela vigente da Receita Federal. O sistema usa o método (deduções legais ou simplificado) que resultar em menor imposto.</p></div>
+  <div class="card"><h2>Salário-família, FGTS, vale-transporte e adicionais</h2><div class="grid"><div class="f" style="grid-column:span 3"><label>Cota do salário-família</label>${pin('salFam.cota')}</div><div class="f" style="grid-column:span 3"><label>Limite de remuneração</label>${pin('salFam.limite')}</div><div class="f" style="grid-column:span 2"><label>Idade máxima do filho</label>${pin('salFam.idade',60)}</div><div class="f" style="grid-column:span 2"><label>FGTS (%)</label>${pin('fgts',60)}</div><div class="f" style="grid-column:span 2"><label>FGTS aprendiz (%)</label>${pin('fgtsAprendiz',60)}</div><div class="f" style="grid-column:span 2"><label>Desconto do VT (%)</label>${pin('vtPerc',60)}</div><div class="f" style="grid-column:span 2"><label>Adicional noturno (%)</label>${pin('adNoturno',60)}</div><div class="f" style="grid-column:span 2"><label>Periculosidade (%)</label>${pin('peric',60)}</div><div class="f" style="grid-column:span 2"><label>Hora extra (%)</label>${pin('he50',60)}</div><div class="f" style="grid-column:span 2"><label>Hora extra 100% (%)</label>${pin('he100',60)}</div><div class="f" style="grid-column:span 2"><label>Divisor padrão (h/mês)</label>${pin('divisor',60)}</div><div class="f" style="grid-column:span 2"><label>CPP patronal padrão (%)</label>${pin('patronal',60)}</div></div>
+  <p class="sub" style="margin:8px 0 0">Bases: salário-família — Lei nº 8.213/1991, art. 65, e Portaria MPS/MF nº 13/2026; FGTS — Lei nº 8.036/1990, art. 15, caput e §7º (aprendiz); vale-transporte — Lei nº 7.418/1985, art. 4º, parágrafo único; horas extras — CF, art. 7º, XVI, e CLT, art. 59, §1º; adicional noturno — CLT, art. 73, caput; periculosidade — CLT, art. 193, §1º; insalubridade — CLT, art. 192; contribuição patronal — Lei nº 8.212/1991, art. 22, I e II.</p></div></div>`;},
+  actions:()=>[{label:'Restaurar padrão 2026',act:'parDef'},{label:'💾 Salvar parâmetros',act:'parSave',cls:'pri',key:'save'}]};
+ACT.parSave=()=>{$$('[data-pp]').forEach(i=>setP(DB.params,i.dataset.pp,num(i.value)));saveDB();DIRTY=false;toast('Parâmetros salvos. Recalcule as folhas abertas.','ok');refresh();};
+ACT.parDef=()=>modalConfirm('Restaurar todas as tabelas para os valores padrão de 2026?',()=>{DB.params=defaultParams();saveDB();refresh();},{yes:'Restaurar'});
+
+/* ===================== BACKUP / DEMO ===================== */
+const cpfGer=b=>{let c=b;for(let t=9;t<11;t++){let s=0;for(let i=0;i<t;i++)s+=c[i]*(t+1-i);c+=String((s*10)%11%10);}return c;};
+function seedDemo(regime){regime=typeof regime==='string'?regime:'lp';DB=emptyDB();const comp=compAtual();DB.cfg.comp=comp;const sn=regime==='sn',iv=regime==='sn4';const reg=iv?'sn':regime;
+  DB.empresa={cnpj:'11222333000181',razao:'EMPRESA DEMONSTRAÇÃO LTDA',fantasia:'Demonstração',natJurid:'2062',cnae:'6201501',regime:reg,anexo:iv?'iv':'std',cprb:regime==='lpcprb',porte:reg==='sn'?'S':'N',regEletron:'0',iniValid:comp,cep:'80010000',tpLograd:'R',logr:'Rua das Flores',nr:'100',bairro:'Centro',municipio:'Curitiba',codMunic:'4106902',uf:'PR',ctNome:'Responsável Demonstração',ctCpf:cpfGer('111222333'),ctFone:'4130000000',ctEmail:'rh@demonstracao.example',fpas:'515',codTercs:reg==='sn'?'0000':'0115',patronal:20,rat:2,fap:1,terceiros:reg==='sn'?0:5.8,certTipo:'A1',certTitular:'(dados fictícios)'};
+  DB.empresa.regime=reg;DB.empresa.classTrib=classTribDe(DB.empresa);
+  const eid=uid('e'),fid=uid('e');DB.estabs.push({id:eid,nome:'Matriz',tipoEstab:'matriz',tpInsc:'1',nrInsc:'11222333000181',cnae:'6201501',rat:2,fap:1,iniValid:comp},{id:fid,nome:'Filial Londrina',tipoEstab:'filial',tpInsc:'1',nrInsc:'11222333000262',cnae:'4711301',rat:3,fap:1.2,iniValid:comp});
+  const ct=reg==='sn'?'0000':'0115',tc=reg==='sn'?0:5.8;
+  const l1=uid('l'),l2=uid('l');DB.lotacoes.push({id:l1,cod:'001',desc:'Administrativo',tpLotacao:'01',fpas:'515',codTercs:ct,terceiros:tc,atvSimples:'sub',cprb:'nao'},{id:l2,cod:'002',desc:'Operacional',tpLotacao:'01',fpas:'515',codTercs:ct,terceiros:tc,atvSimples:'sub',cprb:'sim'});
+  const c1=uid('c'),c2=uid('c'),c3=uid('c');DB.cargos.push({id:c1,cod:'01',nome:'Assistente administrativo',cbo:'411010',sumula:''},{id:c2,cod:'02',nome:'Alimentador de linha de produção',cbo:'784205',sumula:''},{id:c3,cod:'03',nome:'Gerente administrativo',cbo:'142105',sumula:''});
+  const base={categoria:'101',tpContr:'1',tpRegJor:'1',natAtividade:'1',hrsSem:44,divisor:220,tpJornada:'2',undSalFixo:'5',situacao:'ativo',racaCor:'6',grauInstr:'07',estCiv:'2',sexo:'F',estab:eid,cep:'80020000',tpLograd:'R',logr:'Rua Exemplo',nr:'10',bairro:'Centro',municipio:'Curitiba',codMunic:'4106902',uf:'PR',formaPgto:'cc',banco:'001',agencia:'0001'};
+  const m=uid('emp'),j=uid('emp'),a=uid('emp');
+  DB.empregados.push(Object.assign({},base,{id:m,estab:fid,mat:'0001',nome:'Maria Aparecida Souza',cpf:cpfGer('529982247'),nasc:'1990-05-12',mae:'Joana Souza',admissao:'2024-03-01',lotacao:l2,cargo:c2,salario:1900,optaVT:true,vtValor:220,conta:'11111-1',deps:[{nome:'Lucas Souza',cpf:'',nasc:'2020-02-10',tp:'03',irrf:true,sf:true}]}),
+   Object.assign({},base,{id:j,mat:'0002',nome:'João Carlos Pereira',sexo:'M',cpf:cpfGer('390533447'),nasc:'1985-09-03',mae:'Rita Pereira',admissao:'2023-08-15',lotacao:l1,cargo:c1,salario:3600,optaVT:false,conta:'22222-2',deps:[{nome:'Paula Pereira',cpf:cpfGer('123456789'),nasc:'1987-01-20',tp:'01',irrf:true,sf:false}]}),
+   Object.assign({},base,{id:a,mat:'0003',nome:'Ana Beatriz Lima',cpf:cpfGer('935411347'),nasc:'1982-11-25',mae:'Beatriz Lima',admissao:comp+'-03',lotacao:l1,cargo:c3,salario:8200,optaVT:false,conta:'33333-3',deps:[{nome:'Pedro Lima',cpf:'',nasc:'2012-06-01',tp:'03',irrf:true,sf:false},{nome:'Clara Lima',cpf:'',nasc:'2015-04-14',tp:'03',irrf:true,sf:false}]}));
+  DB.comps[comp]={status:'aberta',lanc:{[j]:{he50:'10'},[m]:{faltas:'1'}},res:{},diasUteis:'25',domFer:'5',dtPgto:proxMes(comp,5)};
+  saveDB();}
+SC.backup={view(){return `<h1>Backup e dados</h1><p class="sub">Os dados ficam salvos no navegador deste dispositivo. Faça backup periódico.</p>
+  <div class="card"><h2>Exportar / importar</h2><div class="row"><button class="btn pri" data-act="bkExport">Exportar backup (JSON)</button><button class="btn" data-act="bkImport">Importar backup</button></div></div>
+  <div class="card"><h2>Dados de demonstração</h2><p class="sub">Carrega uma empresa fictícia (matriz e filial), 3 empregados e lançamentos para percorrer todo o fluxo. Escolha o regime a simular (substitui os dados atuais).</p><div class="row"><button class="btn" data-act="bkDemo" data-arg="sn">Simples Nacional (Anexo III/V)</button><button class="btn" data-act="bkDemo" data-arg="sn4">Simples Nacional (Anexo IV)</button><button class="btn" data-act="bkDemo" data-arg="lp">Lucro Presumido</button><button class="btn" data-act="bkDemo" data-arg="lr">Lucro Real</button><button class="btn" data-act="bkDemo" data-arg="lpcprb">Presumido com CPRB</button></div></div>
+  <div class="card"><h2>Apagar tudo</h2><p class="sub">Remove todos os cadastros, folhas e eventos deste navegador.</p><button class="btn danger" data-act="bkReset">Apagar todos os dados</button></div>
+  <div class="note info">Armazenamento local: ${(JSON.stringify(DB).length/1024).toFixed(0)} KB. Em páginas publicadas como artefato, o armazenamento pode ser limpo pelo navegador — mantenha sempre um backup.</div>`;},actions:()=>[]};
+ACT.bkExport=()=>{const s=JSON.stringify(DB);modal(`<textarea id="bkt" style="width:100%;height:280px" class="mono" readonly>${esc(s)}</textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="bkc">Copiar</button><button class="btn" id="bkd">Baixar .json</button></div>`,{title:'Backup completo',wide:true});
+  $('#bkc').onclick=async()=>{try{await navigator.clipboard.writeText(s);toast('Copiado.','ok');}catch(e){$('#bkt').select();toast('Selecione e copie manualmente (Ctrl+C).');}};$('#bkd').onclick=()=>baixar('folhapro_backup_'+hoje()+'.json',s,'application/json');};
+ACT.bkImport=()=>{modal(`<p class="sub">Cole o conteúdo do backup (JSON). Os dados atuais serão substituídos.</p><textarea id="bki" style="width:100%;height:260px" class="mono"></textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="bkok">Importar</button></div>`,{title:'Importar backup',wide:true});
+  $('#bkok').onclick=()=>{try{const d=JSON.parse($('#bki').value);if(!d||typeof d!=='object'||!Array.isArray(d.empregados))throw new Error('formato inválido');const e=emptyDB();DB=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});migrar(DB);saveDB();closeModal();toast('Backup importado.','ok');refresh();}catch(x){toast('Backup inválido: '+x.message,'err');}};};
+ACT.bkDemo=el=>modalConfirm('Substituir todos os dados atuais pelos dados de demonstração?',()=>{seedDemo(el&&el.dataset&&el.dataset.arg||'lp');toast('Dados de demonstração carregados.','ok');home();render();},{yes:'Carregar'});
+ACT.bkReset=()=>modalConfirm('<b>Apagar todos os dados?</b> Esta ação não pode ser desfeita.',()=>{DB=emptyDB();saveDB();toast('Dados apagados.');home();render();},{yes:'Apagar tudo'});
+
+/* ===================== INÍCIO ===================== */
+SC.home={view(){const comp=DB.cfg.comp,c=DB.comps[comp],t=totaisComp(comp);const proc=s=>DB.eventos.some(e=>e.tipo===s&&e.status==='processado');
+  const pend=DB.eventos.filter(e=>e.status==='gerado').length,rej=DB.eventos.filter(e=>e.status==='rejeitado').length;
+  const S=(n,t,d,done,to,lab)=>`<div class="step ${done?'done':''}"><div><span class="n">${done?'✓':n}</span><b>${t}</b></div><p>${d}</p><div><button class="btn sm ${done?'':'pri'}" data-act="nav" data-to="${to}">${lab}</button></div></div>`;
+  const eAtivos=DB.empregados.filter(e=>e.situacao==='ativo').length;
+  return `<h1>FolhaPro</h1><p class="sub">Departamento pessoal, folha de pagamento, contracheque e eSocial — da abertura da empresa à entrega do recibo e ao envio dos eventos.</p>
+  ${!DB.empresa?`<div class="note"><b>Comece por aqui:</b> cadastre a empresa ou carregue dados de demonstração para percorrer o fluxo completo. <button class="btn sm" data-act="bkDemo" style="margin-left:8px">Carregar demonstração</button> <button class="btn sm pri" data-act="nav" data-to="empresa">Cadastrar empresa</button></div>`:''}
+  <div class="kpis"><div class="kpi"><span>Empregados ativos</span><b>${eAtivos}</b></div><div class="kpi"><span>Competência</span><b>${compLabel(comp)}</b></div><div class="kpi"><span>Líquido da folha</span><b>R$ ${brl(t.liq)}</b></div><div class="kpi"><span>Eventos processados</span><b style="color:var(--ok)">${DB.eventos.filter(e=>e.status==='processado').length}</b></div><div class="kpi"><span>Pendentes / rejeitados</span><b>${pend} / <span style="color:${rej?'var(--err)':'inherit'}">${rej}</span></b></div></div>
+  <h2>Fluxo de trabalho</h2><div class="steps">
+  ${S(1,'Empresa','Dados do empregador, endereço, encargos e responsável (S-1000).',!!DB.empresa&&proc('S-1000'),'empresa','Cadastro da empresa')}
+  ${S(2,'Tabelas','Estabelecimentos, lotações tributárias, cargos e rubricas (S-1005, S-1020, S-1010). Veja o mapa da estrutura.',proc('S-1005')&&proc('S-1020')&&proc('S-1010'),'estrutura','Mapa da estrutura')}
+  ${S(3,'Empregados','Cadastro de trabalhadores, dependentes e contrato; admissão (S-2200).',DB.empregados.length>0&&DB.empregados.every(e=>DB.eventos.some(x=>x.tipo==='S-2200'&&x.gen.args.id===e.id&&x.status==='processado')),'empregados','Cadastro de empregados')}
+  ${S(4,'Lançamentos','Horas extras, faltas, comissões e descontos do mês.',!!c&&Object.keys(c.lanc||{}).length>0,'lanc','Lançar eventos do mês')}
+  ${S(5,'Cálculo da folha','INSS, IRRF, FGTS, salário-família, VT e encargos; fechamento.',!!c&&c.status==='fechada','folha','Calcular e fechar')}
+  ${S(6,'Contracheque','Recibo de pagamento para visualizar, imprimir e registrar a entrega.',DB.empregados.length>0&&Object.keys((c||{}).res||{}).length>0&&Object.keys(c.res).every(id=>DB.entregues[comp+'|'+id]),'holerite','Contracheques')}
+  ${S(7,'Envio ao eSocial','S-1200, S-1210 e S-1299 da competência, com dependências respeitadas.',DB.eventos.some(e=>e.tipo==='S-1299'&&e.comp===comp&&e.status==='processado'),'envio','Enviar competência')}
+  ${S(8,'Biblioteca','Todos os XML, protocolos, recibos, ocorrências e retificações.',false,'biblioteca','Abrir biblioteca')}
+  </div>
+  <div class="note info" style="margin-top:16px">Atalhos: <b>Alt+V</b> volta à tela anterior · <b>Alt+I</b> tela inicial · <b>Alt+S</b> salva · <b>Alt+E</b> envia ao eSocial. Além do fluxo mensal, o sistema calcula férias, 13º salário e rescisão, diferencia Simples Nacional, Lucro Presumido e Lucro Real e mostra a estrutura de estabelecimentos e lotações. Ainda não cobre: eventos de SST (S-2210/2220/2240), RAIS e DIRF/EFD-Reinf.</div>`;},
+  actions:()=>[{label:'Cadastro da empresa',act:'nav',arg:'',cls:''},{label:'Calcular folha →',act:'nav',arg:'',cls:'pri'}]};
+// ações da home usam data-to; ajuste das duas de rodapé:
+SC.home.actions=()=>[{label:'Biblioteca de eventos',act:'goBib'},{label:'Cálculo da folha →',act:'goFolha',cls:'pri',key:'save'},{label:'Enviar ao eSocial →',act:'goEnvio',cls:'send',key:'send'}];
+ACT.goBib=()=>go('biblioteca');ACT.goFolha=()=>go('folha',{comp:DB.cfg.comp});ACT.goEnvio=()=>go('envio',{comp:DB.cfg.comp});
+
+/* ===================== INIT ===================== */
+DB=loadDB();render();
+</script></body></html>
