@@ -88,6 +88,7 @@ SC.home={view(){const comp=DB.cfg.comp,c=DB.comps[comp],t=totaisComp(comp);const
   ${S(6,'Contracheque','Recibo de pagamento para visualizar, imprimir e registrar a entrega.',DB.empregados.length>0&&Object.keys((c||{}).res||{}).length>0&&Object.keys(c.res).every(id=>DB.entregues[comp+'|'+id]),'holerite','Contracheques')}
   ${S(7,'Envio ao eSocial','S-1200, S-1210 e S-1299 da competência, com dependências respeitadas.',DB.eventos.some(e=>e.tipo==='S-1299'&&e.comp===comp&&e.status==='processado'),'envio','Enviar competência')}
   ${S(8,'Biblioteca','Todos os XML, protocolos, recibos, ocorrências e retificações.',false,'biblioteca','Abrir biblioteca')}
+  ${S(9,'Painel e comparativo','Dashboards da folha, encargos e eSocial; comparativo entre Simples, Presumido e Real.',false,'painel','Abrir painel')}
   </div>
   <div class="note info" style="margin-top:16px">Atalhos: <b>Alt+V</b> volta à tela anterior · <b>Alt+I</b> tela inicial · <b>Alt+S</b> salva · <b>Alt+E</b> envia ao eSocial. Além do fluxo mensal, o sistema calcula férias, 13º salário e rescisão, diferencia Simples Nacional, Lucro Presumido e Lucro Real e mostra a estrutura de estabelecimentos e lotações. Ainda não cobre: eventos de SST (S-2210/2220/2240), RAIS e DIRF/EFD-Reinf.</div>`;},
   actions:()=>[{label:'Cadastro da empresa',act:'nav',arg:'',cls:''},{label:'Calcular folha →',act:'nav',arg:'',cls:'pri'}]};

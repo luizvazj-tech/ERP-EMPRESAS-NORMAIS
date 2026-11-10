@@ -76,6 +76,13 @@ code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
 .dep .f{grid-column:auto}
 @media (max-width:900px){#side{display:none}.grid>.f{grid-column:span 6!important}.dep{grid-template-columns:1fr 1fr}}
 @media print{body{background:#fff;padding:0}body.printing #top,body.printing #app,body.printing #bar,body.printing #modal,body.printing #toast{display:none!important}body.printing #printarea{display:block}.hol{border:1px solid #000;page-break-after:always;margin:0 auto}}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:2px 0 8px;font-size:12.5px;color:var(--mut)}.legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.hb{display:flex;flex-direction:column;gap:7px}.hrow{display:grid;grid-template-columns:minmax(110px,38%) 1fr 92px;gap:8px;align-items:center;font-size:13px}.hrow .hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hrow .ht{background:#eef2f5;border-radius:4px;height:12px;display:block}.hrow .ht i{display:block;height:12px;border-radius:0 4px 4px 0}.hrow b{text-align:right;font-weight:600}
+#tip{position:fixed;display:none;z-index:60;background:#17212b;color:#fff;padding:6px 9px;border-radius:6px;font-size:12px;max-width:250px;pointer-events:none}
+.cmpg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}@media(max-width:900px){.cmpg{grid-template-columns:1fr}}
+.cmpc{margin:0}.cmpc.best{border:2px solid var(--ok)}.cmpc.off{opacity:.8}.cmpc .big{font-size:24px;font-weight:700;margin:6px 0 2px}
+details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);font-size:13px}
 </style>
 </head>
 <body>
@@ -87,5 +94,5 @@ code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
 </header>
 <div id="app"><nav id="side"></nav><main id="main"></main></div>
 <footer id="bar"></footer>
-<div id="modal"></div><div id="toast"></div><div id="printarea"></div>
+<div id="modal"></div><div id="tip"></div><div id="toast"></div><div id="printarea"></div>
 <script>

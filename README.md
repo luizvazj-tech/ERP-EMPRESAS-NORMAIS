@@ -11,6 +11,7 @@ contracheque e geração/biblioteca de eventos eSocial (leiaute S-1.3).
 - Férias, 13º salário e rescisão (S-2299 com verbas).
 - Eventos S-1000, S-1005, S-1010, S-1020, S-2200, S-2206, S-2230, S-2299, S-1200, S-1210, S-1299; biblioteca com XML, protocolo, recibo e retificação.
 - Relatórios por estabelecimento e lotação, e resumo de recolhimentos.
+- **Painel gerencial** (dashboards de folha, encargos, estrutura e eSocial) e **Comparativo de regimes** (Simples × Presumido × Real, com fator R, LC 224/2025 e sensibilidade por faixa de receita).
 
 ## Limites importantes
 

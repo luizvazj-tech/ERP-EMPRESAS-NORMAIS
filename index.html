@@ -76,6 +76,13 @@ code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
 .dep .f{grid-column:auto}
 @media (max-width:900px){#side{display:none}.grid>.f{grid-column:span 6!important}.dep{grid-template-columns:1fr 1fr}}
 @media print{body{background:#fff;padding:0}body.printing #top,body.printing #app,body.printing #bar,body.printing #modal,body.printing #toast{display:none!important}body.printing #printarea{display:block}.hol{border:1px solid #000;page-break-after:always;margin:0 auto}}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:2px 0 8px;font-size:12.5px;color:var(--mut)}.legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.hb{display:flex;flex-direction:column;gap:7px}.hrow{display:grid;grid-template-columns:minmax(110px,38%) 1fr 92px;gap:8px;align-items:center;font-size:13px}.hrow .hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hrow .ht{background:#eef2f5;border-radius:4px;height:12px;display:block}.hrow .ht i{display:block;height:12px;border-radius:0 4px 4px 0}.hrow b{text-align:right;font-weight:600}
+#tip{position:fixed;display:none;z-index:60;background:#17212b;color:#fff;padding:6px 9px;border-radius:6px;font-size:12px;max-width:250px;pointer-events:none}
+.cmpg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}@media(max-width:900px){.cmpg{grid-template-columns:1fr}}
+.cmpc{margin:0}.cmpc.best{border:2px solid var(--ok)}.cmpc.off{opacity:.8}.cmpc .big{font-size:24px;font-weight:700;margin:6px 0 2px}
+details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);font-size:13px}
 </style>
 </head>
 <body>
@@ -87,7 +94,7 @@ code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
 </header>
 <div id="app"><nav id="side"></nav><main id="main"></main></div>
 <footer id="bar"></footer>
-<div id="modal"></div><div id="toast"></div><div id="printarea"></div>
+<div id="modal"></div><div id="tip"></div><div id="toast"></div><div id="printarea"></div>
 <script>
 'use strict';
 /* =====================================================================
@@ -516,6 +523,62 @@ function validarEvento(ev){const o=validarBase(ev),E=DB.empresa;if(!E||!ev.gen)r
     if(s&&!DB.eventos.some(x=>x.tipo==='S-1005'&&x.status==='processado'&&x.gen.args.id===s.id))o.push('Dependência: o estabelecimento '+s.nome+' (S-1005) ainda não foi processado.');}}
   return o;}
 
+/* ===================== Comparativo de regimes (Simples × Presumido × Real) ===================== */
+/* Tabelas dos Anexos I a V — LC 123/2006, redação da LC 155/2016: [RBT12 até, alíquota nominal %, parcela a deduzir R$] */
+const SN_TAB={
+ I:[[180000,4,0],[360000,7.3,5940],[720000,9.5,13860],[1800000,10.7,22500],[3600000,14.3,87300],[4800000,19,378000]],
+ II:[[180000,4.5,0],[360000,7.8,5940],[720000,10,13860],[1800000,11.2,22500],[3600000,14.7,85500],[4800000,30,720000]],
+ III:[[180000,6,0],[360000,11.2,9360],[720000,13.5,17640],[1800000,16,35640],[3600000,21,125640],[4800000,33,648000]],
+ IV:[[180000,4.5,0],[360000,9,8100],[720000,10.2,12420],[1800000,14,39780],[3600000,22,183780],[4800000,33,828000]],
+ V:[[180000,15.5,0],[360000,18,4500],[720000,19.5,9900],[1800000,20.5,17100],[3600000,23,62100],[4800000,30.5,540000]]};
+function snEfetiva(anexo,rbt12){const t=SN_TAB[anexo];const f=t.find(x=>rbt12<=x[0]);if(!f)return null;
+  const rb=Math.max(rbt12,1);return{nom:f[1],pd:f[2],faixa:t.indexOf(f)+1,ef:rbt12<=0?f[1]:Math.max(0,(rb*f[1]/100-f[2])/rb*100)};}
+/* Percentuais de presunção: [IRPJ %, CSLL %] — Lei 9.249/1995, arts. 15 e 20 */
+const PRES={com:['Comércio e indústria',8,12],serv:['Serviços em geral, intermediação, locação (32%)',32,32],carga:['Transporte de cargas',8,12],hosp:['Serviços hospitalares',8,12],pass:['Transporte de passageiros',16,12]};
+const CMP_DEF={rec:100000,rbt12:0,ativ:'serv',snServ:'fatorR',pres:'serv',iss:3,icms:0,sal:15000,prol:5000,desp:20000,credBase:5000,rat:2,terc:5.8,lc224:true};
+function cmpEncargos(i,regime,anexoIV){ /* valor ANUAL */ // CPP patronal, RAT, terceiros — Lei 8.212/91, art. 22, I a III
+  const pat=num(DB&&DB.params?DB.params.patronal:20);
+  if(regime==='sn'&&!anexoIV)return 0;
+  const temTerc=regime!=='sn';
+  return r2((num(i.sal)*(pat+num(i.rat)+(temTerc?num(i.terc):0))/100+num(i.prol)*pat/100)*12);}
+function calcSimplesCmp(i){const rec=num(i.rec),rbt=num(i.rbt12)>0?num(i.rbt12):rec*12,fgts=num(i.sal)*0.08;
+  const o={key:'sn',nome:'Simples Nacional',notas:[]};
+  if(rbt>4800000){o.elegivel=false;o.motivo='RBT12 acima de R$ 4,8 milhões: ultrapassa o limite do Simples (LC 123/2006, art. 3º, II).';return o;}
+  const fatorR=rbt>0?(num(i.sal)+num(i.prol)+fgts)*12/rbt:0;o.fatorR=fatorR;
+  let anexo=i.ativ==='com'?'I':i.ativ==='ind'?'II':(i.snServ==='fatorR'?(fatorR>=0.28?'III':'V'):i.snServ);
+  if(i.ativ==='ind')anexo='II';
+  const e=snEfetiva(anexo,rbt);o.anexo=anexo;o.efetiva=e.ef;o.faixa=e.faixa;
+  if(i.ativ==='serv'&&i.snServ==='fatorR')o.notas.push('Fator R = '+(fatorR*100).toFixed(1).replace('.',',')+'% → '+(fatorR>=0.28?'Anexo III (fator R ≥ 28%)':'Anexo V (fator R < 28%)')+'.');
+  const das=r2(rec*12*e.ef/100);const iv=anexo==='IV';const enc=cmpEncargos(i,'sn',iv);
+  let fora=0;if(rbt>3600000){fora=r2(rec*12*(i.ativ==='serv'?num(i.iss):num(i.icms))/100);o.notas.push('RBT12 acima de R$ 3,6 milhões: ICMS/ISS são recolhidos fora do DAS (LC 123/2006, art. 13-A). Estimativa conservadora: o ISS/ICMS informado foi somado integralmente, sem abater sua parcela do DAS.');}
+  if(iv)o.notas.push('Anexo IV: a CPP patronal (20%) e o RAT não estão no DAS e são recolhidos à parte (LC 123/2006, art. 18, §5º-C); terceiros dispensados.');
+  o.partes={das,irpj:0,csll:0,pc:0,iss:i.ativ==='serv'?fora:0,icms:i.ativ==='serv'?0:fora,enc};o.elegivel=true;return o;}
+function calcPresumidoCmp(i){const R=num(i.rec)*12,P=PRES[i.pres]||PRES.serv,lim=5000000,f=i.lc224?1.1:1;
+  const o={key:'lp',nome:'Lucro Presumido',notas:[],elegivel:true};
+  if(R>78000000){o.elegivel=false;o.motivo='Receita bruta anual acima de R$ 78 milhões: vedado o Lucro Presumido (Lei 9.718/1998, art. 14, I).';return o;}
+  const baseIr=P[1]/100*(Math.min(R,lim)+f*Math.max(R-lim,0)),baseCs=P[2]/100*(Math.min(R,lim)+f*Math.max(R-lim,0));
+  const irpj=r2(baseIr*0.15+Math.max(0,baseIr-240000)*0.10),csll=r2(baseCs*0.09);
+  const pc=r2(R*0.0365),iss=i.ativ==='serv'?r2(R*num(i.iss)/100):0,icms=i.ativ==='serv'?0:r2(R*num(i.icms)/100);
+  if(R>lim&&i.lc224)o.notas.push('Acréscimo de 10% nos percentuais de presunção sobre a receita anual que excede R$ 5 milhões (LC 224/2025; IN RFB 2.305/2025). A CSLL só sofre o acréscimo a partir de 1º/04/2026 e há discussão judicial: a conta aplica o acréscimo nos 12 meses [VERIFICAR FONTE OFICIAL].');
+  o.base={irpj:baseIr,csll:baseCs};o.partes={das:0,irpj,csll,pc,iss,icms,enc:cmpEncargos(i,'lp')};return o;}
+function calcRealCmp(i){const R=num(i.rec)*12;const o={key:'lr',nome:'Lucro Real',notas:[],elegivel:true};
+  const enc=cmpEncargos(i,'lr'),fgts=num(i.sal)*0.08*12,folha=num(i.sal)*12+num(i.prol)*12+fgts+enc;
+  const deb=R*0.0925,cred=num(i.credBase)*12*0.0925,pc=r2(Math.max(0,deb-cred));
+  const iss=i.ativ==='serv'?r2(R*num(i.iss)/100):0,icms=i.ativ==='serv'?0:r2(R*num(i.icms)/100);
+  const lucro=R-pc-iss-icms-num(i.desp)*12-folha;o.lucro=lucro;
+  const irpj=r2(Math.max(0,lucro)*0.15+Math.max(0,lucro-240000)*0.10),csll=r2(Math.max(0,lucro)*0.09);
+  if(lucro<=0)o.notas.push('Prejuízo fiscal no período: IRPJ e CSLL zerados. O prejuízo pode ser compensado em períodos futuros (limite de 30% do lucro) — não simulado (Lei 9.065/1995, art. 15) [VERIFICAR FONTE OFICIAL].');
+  o.notas.push('PIS/COFINS não cumulativos: 1,65% + 7,6% sobre a receita, menos créditos de 9,25% sobre a base informada (Leis 10.637/2002 e 10.833/2003, arts. 2º e 3º).');
+  o.partes={das:0,irpj,csll,pc,iss,icms,enc};return o;}
+function compararRegimes(i){const R=num(i.rec)*12,fgts=num(i.sal)*0.08*12;
+  const out=[calcSimplesCmp(i),calcPresumidoCmp(i),calcRealCmp(i)];
+  out.forEach(o=>{if(!o.elegivel)return;const p=o.partes;o.total=r2(p.das+p.irpj+p.csll+p.pc+p.iss+p.icms+p.enc);o.carga=R>0?o.total/R*100:0;
+    o.resultado=r2(R-num(i.desp)*12-num(i.sal)*12-num(i.prol)*12-fgts-o.total);});
+  const el=out.filter(o=>o.elegivel);if(el.length){const m=Math.min(...el.map(o=>o.total));el.forEach(o=>{o.melhor=o.total===m;o.dif=r2(o.total-m);});}
+  return out;}
+function varrerReceita(i,mults){return mults.map(m=>{const j=Object.assign({},i,{rec:num(i.rec)*m,sal:num(i.sal)*m,prol:num(i.prol),desp:num(i.desp)*m,credBase:num(i.credBase)*m,rbt12:0});
+  const r=compararRegimes(j);return{rec:j.rec*12,v:r.map(o=>o.elegivel?o.carga:null)};});}
+
 /* ===================== UI: infraestrutura ===================== */
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -535,7 +598,7 @@ const MENU=[['','home','⌂ Início'],['Cadastros','empresa','Empresa e regime (
  ['Departamento Pessoal','empregados','Empregados (S-2200)'],['','movs','Movimentações (S-2206/2230/2299)'],
  ['Folha de pagamento','lanc','Lançamentos do mês'],['','folha','Cálculo da folha'],['','ferias','Férias'],['','d13','13º salário'],['','resc','Rescisão (S-2299)'],['','holerite','Contracheques'],['','relat','Relatórios e guias'],
  ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','integr','Webservice / Integração'],
- ['Sistema','params','Parâmetros legais'],['','backup','Backup e dados']];
+ ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados']];
 function renderSide(){const cur=NAV.cur.name==='empForm'?'empregados':NAV.cur.name;let h='';MENU.forEach(([g,k,l])=>{if(g)h+=`<h6>${g}</h6>`;h+=`<a data-act="nav" data-to="${k}" class="${k===cur?'on':''}">${l}</a>`;});$('#side').innerHTML=h;
   $('#topemp').innerHTML=DB.empresa?`<b>${esc(DB.empresa.razao)}</b><br>CNPJ ${fmtCNPJ(DB.empresa.cnpj)} · eSocial: ${DB.cfg.ambiente==1?'Produção':'Produção restrita'} · ${DB.cfg.modo==='sim'?'modo simulação':'webservice'}`:'Empresa não cadastrada';}
 function renderBar(sc){const acts=(sc.actions?sc.actions(NAV.cur.params):[])||[];
@@ -678,7 +741,7 @@ SC.empresa={view(){const E=DB.empresa||{regime:'lp',anexo:'std',iniValid:compAtu
   <div class="card"><h2>Identificação</h2><div class="grid">${F('CNPJ','cnpj',fmtCNPJ(E.cnpj),{req:1,w:3,mask:'cnpj'})+F('Razão social','razao',E.razao,{req:1,w:5})+F('Nome fantasia','fantasia',E.fantasia,{w:4})+F('Natureza jurídica (4 dígitos)','natJurid',E.natJurid,{w:3,list:'dlNat',hint:'Ex.: 2062 Sociedade Empresária Limitada'})+F('CNAE principal','cnae',E.cnae,{w:3})+F('Regime tributário','regime',E.regime||'lp',{t:'select',opts:Object.entries(REGIMES),w:3,req:1})+F('Enquadramento da CPP (Simples)','anexo',E.anexo||'std',{t:'select',opts:Object.entries(ANEXOS),w:5})+F('CPRB (desoneração da folha)','cprb',E.cprb,{t:'check',cl:'Atividade sujeita à CPRB (Lucro Presumido/Real)',w:4})+F('classTrib (derivado do regime)','classTribV',classTribDe(E)||'—',{ro:1,w:3,hint:'Tabela 8 do eSocial — calculado automaticamente'})+F('Porte','porte',E.porte,{t:'select',opts:[['N','Demais'],['S','ME/EPP']],w:2})+F('Entrega eletrônica obrigatória','regEletron',E.regEletron,{t:'select',opts:[['0','0 – Não'],['1','1 – Sim']],w:3})+F('Construtora','construtora',E.construtora,{t:'check',cl:'Empresa de construção civil (indConstr)',w:3})+F('Início de validade (AAAA-MM)','iniValid',E.iniValid,{t:'month',req:1,w:3})}</div><datalist id="dlNat"><option value="2062">2062 – Sociedade Empresária Limitada</option><option value="2135">2135 – Empresário (Individual)</option><option value="2305">2305 – Empresa Individual de Responsabilidade Limitada</option><option value="2054">2054 – Sociedade Anônima Fechada</option></datalist></div>
   <div class="card"><h2>Endereço</h2><div class="grid">${F('CEP','cep',fmtCEP(E.cep),{w:2,mask:'cep'})+F('Tipo','tpLograd',E.tpLograd||'R',{w:1})+F('Logradouro','logr',E.logr,{w:4})+F('Número','nr',E.nr,{w:1})+F('Complemento','compl',E.compl,{w:2})+F('Bairro','bairro',E.bairro,{w:3})+F('Município','municipio',E.municipio,{w:3})+F('Cód. IBGE (7 dígitos)','codMunic',E.codMunic,{w:2})+F('UF','uf',E.uf,{t:'select',opts:O.uf,w:1})}</div></div>
   <div class="card"><h2>Contato e responsável pelo envio</h2><div class="grid">${F('Nome do contato','ctNome',E.ctNome,{req:1,w:4})+F('CPF do contato','ctCpf',fmtCPF(E.ctCpf),{req:1,w:3,mask:'cpf'})+F('Telefone','ctFone',E.ctFone,{w:2})+F('E-mail','ctEmail',E.ctEmail,{w:3})}</div></div>
-  <div class="card"><h2>Regras de incidência para o regime escolhido</h2><div id="regraBox">${regraPanel(E)}</div></div>
+  <div class="card"><div class="row sp"><h2>Regras de incidência para o regime escolhido</h2><button class="btn sm" data-act="nav" data-to="cmp">Comparar com os outros regimes</button></div><div id="regraBox">${regraPanel(E)}</div></div>
   <div class="card"><h2>Valores de referência (usados quando o estabelecimento ou a lotação não informa os seus)</h2><div class="grid">${F('CPP patronal (%)','patronal',E.patronal,{w:2})+F('RAT (%)','rat',E.rat,{w:2})+F('FAP','fap',E.fap,{w:2})+F('Terceiros (%)','terceiros',E.terceiros,{w:2})+F('FPAS padrão','fpas',E.fpas,{w:2})+F('Terceiros padrão','codTercs',E.codTercs,{w:2})}</div><p class="sub" style="margin:8px 0 0">O RAT×FAP efetivo vem do <b>estabelecimento</b> do empregado; FPAS, terceiros, atividade substituída e CPRB vêm da <b>lotação</b>. Estes valores servem só de padrão para novos cadastros.</p></div>
   <div class="card"><h2>Certificado digital (e-CNPJ / e-CPF do procurador)</h2><div class="grid">${F('Tipo','certTipo',E.certTipo||'A1',{t:'select',opts:['A1','A3'],w:2})+F('Titular','certTitular',E.certTitular,{w:5})+F('Validade','certVal',E.certVal,{t:'date',w:2})}</div><div class="note info" style="margin:10px 0 0">O arquivo do certificado e sua senha <b>não são armazenados</b> neste sistema. A assinatura XML e a conexão com certificado ocorrem no serviço de integração (aba Webservice).</div></div></div>`;},
   actions:()=>[{label:'💾 Salvar empresa',act:'empSave',cls:'pri',key:'save'},{label:'Salvar e enviar S-1000 ao eSocial',act:'empSend',cls:'send',key:'send'}]};
@@ -1081,6 +1144,95 @@ SC.relat={view(p){const comp=compSel(p),c=DB.comps[comp];const R=c&&c.status!=='
   mount(){bindComp();},
   actions:()=>[{label:'Imprimir',act:'relPrint'}]};
 ACT.relPrint=()=>{$('#printarea').innerHTML='<div style="padding:12px">'+$('#main').innerHTML+'</div>';document.body.classList.add('printing');try{window.print();}catch(e){toast('Impressão indisponível neste ambiente.','err');}setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};
+/* ===================== Gráficos (SVG/HTML, sem dependências) ===================== */
+const SER=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#6250d6','#e34948'];
+const brlK=n=>{const a=Math.abs(n);return (n<0?'-':'')+(a>=1e6?(a/1e6).toFixed(a>=1e7?0:1).replace('.',',')+' mi':a>=1e3?(a/1e3).toFixed(a>=1e4?0:1).replace('.',',')+' mil':String(Math.round(a)));};
+const niceMax=v=>{if(v<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(v))),f=v/e;return (f<=1?1:f<=2?2:f<=4?4:f<=8?8:10)*e;};
+const legendHtml=(names,cols)=>`<div class="legend">${names.map((n,i)=>`<span><i class="sw" style="background:${(cols||SER)[i]}"></i>${esc(n)}</span>`).join('')}</div>`;
+function vbars(cats,series,o){o=o||{};const W=640,H=o.h||250,m={l:50,r:8,t:12,b:30},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const tot=cats.map((_,i)=>series.reduce((a,s)=>a+(s.v[i]||0),0)),mx=niceMax(Math.max(...tot,1)),step=iw/Math.max(cats.length,1),bw=Math.min(54,step*0.6);
+  let g='';for(let k=0;k<=4;k++){const y=m.t+ih-ih*k/4;g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y}" y2="${y}" stroke="#e3e8ee" stroke-width="1"/><text x="${m.l-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#5d6b79">${brlK(mx*k/4)}</text>`;}
+  let b='';cats.forEach((c,i)=>{let acc=0;const x=m.l+step*i+(step-bw)/2;series.forEach((s,j)=>{const v=s.v[i]||0;if(v<=0)return;const h=ih*v/mx,y=m.t+ih-ih*acc/mx-h;acc+=v;
+    b+=`<rect x="${x}" y="${y}" width="${bw}" height="${Math.max(h,0)}" rx="${j===series.length-1?3:0}" fill="${(o.cols||SER)[j]}" stroke="#fff" stroke-width="2" data-tip="${esc(c+' — '+s.n+': R$ '+brl(v))}"/>`;});
+    b+=`<text x="${x+bw/2}" y="${H-10}" text-anchor="middle" font-size="11" fill="#5d6b79">${esc(c)}</text>`;if(o.totals)b+=`<text x="${x+bw/2}" y="${m.t+ih-ih*acc/mx-5}" text-anchor="middle" font-size="11" font-weight="600" fill="#17212b">${brlK(acc)}</text>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(o.label||'gráfico de barras')}">${g}${b}</svg>`;}
+function hbars(items,o){o=o||{};const mx=Math.max(...items.map(x=>Math.abs(x.v)),1);
+  return `<div class="hb">${items.map((x,i)=>`<div class="hrow" data-tip="${esc(x.l+': '+(o.fmt?o.fmt(x.v):'R$ '+brl(x.v)))}"><span class="hl">${esc(x.l)}</span><span class="ht"><i style="width:${Math.max(1,Math.abs(x.v)/mx*100)}%;background:${x.c||SER[0]}"></i></span><b>${o.fmt?o.fmt(x.v):brl(x.v)}</b></div>`).join('')}</div>`;}
+function linhas(xs,series,o){o=o||{};const W=640,H=o.h||260,m={l:46,r:12,t:12,b:34},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const vals=series.flatMap(s=>s.v.filter(v=>v!=null)),mx=niceMax(Math.max(...vals,1));const X=i=>m.l+iw*i/Math.max(xs.length-1,1),Y=v=>m.t+ih-ih*v/mx;
+  let g='';for(let k=0;k<=4;k++){const y=m.t+ih-ih*k/4;g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y}" y2="${y}" stroke="#e3e8ee"/><text x="${m.l-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#5d6b79">${(v=>Number.isInteger(v)?v:v.toFixed(1).replace('.',','))(mx*k/4)}%</text>`;}
+  xs.forEach((x,i)=>{g+=`<text x="${X(i)}" y="${H-12}" text-anchor="middle" font-size="11" fill="#5d6b79">${esc(x)}</text>`;});
+  let l='';series.forEach((s,j)=>{let d='',pen=false;s.v.forEach((v,i)=>{if(v==null){pen=false;return;}d+=(pen?'L':'M')+X(i)+' '+Y(v)+' ';pen=true;});
+    l+=`<path d="${d}" fill="none" stroke="${(o.cols||SER)[j]}" stroke-width="2" stroke-linejoin="round"/>`;
+    s.v.forEach((v,i)=>{if(v==null)return;l+=`<circle cx="${X(i)}" cy="${Y(v)}" r="4.5" fill="${(o.cols||SER)[j]}" stroke="#fff" stroke-width="2" data-tip="${esc(s.n+' — receita anual R$ '+xs[i]+': '+v.toFixed(1).replace('.',',')+'% de carga')}"/>`;});});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(o.label||'gráfico de linhas')}">${g}${l}</svg>`;}
+document.addEventListener('mouseover',e=>{const t=e.target.closest('[data-tip]'),tip=$('#tip');if(!tip)return;if(!t){tip.style.display='none';return;}tip.textContent=t.dataset.tip;tip.style.display='block';});
+document.addEventListener('mousemove',e=>{const tip=$('#tip');if(tip&&tip.style.display==='block'){tip.style.left=Math.min(e.clientX+14,window.innerWidth-260)+'px';tip.style.top=(e.clientY+16)+'px';}});
+
+/* ===================== Painel gerencial (dashboards) ===================== */
+const compsComDados=()=>Object.keys(DB.comps).filter(c=>DB.comps[c].res&&Object.keys(DB.comps[c].res).length).sort();
+SC.painel={view(p){const comp=compSel(p),c=DB.comps[comp],T=totaisComp(comp),all=compsComDados().slice(-12);
+  const serie=all.map(k=>{const t=totaisComp(k);return{k,t};});
+  const cats=serie.map(x=>compLabel(x.k).replace(/ de /,'/')),pct=(a,b)=>b?(a/b*100).toFixed(1).replace('.',',')+'%':'—';
+  const custo=T.prov+T.fgts+T.pat+T.rat+T.terc,R=c&&c.status!=='aberta'?resumoEstrutura(comp):null;
+  const ev={};DB.eventos.forEach(e=>{ev[e.tipo]=ev[e.tipo]||{processado:0,gerado:0,enviado:0,rejeitado:0};ev[e.tipo][e.status]=(ev[e.tipo][e.status]||0)+1;});
+  const tipos=Object.keys(ev).sort((a,b)=>ORDEM.indexOf(a)-ORDEM.indexOf(b));
+  const lotN={};DB.empregados.filter(e=>e.situacao!=='desligado').forEach(e=>{const l=byId(DB.lotacoes,e.lotacao);const k=l?l.cod+' – '+l.desc:'Sem lotação';lotN[k]=(lotN[k]||0)+1;});
+  const tabela=(heads,rows)=>`<details class="tv"><summary>Ver como tabela</summary><div class="tw"><table class="t"><thead><tr>${heads.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((x,i)=>`<td class="${i?'r':''}">${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>`;
+  return `<h1>Painel gerencial</h1><p class="sub">Visão da folha, dos encargos, da estrutura e do eSocial. Os números vêm das folhas calculadas; o regime atual é <b>${esc(regimeTxt(DB.empresa))}</b>.</p>${exigeEmpresa()}${compBar(comp)}
+  ${T.n?`<div class="kpis"><div class="kpi"><span>Empregados na folha</span><b>${T.n}</b></div><div class="kpi"><span>Custo total da folha</span><b>R$ ${brl(custo)}</b></div><div class="kpi"><span>Encargos patronais</span><b>R$ ${brl(T.pat+T.rat+T.terc)}</b></div><div class="kpi"><span>Encargos ÷ proventos</span><b>${pct(T.pat+T.rat+T.terc,T.prov)}</b></div><div class="kpi"><span>Líquido a pagar</span><b>R$ ${brl(T.liq)}</b></div></div>`:'<div class="note">Calcule a folha da competência para ver os indicadores.</div>'}
+  <div class="card"><h2>Custo da folha por competência</h2>${serie.length?legendHtml(['Proventos','FGTS','CPP patronal','RAT','Terceiros']).concat(vbars(cats,[{n:'Proventos',v:serie.map(x=>x.t.prov)},{n:'FGTS',v:serie.map(x=>x.t.fgts)},{n:'CPP patronal',v:serie.map(x=>x.t.pat)},{n:'RAT',v:serie.map(x=>x.t.rat)},{n:'Terceiros',v:serie.map(x=>x.t.terc)}],{totals:true,label:'Custo da folha por competência'}))+tabela(['Competência','Proventos','FGTS','CPP','RAT','Terceiros'],serie.map(x=>[compLabel(x.k),brl(x.t.prov),brl(x.t.fgts),brl(x.t.pat),brl(x.t.rat),brl(x.t.terc)])):'<p class="sub">Sem competências calculadas.</p>'}</div>
+  ${T.n?`<div class="grid"><div class="card" style="grid-column:span 6"><h2>Para onde vai o dinheiro — ${compLabel(comp)}</h2>${hbars([{l:'Líquido aos empregados',v:T.liq,c:SER[0]},{l:'INSS dos empregados',v:T.inss,c:SER[1]},{l:'IRRF retido',v:T.irrf,c:SER[2]},{l:'FGTS',v:T.fgts,c:SER[3]},{l:'CPP patronal',v:T.pat,c:SER[4]},{l:'RAT',v:T.rat,c:SER[5]},{l:'Terceiros',v:T.terc,c:SER[6]}])}</div>
+  <div class="card" style="grid-column:span 6"><h2>Empregados por lotação</h2>${hbars(Object.entries(lotN).map(([l,v],i)=>({l,v,c:SER[i%8]})),{fmt:v=>String(v)})}</div></div>`:''}
+  ${R?`<div class="grid"><div class="card" style="grid-column:span 6"><h2>Custo previdenciário por estabelecimento</h2>${hbars(Object.entries(R.estab).map(([k,o],i)=>({l:(byId(DB.estabs,k)||{nome:k}).nome,v:r2(o.inss+o.pat+o.rat+o.terc),c:SER[i%8]})))}<p class="sub" style="margin:6px 0 0">INSS dos empregados + CPP + RAT + terceiros.</p></div>
+  <div class="card" style="grid-column:span 6"><h2>Custo previdenciário por lotação</h2>${hbars(Object.entries(R.lot).map(([k,o],i)=>({l:(l=>l?l.cod+' – '+l.desc:k)(byId(DB.lotacoes,k)),v:r2(o.inss+o.pat+o.rat+o.terc),c:SER[i%8]})))}<p class="sub" style="margin:6px 0 0">Em Simples (Anexos I–III/V) os encargos patronais ficam no DAS.</p></div></div>`:''}
+  <div class="card"><h2>Situação dos eventos eSocial</h2>${tipos.length?legendHtml(['Processado','Enviado','Gerado','Rejeitado'],[SER[2],SER[0],SER[3],SER[7]]).concat(vbars(tipos,[{n:'Processado',v:tipos.map(t=>ev[t].processado||0)},{n:'Enviado',v:tipos.map(t=>ev[t].enviado||0)},{n:'Gerado',v:tipos.map(t=>ev[t].gerado||0)},{n:'Rejeitado',v:tipos.map(t=>ev[t].rejeitado||0)}],{cols:[SER[2],SER[0],SER[3],SER[7]],h:230,label:'Eventos eSocial por tipo e situação'}).replace(/R\$ /g,'')):'<p class="sub">Nenhum evento gerado ainda.</p>'}</div>
+  <div class="note info">Quer saber qual regime tributário custa menos para a empresa? Use o <a style="cursor:pointer;text-decoration:underline" data-act="nav" data-to="cmp">Comparativo de regimes</a>.</div>`;},
+  mount(){bindComp();},actions:()=>[{label:'Comparativo de regimes →',act:'goCmp',cls:'pri'}]};
+ACT.goCmp=()=>go('cmp');
+
+/* ===================== Comparativo de regimes ===================== */
+const CMP_PARTES=[['das','DAS (Simples)'],['irpj','IRPJ'],['csll','CSLL'],['pc','PIS/COFINS'],['iss','ISS / ICMS'],['enc','CPP, RAT e terceiros']];
+function cmpDefaults(){const d=Object.assign({},CMP_DEF);const E=DB.empresa;if(E){d.rat=num(E.rat)*num(E.fap)||d.rat;if(E.terceiros!=null&&E.terceiros!=='')d.terc=num(E.terceiros);}return d;}
+function cmpEntrada(){return Object.assign(cmpDefaults(),DB.cmp||{});}
+function cmpResultadoHtml(i){const R=compararRegimes(i),Rv=num(i.rec)*12;const el=R.filter(o=>o.elegivel);
+  const cards=R.map(o=>o.elegivel?`<div class="card cmpc ${o.melhor?'best':''}"><div class="row sp"><h3>${o.nome}${o.anexo?' — Anexo '+o.anexo:''}</h3>${o.melhor?badge('Menor carga','ok'):''}</div><div class="big">R$ ${brl(o.total)}</div><div class="sub" style="margin:0">por ano · ${o.carga.toFixed(2).replace('.',',')}% da receita${o.dif>0?` · <b>+R$ ${brl(o.dif)}</b> que o menor`:''}</div><p style="margin:8px 0 0">Resultado após tributos: <b>R$ ${brl(o.resultado)}</b>/ano</p></div>`
+   :`<div class="card cmpc off"><h3>${o.nome}</h3>${badge('Inelegível','err')}<p class="sub" style="margin:8px 0 0">${esc(o.motivo)}</p></div>`).join('');
+  const cols=CMP_PARTES.map((_,k)=>SER[k]);
+  const stack=vbars(el.map(o=>o.nome),CMP_PARTES.map(([k,n])=>({n,v:el.map(o=>o.key==='lp'||o.key==='lr'||o.key==='sn'?(k==='iss'?o.partes.iss+o.partes.icms:o.partes[k]):0)})),{totals:true,h:280,label:'Tributos por regime (anual)'});
+  const tab=`<div class="tw"><table class="t"><thead><tr><th>Componente (anual)</th>${R.map(o=>`<th class="r">${o.nome}</th>`).join('')}</tr></thead><tbody>${CMP_PARTES.map(([k,n])=>`<tr><td>${n}</td>${R.map(o=>`<td class="r">${o.elegivel?brl(k==='iss'?o.partes.iss+o.partes.icms:o.partes[k]):'—'}</td>`).join('')}</tr>`).join('')}<tr><td><b>Total de tributos e encargos</b></td>${R.map(o=>`<td class="r"><b>${o.elegivel?brl(o.total):'—'}</b></td>`).join('')}</tr><tr><td>Carga sobre a receita</td>${R.map(o=>`<td class="r">${o.elegivel?o.carga.toFixed(2).replace('.',',')+'%':'—'}</td>`).join('')}</tr><tr><td>Resultado após tributos</td>${R.map(o=>`<td class="r">${o.elegivel?brl(o.resultado):'—'}</td>`).join('')}</tr></tbody></table></div>`;
+  const mult=[0.25,0.5,0.75,1,1.5,2,3,5,8],sw=varrerReceita(i,mult),xs=sw.map(s=>brlK(s.rec));
+  const line=linhas(xs,[{n:'Simples Nacional',v:sw.map(s=>s.v[0])},{n:'Lucro Presumido',v:sw.map(s=>s.v[1])},{n:'Lucro Real',v:sw.map(s=>s.v[2])}],{cols:[SER[0],SER[1],SER[2]],label:'Carga tributária por faixa de receita'});
+  const notas=R.flatMap(o=>(o.notas||[]).map(n=>o.nome+': '+n));
+  return `<div class="cmpg">${cards}</div>
+  <div class="card"><h2>Composição dos tributos e encargos (anual)</h2>${legendHtml(CMP_PARTES.map(x=>x[1]),cols)}${stack}<details class="tv" open><summary>Tabela</summary>${tab}</details></div>
+  <div class="card"><h2>E se a receita mudar? Carga tributária por faixa de receita anual</h2><p class="sub" style="margin:0 0 6px">Escala a receita, a folha, as despesas e a base de créditos proporcionalmente (pró-labore fixo). Lacuna na linha do Simples = receita acima de R$ 4,8 milhões.</p>${legendHtml(['Simples Nacional','Lucro Presumido','Lucro Real'],[SER[0],SER[1],SER[2]])}${line}</div>
+  ${notas.length?`<div class="card"><h2>Observações deste cenário</h2>${notas.map(n=>`<p style="margin:4px 0">• ${esc(n)}</p>`).join('')}</div>`:''}`;}
+SC.cmp={view(){const i=cmpEntrada();const serv=i.ativ==='serv';
+  return `<h1>Comparativo de enquadramentos tributários</h1><p class="sub">Simples Nacional × Lucro Presumido × Lucro Real, com a mesma receita, folha e despesas. Estimativa anual com base em valores mensais médios.</p>${exigeEmpresa()}
+  <div class="card" data-form id="f"><h2>Dados da empresa</h2><div class="grid">
+  ${F('Receita bruta mensal (R$)','rec',i.rec,{t:'money',req:1,w:3})+F('RBT12 (receita dos 12 meses; vazio = mensal × 12)','rbt12',i.rbt12||'',{t:'money',w:3})+F('Atividade','ativ',i.ativ,{t:'select',opts:[['serv','Serviços'],['com','Comércio'],['ind','Indústria']],w:3})
+  +F('Serviços no Simples','snServ',i.snServ,{t:'select',opts:[['fatorR','Anexo III ou V conforme fator R'],['III','Anexo III (fixo)'],['IV','Anexo IV (CPP fora do DAS)'],['V','Anexo V (fixo)']],w:3})
+  +F('Presunção no Lucro Presumido','pres',i.pres,{t:'select',opts:Object.entries(PRES).map(([k,v])=>[k,v[0]+' — IRPJ '+v[1]+'% / CSLL '+v[2]+'%']),w:6})
+  +F('ISS (% da receita de serviços)','iss',i.iss,{w:2,hint:'2% a 5%'})+F('ICMS líquido (% da receita)','icms',i.icms,{w:2,hint:'Após créditos'})
+  +F('Salários CLT por mês (R$)','sal',i.sal,{t:'money',w:3})+F('Pró-labore por mês (R$)','prol',i.prol,{t:'money',w:3})+F('Demais custos e despesas por mês (R$)','desp',i.desp,{t:'money',w:3,hint:'Exceto folha e encargos'})+F('Base de créditos PIS/COFINS por mês (R$)','credBase',i.credBase,{t:'money',w:3,hint:'Insumos, energia, aluguel etc. (Lucro Real)'})
+  +F('RAT × FAP (%)','rat',i.rat,{w:2})+F('Terceiros (%)','terc',i.terc,{w:2})+F('Acréscimo da LC 224/2025','lc224',i.lc224,{t:'check',cl:'Aplicar +10% na presunção acima de R$ 5 mi',w:4})}</div>
+  <p class="sub" style="margin:8px 0 0">Os resultados são recalculados a cada alteração. Valores salvos neste navegador.</p></div>
+  <div id="cmpOut">${cmpResultadoHtml(i)}</div>
+  <div class="card"><h2>Premissas, limites e base legal</h2>
+  <p style="margin:4px 0">• <b>Simples Nacional:</b> alíquota efetiva = (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 (LC 123/2006, art. 18 e Anexos I a V, redação da LC 155/2016). Fator R de 28% (art. 18, §§ 5º-I, 5º-J e 5º-M): folha dos 12 meses, com pró-labore e FGTS, dividida pela receita. Limite de R$ 4,8 milhões (art. 3º, II) e sublimite de R$ 3,6 milhões para ICMS/ISS (art. 13-A). Anexos IV: CPP fora do DAS (art. 18, §5º-C).</p>
+  <p style="margin:4px 0">• <b>Lucro Presumido:</b> presunção da Lei 9.249/1995, arts. 15 e 20; IRPJ de 15% com adicional de 10% sobre o que passar de R$ 20 mil por mês (art. 3º, caput e §1º); CSLL de 9%; PIS 0,65% e COFINS 3% cumulativos (Lei 9.718/1998). <b>LC 224/2025</b>: acréscimo de 10% nos percentuais de presunção sobre a parcela da receita anual acima de R$ 5 milhões (IN RFB 2.305/2025 e 2.306/2026); há ações judiciais em curso [VERIFICAR FONTE OFICIAL].</p>
+  <p style="margin:4px 0">• <b>Lucro Real:</b> IRPJ 15% + adicional de 10% e CSLL 9% sobre o lucro contábil ajustado; PIS 1,65% e COFINS 7,6% não cumulativos, com créditos (Leis 10.637/2002 e 10.833/2003). Sem adições e exclusões, sem compensação de prejuízos e sem JCP.</p>
+  <p style="margin:4px 0">• <b>Encargos patronais</b> (Presumido, Real e Simples Anexo IV): 20% sobre salários e pró-labore, RAT×FAP e terceiros só sobre salários (Lei 8.212/1991, art. 22, I a III; terceiros dispensados no Simples — LC 123/2006, art. 13, §3º). FGTS de 8% é igual em todos os regimes.</p>
+  <p style="margin:4px 0">• <b>Reforma do consumo em 2026:</b> CBS 0,9% e IBS 0,1% são alíquotas de teste, compensadas com PIS/COFINS, sem aumento de carga; o Simples fica fora do teste (LC 214/2025, arts. 343 e 346).</p>
+  <p style="margin:4px 0">• <b>Não considerado:</b> CPRB, retenções na fonte, atividades mistas, ICMS-ST, IPI, JCP, compensação de prejuízos, tributação dos lucros distribuídos (IRRF de 10% sobre dividendos acima de R$ 50 mil por mês — Lei 15.270/2025 [VERIFICAR FONTE OFICIAL]) e variações sazonais. O resultado é uma <b>estimativa para decisão preliminar</b>, não substitui o estudo de planejamento tributário.</p></div>`;},
+  mount(){const f=$('#f');if(!f)return;const upd=()=>{const o=readForm(f);o.lc224=!!o.lc224;DB.cmp=Object.assign({},o);saveDB();$('#cmpOut').innerHTML=cmpResultadoHtml(cmpEntrada());DIRTY=false;};
+    $$('[name]',f).forEach(el=>{el.addEventListener('input',upd);el.addEventListener('change',upd);});},
+  actions:()=>[{label:'Usar folha calculada',act:'cmpFolha'},{label:'Restaurar padrão',act:'cmpReset'},{label:'🖨 Imprimir',act:'cmpPrint',cls:'pri',key:'save'}]};
+ACT.cmpFolha=()=>{const comp=DB.cfg.comp,c=DB.comps[comp];if(!c||!Object.keys(c.res||{}).length){toast('Calcule a folha da competência para importar.','err');return;}
+  let sal=0;Object.values(c.res).forEach(r=>sal+=r.baseCP);DB.cmp=Object.assign(cmpEntrada(),{sal:r2(sal)});saveDB();toast('Salários importados da folha de '+compLabel(comp)+': R$ '+brl(sal)+'.','ok');refresh();};
+ACT.cmpReset=()=>{DB.cmp={};saveDB();refresh();};
+ACT.cmpPrint=()=>{$('#printarea').innerHTML='<div style="padding:12px"><h2>Comparativo de regimes — '+esc((DB.empresa||{}).razao||'')+'</h2>'+$('#cmpOut').innerHTML+'</div>';document.body.classList.add('printing');try{window.print();}catch(e){toast('Impressão indisponível neste ambiente.','err');}setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};
 
 /* ===================== INTEGRAÇÃO ===================== */
 SC.integr={view(){const C=DB.cfg;
@@ -1171,6 +1323,7 @@ SC.home={view(){const comp=DB.cfg.comp,c=DB.comps[comp],t=totaisComp(comp);const
   ${S(6,'Contracheque','Recibo de pagamento para visualizar, imprimir e registrar a entrega.',DB.empregados.length>0&&Object.keys((c||{}).res||{}).length>0&&Object.keys(c.res).every(id=>DB.entregues[comp+'|'+id]),'holerite','Contracheques')}
   ${S(7,'Envio ao eSocial','S-1200, S-1210 e S-1299 da competência, com dependências respeitadas.',DB.eventos.some(e=>e.tipo==='S-1299'&&e.comp===comp&&e.status==='processado'),'envio','Enviar competência')}
   ${S(8,'Biblioteca','Todos os XML, protocolos, recibos, ocorrências e retificações.',false,'biblioteca','Abrir biblioteca')}
+  ${S(9,'Painel e comparativo','Dashboards da folha, encargos e eSocial; comparativo entre Simples, Presumido e Real.',false,'painel','Abrir painel')}
   </div>
   <div class="note info" style="margin-top:16px">Atalhos: <b>Alt+V</b> volta à tela anterior · <b>Alt+I</b> tela inicial · <b>Alt+S</b> salva · <b>Alt+E</b> envia ao eSocial. Além do fluxo mensal, o sistema calcula férias, 13º salário e rescisão, diferencia Simples Nacional, Lucro Presumido e Lucro Real e mostra a estrutura de estabelecimentos e lotações. Ainda não cobre: eventos de SST (S-2210/2220/2240), RAIS e DIRF/EFD-Reinf.</div>`;},
   actions:()=>[{label:'Cadastro da empresa',act:'nav',arg:'',cls:''},{label:'Calcular folha →',act:'nav',arg:'',cls:'pri'}]};
