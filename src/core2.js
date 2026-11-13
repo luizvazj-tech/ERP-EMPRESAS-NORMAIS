@@ -35,7 +35,7 @@ function calcPresumidoCmp(i){const R=num(i.rec)*12,P=PRES[i.pres]||PRES.serv,lim
   const baseIr=P[1]/100*(Math.min(R,lim)+f*Math.max(R-lim,0)),baseCs=P[2]/100*(Math.min(R,lim)+f*Math.max(R-lim,0));
   const irpj=r2(baseIr*0.15+Math.max(0,baseIr-240000)*0.10),csll=r2(baseCs*0.09);
   const pc=r2(R*0.0365),iss=i.ativ==='serv'?r2(R*num(i.iss)/100):0,icms=i.ativ==='serv'?0:r2(R*num(i.icms)/100);
-  if(R>lim&&i.lc224)o.notas.push('Acréscimo de 10% nos percentuais de presunção sobre a receita anual que excede R$ 5 milhões (LC 224/2025; IN RFB 2.305/2025). A CSLL só sofre o acréscimo a partir de 1º/04/2026 e há discussão judicial: a conta aplica o acréscimo nos 12 meses [VERIFICAR FONTE OFICIAL].');
+  if(R>lim&&i.lc224)o.notas.push('Acréscimo de 10% nos percentuais de presunção sobre a receita anual que excede R$ 5 milhões (LC 224/2025; IN RFB 2.305/2025). A CSLL só sofre o acréscimo a partir de 1º/04/2026 e há discussão judicial: a conta aplica o acréscimo nos 12 meses **.');
   o.base={irpj:baseIr,csll:baseCs};o.partes={das:0,irpj,csll,pc,iss,icms,enc:cmpEncargos(i,'lp')};return o;}
 function calcRealCmp(i){const R=num(i.rec)*12;const o={key:'lr',nome:'Lucro Real',notas:[],elegivel:true};
   const enc=cmpEncargos(i,'lr'),fgts=num(i.sal)*0.08*12,folha=num(i.sal)*12+num(i.prol)*12+fgts+enc;
@@ -43,7 +43,7 @@ function calcRealCmp(i){const R=num(i.rec)*12;const o={key:'lr',nome:'Lucro Real
   const iss=i.ativ==='serv'?r2(R*num(i.iss)/100):0,icms=i.ativ==='serv'?0:r2(R*num(i.icms)/100);
   const lucro=R-pc-iss-icms-num(i.desp)*12-folha;o.lucro=lucro;
   const irpj=r2(Math.max(0,lucro)*0.15+Math.max(0,lucro-240000)*0.10),csll=r2(Math.max(0,lucro)*0.09);
-  if(lucro<=0)o.notas.push('Prejuízo fiscal no período: IRPJ e CSLL zerados. O prejuízo pode ser compensado em períodos futuros (limite de 30% do lucro) — não simulado (Lei 9.065/1995, art. 15) [VERIFICAR FONTE OFICIAL].');
+  if(lucro<=0)o.notas.push('Prejuízo fiscal no período: IRPJ e CSLL zerados. O prejuízo pode ser compensado em períodos futuros (limite de 30% do lucro) — não simulado (Lei 9.065/1995, art. 15) **.');
   o.notas.push('PIS/COFINS não cumulativos: 1,65% + 7,6% sobre a receita, menos créditos de 9,25% sobre a base informada (Leis 10.637/2002 e 10.833/2003, arts. 2º e 3º).');
   o.partes={das:0,irpj,csll,pc,iss,icms,enc};return o;}
 function compararRegimes(i){const R=num(i.rec)*12,fgts=num(i.sal)*0.08*12;

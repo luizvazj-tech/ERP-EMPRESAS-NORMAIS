@@ -90,6 +90,7 @@ details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);fon
   <div class="logo">Folha<span>Pro</span></div>
   <button data-act="home" title="Alt+I">⌂ Tela inicial</button>
   <button data-act="back" title="Alt+V">◀ Voltar</button>
+  <button data-act="segBloquear" title="Bloquear o acesso">🔒 Bloquear</button>
   <div class="emp" id="topemp"></div>
 </header>
 <div id="app"><nav id="side"></nav><main id="main"></main></div>
@@ -119,7 +120,7 @@ const compLabel=c=>{const [a,m]=String(c).split('-');return MESES[+m-1]+'/'+a;};
 const hoje=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const compAtual=()=>hoje().slice(0,7);
 const diasMes=c=>{const [a,m]=c.split('-').map(Number);return new Date(a,m,0).getDate();};
-const idadeEm=(nasc,ref)=>{if(!nasc)return 0;const n=new Date(nasc),r=new Date(ref);let i=r.getFullYear()-n.getFullYear();if(r.getMonth()<n.getMonth()||(r.getMonth()==n.getMonth()&&r.getDate()<n.getDate()))i--;return i;};
+const idadeEm=(nasc,ref)=>{if(!nasc)return 0;const [a,m,d]=String(nasc).slice(0,10).split('-').map(Number),[A,M,D]=String(ref).slice(0,10).split('-').map(Number);return A-a-((M<m||(M===m&&D<d))?1:0);};
 const agoraISO=()=>new Date().toISOString();
 const dtHora=iso=>{if(!iso)return '';const d=new Date(iso);return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});};
 
@@ -132,13 +133,15 @@ function defaultParams(){return{
   redutor:{isento:5000.00,teto:7350.00,a:978.62,b:0.133145},
   salFam:{cota:67.54,limite:1980.38,idade:14},
   fgts:8, fgtsAprendiz:2, vtPerc:6,
-  patronal:20, rat:2, fap:1, terceiros:5.8, adNoturno:20, peric:30, he50:50, he100:100, divisor:220, cprbFrac:{2025:25,2026:50,2027:75}, venc:{inss:20,fgts:20}
+  patronal:20, rat:2, fap:1, terceiros:5.8, adNoturno:20, peric:30, he50:50, he100:100, divisor:220, cprbFrac:{2025:25,2026:50,2027:75}, venc:{inss:20,fgts:20,regra:'antecipa'}, adnotBase:'vh', horaNotRed:false, dsrAuto:false
 };}
 
 /* ---------------- Rubricas padrão ---------------- */
 // natureza (Tabela 3) preenchida apenas onde confirmada em fonte oficial: 1000, 1409, 9200, 9201, 9203.
+const NAT_SUGERIDA={INSAL:'1202',PERIC:'1203',ADNOT:'1205',HE50:'1003',HE100:'1003',DSRHE:'1012',COMIS:'1207',GRAT:'1211',FALTAS:'9207',ATRASOS:'9208',DSRFALTA:'9211',VT:'9216',PENSAO:'9213',FERIAS:'1016',FERTERCO:'1017',ABONO:'1023',D13:'5001',D13P1:'9214',AVISO:'6003',FERVENC:'6007',FERPROP:'6006',D13PROP:'6002',AVISOD:'6901'};
+// Naturezas sugeridas a partir da Tabela 3 do leiaute S-1.3 (gov.br/esocial) — conferir antes de transmitir. Sem sugestão (preenchimento obrigatório pelo usuário): OUTP, OUTD, ABONOTERCO, FERPTERCO.
 function defaultRubricas(){
-  const R=(sys,cod,desc,tp,nat,cp,ir,fg,reduz)=>({sys,cod,desc,tp,nat,incCP:cp,incIRRF:ir,incFGTS:fg,reduz:!!reduz,conf:['1000','1409','9200','9201','9203'].includes(nat)?false:false});
+  const R=(sys,cod,desc,tp,nat,cp,ir,fg,reduz)=>({sys,cod,desc,tp,nat:nat||NAT_SUGERIDA[sys]||'',incCP:cp,incIRRF:ir,incFGTS:fg,reduz:!!reduz,conf:['1000','1409','9200','9201','9203'].includes(nat)?false:false});
   return [
     R('SAL','001','SALÁRIO',1,'1000','11','11','11'),
     R('INSAL','002','ADICIONAL DE INSALUBRIDADE',1,'','11','11','11'),
@@ -153,6 +156,7 @@ function defaultRubricas(){
     R('SALFAM','011','SALÁRIO-FAMÍLIA',1,'1409','00','00','00'),
     R('FALTAS','101','FALTAS INJUSTIFICADAS',2,'','11','11','11',true),
     R('ATRASOS','102','ATRASOS / SAÍDAS ANTECIPADAS',2,'','11','11','11',true),
+    R('DSRFALTA','113','DSR PERDIDO POR FALTAS INJUSTIFICADAS',2,'','11','11','11',true),
     R('INSS','103','INSS',2,'9201','00','31','00'),
     R('IRRF','104','IRRF',2,'9203','00','00','00'),
     R('VT','105','VALE-TRANSPORTE (6%)',2,'','00','00','00'),
@@ -181,11 +185,12 @@ const LS_KEY='folhaPro.v1';
 let DB=null,_mem=null;
 function emptyDB(){return{ver:1,empresa:null,estabs:[],lotacoes:[],cargos:[],rubricas:defaultRubricas(),empregados:[],comps:{},eventos:[],seq:0,entregues:{},movs:[],ferias:[],decimo:{},rescisoes:{},
   cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams()};}
-function loadDB(){let r=null;try{r=localStorage.getItem(LS_KEY);}catch(e){}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{if(!o.rubricas.some(x=>x.sys===r.sys))o.rubricas.push(r);});migrar(o);return o;}catch(e){}}return emptyDB();}
+function hidratar(d){const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{if(!o.rubricas.some(x=>x.sys===r.sys))o.rubricas.push(r);});o.rubricas.forEach(x=>{if(!x.nat&&NAT_SUGERIDA[x.sys])x.nat=NAT_SUGERIDA[x.sys];});migrar(o);return o;}
+function loadDB(){let r=null;try{r=localStorage.getItem(LS_KEY);}catch(e){}if(!r)r=_mem;if(r){try{return hidratar(JSON.parse(r));}catch(e){}}return emptyDB();}
 function migrar(o){const E=o.empresa;if(E&&!E.regime){const ct=E.classTrib;E.regime=['01','02','03'].includes(ct)?'sn':'lp';E.anexo=ct==='03'?'iv':ct==='02'?'misto':'std';E.cprb=false;}
   if(E&&E.regime)E.classTrib=classTribDe(E);
   (o.lotacoes||[]).forEach(l=>{if(l.terceiros==null)l.terceiros='';});}
-function saveDB(){const s=JSON.stringify(DB);_mem=s;try{localStorage.setItem(LS_KEY,s);}catch(e){}}
+function saveDB(){const s=JSON.stringify(DB);_mem=s;/* com o módulo de segurança presente (navegador), nunca grava em claro */if(typeof SEG!=='undefined'){SEG.persistir(s);return;}try{localStorage.setItem(LS_KEY,s);}catch(e){}}
 const uid=(p)=>p+Math.random().toString(36).slice(2,9);
 const byId=(arr,id)=>(arr||[]).find(x=>x.id===id);
 
@@ -202,19 +207,33 @@ function calcIrrf(rendTrib,inss,nDep,pensao,P,semRed){
   return{base,imposto:imp,reducao:r2(red),irrf:Math.max(0,r2(imp-red)),simplificado:simp};
 }
 const rubBy=(sys)=>DB.rubricas.find(r=>r.sys===sys);
+/* Dias de salário do mês: base comercial de 30 dias (CLT, art. 64); contam-se os dias corridos de vínculo no mês, limitados a 30; admissão no dia 31 vale 1 dia; o último dia do mês vale mês cheio. */
+function diasSalarioMes(e,comp){const n=diasMes(comp);let ini=1,fim=n;
+  if(e.admissao&&e.admissao.slice(0,7)===comp)ini=Number(e.admissao.slice(8,10));
+  if(e.desligamento&&e.desligamento.slice(0,7)===comp)fim=Number(e.desligamento.slice(8,10));
+  if(ini===1&&fim===n)return 30;
+  return Math.max(0,Math.min(30,fim-ini+1));}
+/* Afastamento no mês: dias afastados e dias NÃO remunerados pela empresa. Nos afastamentos por incapacidade (motivo 01, 03 ou sem motivo informado), os 15 primeiros dias são pagos pela empresa (Lei 8.213/91, art. 60, §3º); nos demais, o contrato fica suspenso **. */
+function afastNaComp(e,comp){if(e.situacao!=='afastado')return{dias:0,naoPagos:0};
+  const n=diasMes(comp),ci=comp+'-01',cf=comp+'-'+String(n).padStart(2,'0'),ate=String(e.afastAteComp||'');
+  const ini=e.afastIni||ci;let fim=e.afastFim||'';
+  if(!fim)fim=ate.length>7?ate:(ate&&ate!=='9999-12'?ate+'-'+String(diasMes(ate)).padStart(2,'0'):'9999-12-31');
+  const dn=s=>Math.round(Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10))/864e5);
+  const a=ini>ci?ini:ci,b=fim<cf?fim:cf;if(b<a)return{dias:0,naoPagos:0};
+  const dias=dn(b)-dn(a)+1;const incap=['','01','03'].includes(String(e.afastMotivo||''));
+  const pagos=incap?Math.max(0,Math.min(dn(b),dn(ini)+14)-dn(a)+1):0;
+  return{dias,naoPagos:dias-pagos};}
 function empAtivoNaComp(e,comp){
-  if(e.situacao==='afastado'&&e.afastAteComp&&e.afastAteComp>=comp)return false;
   if(e.admissao&&e.admissao.slice(0,7)>comp)return false;
   if(e.desligamento&&e.desligamento.slice(0,7)<comp)return false;
   return true;
 }
-const LANC_CAMPOS=[['he50','HE 50% (h)'],['he100','HE 100% (h)'],['adnot','Ad. noturno (h)'],['faltas','Faltas (dias)'],['atrasos','Atrasos (h)'],['comis','Comissões R$'],['grat','Gratificações R$'],['outp','Outros prov. R$'],['adiant','Adiantamento R$'],['outd','Outros desc. R$']];
+const LANC_CAMPOS=[['he50','HE 50% (h)'],['he100','HE 100% (h)'],['adnot','Ad. noturno (h)'],['faltas','Faltas (dias)'],['dsrperd','DSR perdido (dias)'],['atrasos','Atrasos (h)'],['comis','Comissões R$'],['grat','Gratificações R$'],['outp','Outros prov. R$'],['adiant','Adiantamento R$'],['outd','Outros desc. R$']];
 function calcEmpregado(e,comp,L,P,emp){
   L=L||{};const it=[];const ctx=DB.comps[comp]||{};
   const add=(sys,ref,val,info,sep)=>{if(val>0||info){const r=rubBy(sys);it.push({sys,cod:r.cod,desc:r.desc,tp:r.tp,ref:ref||'',valor:r2(val),sep:!!sep,r});}};
-  const dm=diasMes(comp);let dias=30;
-  if(e.admissao&&e.admissao.slice(0,7)===comp)dias=Math.max(0,30-(Number(e.admissao.slice(8,10))-1));
-  if(e.desligamento&&e.desligamento.slice(0,7)===comp)dias=Math.min(dias,Number(e.desligamento.slice(8,10)));
+  const dm=diasMes(comp);let dias=diasSalarioMes(e,comp);const diasVinc=dias,alertas=[];
+  const af=afastNaComp(e,comp);dias=Math.max(0,dias-af.naoPagos);
   const fer=feriasNoMes(e,comp);dias=Math.max(0,dias-fer.diasGozoMes);
   const sal=num(e.salario);
   const salMes=dias>=30?sal:r2(sal/30*dias);
@@ -227,13 +246,14 @@ function calcEmpregado(e,comp,L,P,emp){
   if(insal)add('INSAL',e.insal+'%',insal);
   if(peric)add('PERIC',P.peric+'%',peric);
   (DB.ferias||[]).filter(f=>f.empId===e.id&&f.compPgto===comp).forEach(f=>{const c=f.calc;add('FERIAS',f.diasGozo+' d',c.ferias);add('FERTERCO','',c.terco);if(c.abono>0){add('ABONO',f.diasAbono+' d',c.abono);add('ABONOTERCO','',c.abonoTerco);}});
-  const hAdn=num(L.adnot);if(hAdn>0)add('ADNOT',hAdn+' h',r2(hAdn*vhSal*P.adNoturno/100));
+  let hAdn=num(L.adnot);if(hAdn>0&&P.horaNotRed){hAdn=hAdn*60/52.5;alertas.push('Hora noturna reduzida (52min30s) aplicada ao adicional noturno (CLT, art. 73, §1º) **.');}
+  if(hAdn>0)add('ADNOT',num(L.adnot)+' h',r2(hAdn*(P.adnotBase==='sal'?vhSal:vh)*P.adNoturno/100));
   const h50=num(L.he50),h100=num(L.he100);
   const vHE50=r2(h50*vh*(1+P.he50/100)),vHE100=r2(h100*vh*(1+P.he100/100));
   if(h50>0)add('HE50',h50+' h',vHE50);
   if(h100>0)add('HE100',h100+' h',vHE100);
   const du=num(ctx.diasUteis),df=num(ctx.domFer);
-  if((vHE50+vHE100)>0&&du>0&&df>0)add('DSRHE',df+' d',r2((vHE50+vHE100)/du*df));
+  if((vHE50+vHE100)>0&&du>0&&df>0)add('DSRHE',df+' d',r2((vHE50+vHE100)/du*df));else if((vHE50+vHE100)>0)alertas.push('DSR sobre horas extras não calculado: informe os dias úteis e os domingos/feriados da competência (Lei 605/1949; Súmula 172 do TST).');
   add('COMIS','',num(L.comis));add('GRAT','',num(L.grat));add('OUTP','',num(L.outp));
   // 13º salário e verbas rescisórias (tributação exclusiva/separada)
   let base13=0,sep13=0,inss13=0,irrf13=0,multaFgts=0,notasRes=[];
@@ -251,6 +271,9 @@ function calcEmpregado(e,comp,L,P,emp){
     if(v.avisoDesc>0)add('AVISOD','',v.avisoDesc);}
   // faltas e atrasos
   const fal=num(L.faltas);if(fal>0)add('FALTAS',fal+' d',r2(sal/30*fal));
+  let dsp=num(L.dsrperd);if(L.dsrperd===undefined||L.dsrperd===''||L.dsrperd===null){if(P.dsrAuto&&fal>0){const nd=num(ctx.domFer);dsp=nd>0?Math.min(Math.ceil(fal),nd):0;if(dsp>0)alertas.push('DSR perdido apurado automaticamente (um por semana com falta injustificada, limitado aos domingos/feriados da competência): confira a escala (Lei 605/1949, art. 6º) **.');else alertas.push('Faltas lançadas sem DSR perdido: informe os domingos/feriados da competência para a apuração automática **.');}else dsp=0;}
+  if(dsp>0)add('DSRFALTA',dsp+' d',r2(sal/30*dsp));
+  if(sal>0&&sal<P.salMin)alertas.push('Salário inferior ao mínimo nacional: confirme se há jornada reduzida proporcional (CF, art. 7º, IV).');
   const atr=num(L.atrasos);if(atr>0)add('ATRASOS',atr+' h',r2(vhSal*atr));
   // bases
   let bCP=0,bIR=0,bFG=0,prov=0,desc=0;
@@ -262,8 +285,11 @@ function calcEmpregado(e,comp,L,P,emp){
   // salário-família (Lei 8.213/91, art. 65) — limite sobre a remuneração
   let nSF=0;const refD=comp+'-'+String(dm).padStart(2,'0');
   (e.deps||[]).forEach(d=>{if(d.sf&&(d.inv||idadeEm(d.nasc,refD)<=P.salFam.idade))nSF++;});
-  const sfOk=nSF>0&&bCP<=P.salFam.limite&&e.categoria!=='103';
-  if(sfOk)add('SALFAM',nSF+' dep',r2(nSF*P.salFam.cota));
+  /* direito aferido sobre a remuneração que seria devida no mês cheio; cota proporcional aos dias nos meses de admissão e desligamento (Portaria MPS/MF 13/2026) ** */
+  let remDev=sal+peric+insal;for(const x of it){if(x.sep)continue;if(x.r.tp===1&&x.r.incCP!=='00'&&!['SAL','FERIAS','FERTERCO','INSAL','PERIC'].includes(x.sys))remDev+=x.valor;}
+  const sfOk=nSF>0&&remDev<=P.salFam.limite&&e.categoria!=='103';
+  const sfVal=sfOk?r2(nSF*P.salFam.cota*(diasVinc<30?diasVinc/30:1)):0;
+  if(sfOk)add('SALFAM',nSF+' dep',sfVal);
   // descontos legais
   const inss=calcInss(bCP,P);
   const nDepIR=(e.deps||[]).filter(d=>d.irrf).length;
@@ -280,7 +306,7 @@ function calcEmpregado(e,comp,L,P,emp){
   totProv=r2(totProv);totDesc=r2(totDesc);
   const aliqFg=e.categoria==='103'?P.fgtsAprendiz:P.fgts;
   return{itens:it.map(({r,...o})=>o),totProv,totDesc,liquido:r2(totProv-totDesc),baseCP:bCP,baseIR:bIR,baseFGTS:bFG,
-    inss:r2(inss+inss13),irrf:r2(ir.irrf+irrf13),irrfInfo:ir,fgts:r2((bFG+base13)*aliqFg/100),aliqFgts:aliqFg,baseCP13:r2(base13),inss13,irrf13,multaFgts,notasRes,sf:sfOk?r2(nSF*P.salFam.cota):0,dias,calculadoEm:agoraISO()};
+    inss:r2(inss+inss13),irrf:r2(ir.irrf+irrf13),irrfInfo:ir,fgts:r2((bFG+base13)*aliqFg/100),aliqFgts:aliqFg,baseCP13:r2(base13),inss13,irrf13,multaFgts,notasRes,sf:sfVal,dias,alertas,calculadoEm:agoraISO()};
 }
 /* ---------------- Regimes tributários, estabelecimentos e lotações ---------------- */
 const REGIMES={sn:'Simples Nacional',lp:'Lucro Presumido',lr:'Lucro Real'};
@@ -317,7 +343,7 @@ function calcFolha(comp){
   c.res={};
   DB.empregados.filter(e=>empAtivoNaComp(e,comp)&&e.situacao!=='desligado'||(e.desligamento&&e.desligamento.slice(0,7)===comp)).forEach(e=>{
     if(!empAtivoNaComp(e,comp))return;
-    c.res[e.id]=calcEmpregado(e,comp,c.lanc[e.id],P,DB.empresa);
+    const rr=calcEmpregado(e,comp,c.lanc[e.id],P,DB.empresa);if(e.situacao==='afastado'&&rr.dias===0&&!rr.itens.length)return;c.res[e.id]=rr;
   });
   c.status='calculada';c.calcEm=agoraISO();saveDB();return c;
 }
@@ -329,6 +355,22 @@ function totaisComp(comp){
   for(const k in t)t[k]=k==='n'?t[k]:r2(t[k]);return t;
 }
 
+
+
+/* Média de variáveis (CLT, art. 142, §§ 3º e 4º): média dos últimos n meses de comissões, gratificações e horas extras/adicional noturno lançados */
+function mediaVariaveis(e,compRef,P,n){n=n||12;const meses=[];let [a,m]=compRef.split('-').map(Number);
+  for(let i=0;i<n;i++){m--;if(m<1){m=12;a--;}meses.push(a+'-'+String(m).padStart(2,'0'));}
+  let tot=0,cont=0;const div=num(e.divisor)||P.divisor,vh=(num(e.salario)+(e.peric?num(e.salario)*P.peric/100:0)+(e.insal?P.salMin*Number(e.insal)/100:0))/div;
+  meses.forEach(c=>{if(!empAtivoNaComp(e,c))return;const L=((DB.comps[c]||{}).lanc||{})[e.id];if(!L)return;cont++;
+    tot+=num(L.comis)+num(L.grat)+num(L.he50)*vh*(1+P.he50/100)+num(L.he100)*vh*(1+P.he100/100)+num(L.adnot)*vh*P.adNoturno/100;});
+  return cont?r2(tot/cont):0;}
+/* Vencimentos das guias: dia fixo do mês seguinte, com antecipação/prorrogação para dia útil (feriados nacionais fixos considerados; móveis e locais não) */
+function diaUtilAjustado(ano,mes,dia,regra){const fer=['01-01','04-21','05-01','09-07','10-12','11-02','11-15','11-20','12-25'];
+  const ehUtil=d=>{const w=d.getDay();if(w===0||w===6)return false;const k=String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');return !fer.includes(k);};
+  let d=new Date(ano,mes-1,dia,12);const passo=regra==='prorroga'?1:-1;while(!ehUtil(d))d=new Date(d.getTime()+passo*864e5);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function vencimentosGuias(comp,P){let [a,m]=comp.split('-').map(Number);m++;if(m>12){m=1;a++;}const v=P.venc||{},reg=v.regra||'antecipa';
+  return{inss:diaUtilAjustado(a,m,num(v.inss)||20,reg),fgts:diaUtilAjustado(a,m,num(v.fgts)||20,reg),regra:reg};}
 
 /* ---------------- Férias, 13º salário e rescisão ---------------- */
 const remunBase=(e,P,med)=>r2(num(e.salario)+(e.peric?num(e.salario)*P.peric/100:0)+(e.insal?P.salMin*Number(e.insal)/100:0)+num(med));
@@ -352,7 +394,7 @@ function validarFerias(e,f,P){const m=[];const dir=diasDireitoFerias(f.faltas);
 function avos13(e,ano,fimProj){let n=0;const adm=e.admissao?new Date(e.admissao+'T12:00:00'):null;let des=e.desligamento?new Date(e.desligamento+'T12:00:00'):null;if(des&&fimProj)des=fimProj;
   for(let m=1;m<=12;m++){let a=new Date(ano,m-1,1,12),b=new Date(ano,m,0,12);if(adm&&adm>a)a=adm;if(des&&des<b)b=des;if(b<a)continue;if(Math.round((b-a)/864e5)+1>=15)n++;}return n;}
 function calc13(e,ano,P,media,fimProj){const avos=avos13(e,ano,fimProj),base=remunBase(e,P,media),bruto=r2(base/12*avos),p1v=r2(bruto/2);
-  const nDep=(e.deps||[]).filter(d=>d.irrf).length;const inss13=calcInss(bruto,P);const ir=calcIrrf(bruto,inss13,nDep,0,P,true);
+  const nDep=(e.deps||[]).filter(d=>d.irrf).length;const inss13=calcInss(bruto,P);const ir=calcIrrf(bruto,inss13,nDep,0,P);
   return{avos,base,bruto,p1:p1v,inss13,irrf13:ir.irrf,fgts13:r2(bruto*(e.categoria==='103'?P.fgtsAprendiz:P.fgts)/100),liq2:r2(bruto-p1v-inss13-ir.irrf)};}
 const MOTIVOS_RESC={'01':'Justa causa (iniciativa do empregador)','02':'Sem justa causa (iniciativa do empregador)','06':'Término de contrato a termo','07':'Pedido de demissão (iniciativa do empregado)','17':'Rescisão indireta','33':'Acordo entre as partes (CLT, art. 484-A)'};
 const AVISOS={indenizado:'Indenizado (empregador dispensa o cumprimento)',trabalhado:'Trabalhado',nao_cumprido:'Não cumprido pelo empregado (desconto)',dispensado:'Dispensado / não aplicável'};
@@ -366,12 +408,13 @@ function calcRescisaoVerbas(e,r,P){const notas=[],mt=r.motivo;const anos=anosCom
   else if(r.aviso==='nao_cumprido'&&mt==='07'){avisoDesc=r2(rem);notas.push('Aviso prévio não cumprido: desconto de 30 dias de remuneração (CLT, art. 487, §2º).');}
   if(r.aviso!=='indenizado')avisoDias=0;if(!aviso&&!avisoDesc)avisoDias=0;
   const proj=aviso>0?avisoDias:0;const fimProj=proj?new Date(new Date(e.desligamento+'T12:00:00').getTime()+proj*864e5):null;
-  if(proj)notas.push('Aviso indenizado projeta o tempo de serviço para 13º e férias proporcionais (CLT, art. 487, §1º; Súmula 371 do TST) [VERIFICAR FONTE OFICIAL].');
+  if(proj)notas.push('Aviso indenizado projeta o tempo de serviço para 13º e férias proporcionais (CLT, art. 487, §1º; Súmula 371 do TST) **.');
   let avos13c=0,d13=0,inss13=0,irrf13=0;
   if(mt!=='01'){avos13c=avos13(e,Number(e.desligamento.slice(0,4)),fimProj);d13=r2(rem/12*avos13c);
-    const nDep=(e.deps||[]).filter(x=>x.irrf).length;inss13=calcInss(d13,P);irrf13=calcIrrf(d13,inss13,nDep,0,P,true).irrf;}
-  else notas.push('Justa causa: sem 13º proporcional nem férias proporcionais (Lei 4.090/62, art. 3º; CLT, art. 146, parágrafo único) [VERIFICAR FONTE OFICIAL].');
-  const ferVencPer=num(r.ferVencPer),ferVenc=r2(rem*ferVencPer),ferVencTerco=r2(ferVenc/3);
+    const nDep=(e.deps||[]).filter(x=>x.irrf).length;inss13=calcInss(d13,P);irrf13=calcIrrf(d13,inss13,nDep,0,P).irrf;}
+  else notas.push('Justa causa: sem 13º proporcional nem férias proporcionais (Lei 4.090/62, art. 3º; CLT, art. 146, parágrafo único) **.');
+  const ferVencPer=num(r.ferVencPer),ferDobraPer=Math.min(ferVencPer,num(r.ferDobraPer)),ferVenc=r2(rem*(ferVencPer+ferDobraPer)),ferVencTerco=r2(ferVenc/3);
+  if(ferDobraPer>0)notas.push('Férias vencidas pagas em dobro em '+ferDobraPer+' período(s) fora do prazo concessivo (CLT, art. 137; o terço incide também sobre a dobra, Súmula 328 do TST) **.');
   let avosFer=0,ferProp=0,ferPropTerco=0;
   if(mt!=='01'){const adm=new Date(e.admissao+'T12:00:00'),fim=fimProj||new Date(e.desligamento+'T12:00:00');
     let ult=new Date(fim.getFullYear(),adm.getMonth(),adm.getDate(),12);if(ult>fim)ult=new Date(fim.getFullYear()-1,adm.getMonth(),adm.getDate(),12);
@@ -380,9 +423,9 @@ function calcRescisaoVerbas(e,r,P){const notas=[],mt=r.motivo;const anos=anosCom
     const rest=Math.round((fim-cur)/864e5)+1;avosFer=Math.min(12,m+(rest>=15?1:0));if(avosFer>=12)avosFer=12;
     ferProp=r2(rem/12*avosFer);ferPropTerco=r2(ferProp/3);}
   const multaPct=['02','17'].includes(mt)?40:mt==='33'?20:0;
-  const depRes=r2((aviso+d13)*P.fgts/100);const multaFgts=r2((num(r.saldoFgts)+depRes)*multaPct/100);
-  if(multaPct)notas.push('Multa rescisória do FGTS de '+multaPct+(mt==='33'?'% (CLT, art. 484-A, I, b)':'% (Lei 8.036/90, art. 18, §1º)')+', estimada sobre o saldo informado mais os depósitos da rescisão; é paga via FGTS Digital e não integra o líquido [VERIFICAR FONTE OFICIAL].');
-  return{avisoDias:proj||avisoDias,aviso,avisoDesc,avos13:avos13c,d13,inss13,irrf13,ferVenc,ferVencTerco,avosFer,ferProp,ferPropTerco,multaPct,multaFgts,notas,
+  const saldoSal=r2(num(e.salario)/30*diasSalarioMes(e,e.desligamento.slice(0,7)));const depRes=r2((saldoSal+aviso+d13)*P.fgts/100);const multaFgts=r2((num(r.saldoFgts)+depRes)*multaPct/100);
+  if(multaPct)notas.push('Multa rescisória do FGTS de '+multaPct+(mt==='33'?'% (CLT, art. 484-A, I, b)':'% (Lei 8.036/90, art. 18, §1º)')+', estimada sobre o saldo informado mais os depósitos da rescisão; é paga via FGTS Digital e não integra o líquido **.');
+  return{avisoDias:proj||avisoDias,aviso,avisoDesc,avos13:avos13c,d13,inss13,irrf13,ferVenc,ferVencTerco,avosFer,ferProp,ferPropTerco,multaPct,multaFgts,saldoSal,depRes,notas,
     bruto:r2(aviso+d13+ferVenc+ferVencTerco+ferProp+ferPropTerco)};}
 /* resumo por estabelecimento e lotação (guias e conferência) */
 function resumoEstrutura(comp){const c=DB.comps[comp];const out={estab:{},lot:{},tot:{}};if(!c)return out;
@@ -399,7 +442,8 @@ function ts14(){const d=new Date();const p=n=>String(n).padStart(2,'0');return d
 function novoId(){const cnpj=onlyD(DB.empresa&&DB.empresa.cnpj).padEnd(14,'0');DB.seq=(DB.seq||0)+1;return 'ID1'+cnpj+ts14()+String(DB.seq%100000).padStart(5,'0');}
 const rz=()=>onlyD(DB.empresa&&DB.empresa.cnpj).slice(0,8);
 function ideEmp(){return `<ideEmpregador><tpInsc>1</tpInsc><nrInsc>${rz()}</nrInsc></ideEmpregador>`;}
-function ideEvt(o){o=o||{};return `<ideEvento>${o.retif?`<indRetif>${o.retif.n}</indRetif>${tag('nrRecibo',o.retif.rec)}`:'<indRetif>1</indRetif>'}${o.per?`<indApuracao>1</indApuracao><perApur>${o.per}</perApur>`:''}<tpAmb>${DB.cfg.ambiente}</tpAmb><procEmi>1</procEmi><verProc>FolhaPro-1.0</verProc></ideEvento>`;}
+function exigir(v,rot,e){if(v===undefined||v===null||String(v).trim()==='')throw new Error('Cadastro incompleto — informe '+rot+(e&&e.nome?' do empregado '+e.nome:'')+' antes de gerar o evento.');return v;}
+function ideEvt(o){o=o||{};return `<ideEvento>${o.retif?`<indRetif>${o.retif.n}</indRetif>${tag('nrRecibo',o.retif.rec)}`:'<indRetif>1</indRetif>'}${o.per?`${o.noInd?'':'<indApuracao>1</indApuracao>'}<perApur>${o.per}</perApur>`:''}<tpAmb>${DB.cfg.ambiente}</tpAmb><procEmi>1</procEmi><verProc>FolhaPro-1.0</verProc></ideEvento>`;}
 function ideEvtTab(){return `<ideEvento><tpAmb>${DB.cfg.ambiente}</tpAmb><procEmi>1</procEmi><verProc>FolhaPro-1.0</verProc></ideEvento>`;}
 function envelope(evt,id,corpo){return `<?xml version="1.0" encoding="UTF-8"?>\n<eSocial xmlns="http://www.esocial.gov.br/schema/evt/${evt}/${XV}">\n<${evt} Id="${id}">\n${corpo}\n</${evt}>\n</eSocial>`;}
 // versão simples e segura de indentação
@@ -422,7 +466,7 @@ const ENDERECO=e=>`<endereco><brasil>${tag('tpLograd',e.tpLograd||'R')}${tag('ds
 
 const GEN={};
 GEN['S-1000']=(a,o)=>{const E=DB.empresa,id=novoId();
-  const corpo=`${ideEvtTab()}${ideEmp()}<infoEmpregador><${a.alt?'alteracao':'inclusao'}><idePeriodo><iniValid>${E.iniValid||compAtual()}</iniValid></idePeriodo><infoCadastro><classTrib>${classTribDe(E)||E.classTrib}</classTrib><indCoop>0</indCoop><indConstr>${E.construtora?1:0}</indConstr><indDesFolha>${E.regime!=='sn'&&E.cprb?1:0}</indDesFolha><indPorte>${E.porte||'N'}</indPorte><indOptRegEletron>${E.regEletron||0}</indOptRegEletron><contato>${tag('nmCtt',E.ctNome)}${tag('cpfCtt',onlyD(E.ctCpf))}${tag('foneFixo',onlyD(E.ctFone))}${tag('email',E.ctEmail)}</contato></infoCadastro></${a.alt?'alteracao':'inclusao'}></infoEmpregador>`;
+  const corpo=`${ideEvtTab()}${ideEmp()}<infoEmpregador><${a.alt?'alteracao':'inclusao'}><idePeriodo><iniValid>${E.iniValid||compAtual()}</iniValid></idePeriodo><infoCadastro><classTrib>${classTribDe(E)||E.classTrib}</classTrib><indCoop>0</indCoop><indConstr>${E.construtora?1:0}</indConstr><indDesFolha>${E.regime!=='sn'&&E.cprb?1:0}</indDesFolha>${E.porte==='S'&&!['21','22'].includes(String(classTribDe(E)||E.classTrib))?'<indPorte>S</indPorte>':''}<indOptRegEletron>${E.regEletron||0}</indOptRegEletron></infoCadastro></${a.alt?'alteracao':'inclusao'}></infoEmpregador>`;
   return{id,evt:'evtInfoEmpregador',titulo:'Informações do empregador — '+E.razao,ref:'',xml:envelope('evtInfoEmpregador',id,corpo)};};
 GEN['S-1005']=(a)=>{const s=byId(DB.estabs,a.id),id=novoId();
   const corpo=`${ideEvtTab()}${ideEmp()}<infoEstab><inclusao><ideEstab><tpInsc>${s.tpInsc}</tpInsc><nrInsc>${onlyD(s.nrInsc)}</nrInsc><iniValid>${s.iniValid||compAtual()}</iniValid></ideEstab><dadosEstab>${tag('cnaePrep',onlyD(s.cnae))}${ratIncide(DB.empresa)?`<aliqGilrat><aliqRat>${s.rat||'2'}</aliqRat>${tag('fap',s.fap)}</aliqGilrat>`:''}</dadosEstab></inclusao></infoEstab>`;
@@ -435,11 +479,11 @@ GEN['S-1020']=(a)=>{const l=byId(DB.lotacoes,a.id),id=novoId();
   return{id,evt:'evtTabLotacao',titulo:'Lotação '+l.cod+' — '+l.desc,ref:l.cod,xml:envelope('evtTabLotacao',id,corpo)};};
 GEN['S-2200']=(a,o)=>{const e=byId(DB.empregados,a.id),id=novoId(),car=byId(DB.cargos,e.cargo)||{},lot=byId(DB.lotacoes,e.lotacao)||{},est=byId(DB.estabs,e.estab)||{};
   const deps=(e.deps||[]).map(d=>`<dependente><tpDep>${d.tp}</tpDep><nmDep>${xe(d.nome)}</nmDep><dtNascto>${d.nasc}</dtNascto>${tag('cpfDep',onlyD(d.cpf))}<depIRRF>${d.irrf?'S':'N'}</depIRRF><depSF>${d.sf?'S':'N'}</depSF><incTrab>N</incTrab></dependente>`).join('');
-  const corpo=`${ideEvt(o)}${ideEmp()}<trabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab><nmTrab>${xe(e.nome)}</nmTrab><sexo>${e.sexo}</sexo><racaCor>${e.racaCor}</racaCor><estCiv>${e.estCiv}</estCiv><grauInstr>${e.grauInstr}</grauInstr><nascimento><dtNascto>${e.nasc}</dtNascto><paisNascto>105</paisNascto><paisNac>105</paisNac>${tag('nmMae',e.mae)}</nascimento>${ENDERECO(e)}${deps}${(e.fone||e.email)?`<contato>${tag('fonePrinc',onlyD(e.fone))}${tag('emailPrinc',e.email)}</contato>`:''}</trabalhador>`+
-  `<vinculo><matricula>${xe(e.mat)}</matricula><tpRegTrab>1</tpRegTrab><tpRegPrev>1</tpRegPrev><cadIni>N</cadIni><infoRegimeTrab><infoCeletista><dtAdm>${e.admissao}</dtAdm><tpAdmissao>1</tpAdmissao><indAdmissao>1</indAdmissao><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}${tag('cnpjSindCategProf',onlyD(e.sindCnpj))}</infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(e.salario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr>${e.tpContr==2?tag('dtTerm',e.dtTerm):''}</duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc></horContratual></infoContrato></vinculo>`;
+  const corpo=`${ideEvt(o)}${ideEmp()}<trabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab><nmTrab>${xe(e.nome)}</nmTrab><sexo>${e.sexo}</sexo><racaCor>${e.racaCor}</racaCor><estCiv>${e.estCiv}</estCiv><grauInstr>${e.grauInstr}</grauInstr><nascimento><dtNascto>${exigir(e.nasc,'a data de nascimento',e)}</dtNascto><paisNascto>105</paisNascto><paisNac>105</paisNac></nascimento>${ENDERECO(e)}${deps}${(e.fone||e.email)?`<contato>${tag('fonePrinc',onlyD(e.fone))}${tag('emailPrinc',e.email)}</contato>`:''}</trabalhador>`+
+  `<vinculo><matricula>${xe(e.mat)}</matricula><tpRegTrab>1</tpRegTrab><tpRegPrev>1</tpRegPrev><cadIni>N</cadIni><infoRegimeTrab><infoCeletista><dtAdm>${exigir(e.admissao,'a data de admissão',e)}</dtAdm><tpAdmissao>1</tpAdmissao><indAdmissao>1</indAdmissao><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}<cnpjSindCategProf>${exigir(onlyD(e.sindCnpj),'o CNPJ do sindicato da categoria profissional',e)}</cnpjSindCategProf></infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(e.salario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr>${e.tpContr==2?tag('dtTerm',e.dtTerm):''}</duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc><dscJorn>${xe(e.dscJorn||((e.hrsSem||44)+' HORAS SEMANAIS'))}</dscJorn></horContratual></infoContrato></vinculo>`;
   return{id,evt:'evtAdmissao',titulo:'Admissão — '+e.nome,ref:e.mat,xml:envelope('evtAdmissao',id,corpo)};};
-GEN['S-2206']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId(),car=byId(DB.cargos,e.cargo)||{};
-  const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><altContratual><dtAlteracao>${m.data}</dtAlteracao><vinculo><tpRegTrab>1</tpRegTrab><tpRegPrev>1</tpRegPrev><infoRegimeTrab><infoCeletista><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade></infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(m.novoSalario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr></duracao><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc></horContratual></infoContrato></vinculo></altContratual>`;
+GEN['S-2206']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId(),car=byId(DB.cargos,e.cargo)||{},est=byId(DB.estabs,e.estab)||{};
+  const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><altContratual><dtAlteracao>${m.data}</dtAlteracao><vinculo><tpRegPrev>1</tpRegPrev><infoRegimeTrab><infoCeletista><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade><cnpjSindCategProf>${exigir(onlyD(e.sindCnpj),'o CNPJ do sindicato da categoria profissional',e)}</cnpjSindCategProf></infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(m.novoSalario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr></duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc><dscJorn>${xe(e.dscJorn||((e.hrsSem||44)+' HORAS SEMANAIS'))}</dscJorn></horContratual></infoContrato></vinculo></altContratual>`;
   return{id,evt:'evtAltContratual',titulo:'Alteração contratual — '+e.nome,ref:e.mat,xml:envelope('evtAltContratual',id,corpo)};};
 GEN['S-2230']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId();
   const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><infoAfastamento>${m.fim?`<fimAfastamento><dtTermAfast>${m.fim}</dtTermAfast></fimAfastamento>`:`<iniAfastamento><dtIniAfast>${m.data}</dtIniAfast><codMotAfast>${m.motivo}</codMotAfast>${m.perAqIni?`<perAquis><dtInicio>${m.perAqIni}</dtInicio><dtFim>${m.perAqFim}</dtFim></perAquis>`:''}</iniAfastamento>`}</infoAfastamento>`;
@@ -452,14 +496,14 @@ GEN['S-2299']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId();
   return{id,evt:'evtDeslig',titulo:'Desligamento — '+e.nome,ref:e.mat,xml:envelope('evtDeslig',id,corpo)};};
 GEN['S-1200']=(a,o)=>{const e=byId(DB.empregados,a.id),c=DB.comps[a.comp],r=c&&c.res[a.id],id=novoId();
   const lot=byId(DB.lotacoes,e.lotacao)||{},est=byId(DB.estabs,e.estab)||{};
-  const verbas=r.itens.filter(i=>i.tp===1||i.tp===2).map(i=>{const ru=DB.rubricas.find(x=>x.sys===i.sys);return `<detVerbas><codRubr>${ru.cod}</codRubr><ideTabRubr>FOLHAPRO</ideTabRubr>${/h$/.test(i.ref)||/d$/.test(i.ref)?`<qtdRubr>${num(i.ref)}</qtdRubr>`:''}<vrRubr>${fx(i.valor)}</vrRubr><indApurIR>${i.sep?1:0}</indApurIR></detVerbas>`;}).join('');
-  const corpo=`${ideEvt(Object.assign({per:a.comp},o))}${ideEmp()}<ideTrabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab></ideTrabalhador><dmDev><ideDmDev>${a.comp.replace('-','')}${e.mat}</ideDmDev><codCateg>${e.categoria}</codCateg><infoPerApur><ideEstabLot><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc><codLotacao>${xe(lot.cod||'')}</codLotacao>${verbas}</ideEstabLot></infoPerApur></dmDev>`;
+  const verbas=r.itens.filter(i=>i.tp===1||i.tp===2).map(i=>{const ru=DB.rubricas.find(x=>x.sys===i.sys);return `<itensRemun><codRubr>${ru.cod}</codRubr><ideTabRubr>FOLHAPRO</ideTabRubr>${/h$/.test(i.ref)||/d$/.test(i.ref)?`<qtdRubr>${num(i.ref)}</qtdRubr>`:''}<vrRubr>${fx(i.valor)}</vrRubr><indApurIR>${i.sep?1:0}</indApurIR></itensRemun>`;}).join('');
+  const corpo=`${ideEvt(Object.assign({per:a.comp},o))}${ideEmp()}<ideTrabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab></ideTrabalhador><dmDev><ideDmDev>${a.comp.replace('-','')}${e.mat}</ideDmDev><codCateg>${e.categoria}</codCateg><infoPerApur><ideEstabLot><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc><codLotacao>${xe(lot.cod||'')}</codLotacao><remunPerApur><matricula>${xe(e.mat)}</matricula>${verbas}</remunPerApur></ideEstabLot></infoPerApur></dmDev>`;
   return{id,evt:'evtRemun',titulo:'Remuneração '+compLabel(a.comp)+' — '+e.nome,ref:a.comp,xml:envelope('evtRemun',id,corpo)};};
 GEN['S-1210']=(a,o)=>{const e=byId(DB.empregados,a.id),c=DB.comps[a.comp],r=c&&c.res[a.id],id=novoId();
-  const corpo=`${ideEvt(Object.assign({per:a.comp},o))}${ideEmp()}<ideBenef><cpfBenef>${onlyD(e.cpf)}</cpfBenef><infoPgto><dtPgto>${c.dtPgto}</dtPgto><tpPgto>1</tpPgto><indResBr>S</indResBr><detPgtoFl><perRef>${a.comp}</perRef><ideDmDev>${rescNoMes(a.id,a.comp)?'R':''}${a.comp.replace('-','')}${e.mat}</ideDmDev><indPgtoTt>S</indPgtoTt><vrLiq>${fx(r.liquido)}</vrLiq></detPgtoFl></infoPgto></ideBenef>`;
+  const corpo=`${ideEvt(Object.assign({per:a.comp,noInd:1},o))}${ideEmp()}<ideBenef><cpfBenef>${onlyD(e.cpf)}</cpfBenef><infoPgto><dtPgto>${c.dtPgto}</dtPgto><tpPgto>1</tpPgto><perRef>${a.comp}</perRef><ideDmDev>${rescNoMes(a.id,a.comp)?'R':''}${a.comp.replace('-','')}${e.mat}</ideDmDev><vrLiq>${fx(r.liquido)}</vrLiq></infoPgto></ideBenef>`;
   return{id,evt:'evtPgtos',titulo:'Pagamento '+compLabel(a.comp)+' — '+e.nome,ref:a.comp,xml:envelope('evtPgtos',id,corpo)};};
 GEN['S-1299']=(a,o)=>{const id=novoId();
-  const corpo=`${ideEvt(Object.assign({per:a.comp},o)).replace(/<indRetif>1<\/indRetif>/,'')}${ideEmp()}<infoFech><evtRemun>S</evtRemun><evtPgtos>S</evtPgtos><evtAqProd>N</evtAqProd><evtComProd>N</evtComProd><evtContratAvNP>N</evtContratAvNP><evtInfoComplPer>N</evtInfoComplPer></infoFech>`;
+  const corpo=`${ideEvt(Object.assign({per:a.comp},o)).replace(/<indRetif>1<\/indRetif>/,'')}${ideEmp()}<infoFech><evtRemun>S</evtRemun><evtPgtos>S</evtPgtos><evtComProd>N</evtComProd><evtContratAvNP>N</evtContratAvNP><evtInfoComplPer>N</evtInfoComplPer></infoFech>`;
   return{id,evt:'evtFechaEvPer',titulo:'Fechamento dos eventos periódicos — '+compLabel(a.comp),ref:a.comp,xml:envelope('evtFechaEvPer',id,corpo)};};
 const TIPOS={'S-1000':'Informações do empregador','S-1005':'Estabelecimentos','S-1010':'Rubricas','S-1020':'Lotações tributárias','S-2200':'Admissão','S-2206':'Alteração contratual','S-2230':'Afastamento temporário','S-2299':'Desligamento','S-1200':'Remuneração','S-1210':'Pagamentos','S-1299':'Fechamento periódico'};
 const ratIncide=E=>!E||E.regime!=='sn'||E.anexo==='iv'||E.anexo==='misto';
@@ -502,19 +546,19 @@ function validarEvento(ev){const o=validarBase(ev),E=DB.empresa;if(!E||!ev.gen)r
     if(E.regime==='sn'&&!E.anexo)o.push('Simples Nacional: informe o enquadramento da CPP (Anexos I–III/V, Anexo IV ou misto).');
     if(E.regime==='sn'&&E.cprb)o.push('CPRB (desoneração) é incompatível com o Simples Nacional.');
     if(E.regime&&E.classTrib&&E.classTrib!==classTribDe(E))o.push('classTrib '+E.classTrib+' não corresponde ao regime informado (esperado '+classTribDe(E)+'). Salve a empresa novamente.');
-    if(E.cprb&&!E.cnae)o.push('CPRB: informe o CNAE principal para conferir o enquadramento na atividade desonerada (Lei 12.546/2011, art. 7º-A) [VERIFICAR FONTE OFICIAL].');}
+    if(E.cprb&&!E.cnae)o.push('CPRB: informe o CNAE principal para conferir o enquadramento na atividade desonerada (Lei 12.546/2011, art. 7º-A) **.');}
   if(tipo==='S-1005'){const s=byId(DB.estabs,args.id);if(s){
     if(String(s.tpInsc)==='1'&&!cnpjValido(s.nrInsc))o.push('CNPJ do estabelecimento inválido.');
     if(String(s.tpInsc)==='1'&&onlyD(s.nrInsc).slice(0,8)!==onlyD(E.cnpj).slice(0,8))o.push('O CNPJ do estabelecimento deve ter a mesma raiz (8 primeiros dígitos) do empregador.');
     if(onlyD(s.cnae).length!==7)o.push('CNAE do estabelecimento deve ter 7 dígitos.');
-    if(ratIncide(E)){if(![1,2,3].includes(Number(s.rat)))o.push('RAT (grau de risco) deve ser 1, 2 ou 3 conforme o CNAE (Decreto 3.048/99, Anexo V) [VERIFICAR FONTE OFICIAL].');
+    if(ratIncide(E)){if(![1,2,3].includes(Number(s.rat)))o.push('RAT (grau de risco) deve ser 1, 2 ou 3 conforme o CNAE (Decreto 3.048/99, Anexo V) **.');
       const f=num(s.fap);if(!(f>=0.5&&f<=2))o.push('FAP deve estar entre 0,5000 e 2,0000 (Lei 10.666/2003, art. 10).');}
     if(DB.estabs.filter(x=>x.tpInsc==s.tpInsc&&onlyD(x.nrInsc)===onlyD(s.nrInsc)).length>1)o.push('Inscrição de estabelecimento duplicada.');}}
   if(tipo==='S-1020'){const l=byId(DB.lotacoes,args.id);if(l){
     if(!FPAS_OK.test(String(l.fpas||'')))o.push('FPAS deve ter 3 dígitos (Tabela 4).');
     if(!/^\d{4}$/.test(String(l.codTercs||'')))o.push('Código de terceiros deve ter 4 dígitos (Tabela 4); use 0000 quando não houver recolhimento a terceiros.');
     if(E.regime==='sn'&&String(l.codTercs)!=='0000')o.push('Simples Nacional: terceiros dispensados — use código 0000 (LC 123/2006, art. 13, §3º).');
-    if(E.regime!=='sn'&&String(l.codTercs)==='0000')o.push('Lucro Presumido/Real: informe o código de terceiros do FPAS (ex.: 0115 para FPAS 515; 0079 para FPAS 507) [VERIFICAR FONTE OFICIAL — Tabela 4].');
+    if(E.regime!=='sn'&&String(l.codTercs)==='0000')o.push('Lucro Presumido/Real: informe o código de terceiros do FPAS (ex.: 0115 para FPAS 515; 0079 para FPAS 507) **.');
     if(E.regime==='sn'&&E.anexo==='misto'&&!l.atvSimples)o.push('Simples misto: indique se a lotação é de atividade com CPP substituída ou não substituída.');
     if(DB.lotacoes.filter(x=>String(x.cod)===String(l.cod)).length>1)o.push('Código de lotação duplicado.');}}
   if(tipo==='S-2200'){const e=byId(DB.empregados,args.id);if(e){const l=byId(DB.lotacoes,e.lotacao),s=byId(DB.estabs,e.estab);
@@ -559,7 +603,7 @@ function calcPresumidoCmp(i){const R=num(i.rec)*12,P=PRES[i.pres]||PRES.serv,lim
   const baseIr=P[1]/100*(Math.min(R,lim)+f*Math.max(R-lim,0)),baseCs=P[2]/100*(Math.min(R,lim)+f*Math.max(R-lim,0));
   const irpj=r2(baseIr*0.15+Math.max(0,baseIr-240000)*0.10),csll=r2(baseCs*0.09);
   const pc=r2(R*0.0365),iss=i.ativ==='serv'?r2(R*num(i.iss)/100):0,icms=i.ativ==='serv'?0:r2(R*num(i.icms)/100);
-  if(R>lim&&i.lc224)o.notas.push('Acréscimo de 10% nos percentuais de presunção sobre a receita anual que excede R$ 5 milhões (LC 224/2025; IN RFB 2.305/2025). A CSLL só sofre o acréscimo a partir de 1º/04/2026 e há discussão judicial: a conta aplica o acréscimo nos 12 meses [VERIFICAR FONTE OFICIAL].');
+  if(R>lim&&i.lc224)o.notas.push('Acréscimo de 10% nos percentuais de presunção sobre a receita anual que excede R$ 5 milhões (LC 224/2025; IN RFB 2.305/2025). A CSLL só sofre o acréscimo a partir de 1º/04/2026 e há discussão judicial: a conta aplica o acréscimo nos 12 meses **.');
   o.base={irpj:baseIr,csll:baseCs};o.partes={das:0,irpj,csll,pc,iss,icms,enc:cmpEncargos(i,'lp')};return o;}
 function calcRealCmp(i){const R=num(i.rec)*12;const o={key:'lr',nome:'Lucro Real',notas:[],elegivel:true};
   const enc=cmpEncargos(i,'lr'),fgts=num(i.sal)*0.08*12,folha=num(i.sal)*12+num(i.prol)*12+fgts+enc;
@@ -567,7 +611,7 @@ function calcRealCmp(i){const R=num(i.rec)*12;const o={key:'lr',nome:'Lucro Real
   const iss=i.ativ==='serv'?r2(R*num(i.iss)/100):0,icms=i.ativ==='serv'?0:r2(R*num(i.icms)/100);
   const lucro=R-pc-iss-icms-num(i.desp)*12-folha;o.lucro=lucro;
   const irpj=r2(Math.max(0,lucro)*0.15+Math.max(0,lucro-240000)*0.10),csll=r2(Math.max(0,lucro)*0.09);
-  if(lucro<=0)o.notas.push('Prejuízo fiscal no período: IRPJ e CSLL zerados. O prejuízo pode ser compensado em períodos futuros (limite de 30% do lucro) — não simulado (Lei 9.065/1995, art. 15) [VERIFICAR FONTE OFICIAL].');
+  if(lucro<=0)o.notas.push('Prejuízo fiscal no período: IRPJ e CSLL zerados. O prejuízo pode ser compensado em períodos futuros (limite de 30% do lucro) — não simulado (Lei 9.065/1995, art. 15) **.');
   o.notas.push('PIS/COFINS não cumulativos: 1,65% + 7,6% sobre a receita, menos créditos de 9,25% sobre a base informada (Leis 10.637/2002 e 10.833/2003, arts. 2º e 3º).');
   o.partes={das:0,irpj,csll,pc,iss,icms,enc};return o;}
 function compararRegimes(i){const R=num(i.rec)*12,fgts=num(i.sal)*0.08*12;
@@ -578,6 +622,64 @@ function compararRegimes(i){const R=num(i.rec)*12,fgts=num(i.sal)*0.08*12;
   return out;}
 function varrerReceita(i,mults){return mults.map(m=>{const j=Object.assign({},i,{rec:num(i.rec)*m,sal:num(i.sal)*m,prol:num(i.prol),desp:num(i.desp)*m,credBase:num(i.credBase)*m,rbt12:0});
   const r=compararRegimes(j);return{rec:j.rec*12,v:r.map(o=>o.elegivel?o.carga:null)};});}
+/* ===================== SEGURANÇA: criptografia local com senha =====================
+   Protege os dados em repouso no navegador (LGPD, Lei 13.709/2018, art. 46): o banco é cifrado com
+   AES-256-GCM, com chave derivada da senha por PBKDF2-SHA256 (600.000 iterações) e gravado apenas cifrado.
+   Limites: é proteção local de um único usuário; não oferece perfis, trilha de auditoria nem recuperação
+   de senha. Perdida a senha, os dados só podem ser restaurados de um backup cifrado. */
+const SEG=(()=>{
+  const KEY_ENC='folhaPro.v2.enc',KEY_LEGADO=LS_KEY,ITER=600000,INATIV_MS=15*60*1000,MIN_SENHA=10;
+  let chave=null,salt=null,ativo=false,pendente=null,escrevendo=false,fila=Promise.resolve(),timer=null,falhas=0,bloqAte=0;
+  const te=new TextEncoder(),td=new TextDecoder();
+  const b64=b=>{const u=new Uint8Array(b);let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s);};
+  const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+  const suporta=()=>!!(window.crypto&&crypto.subtle&&window.isSecureContext!==false);
+  const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+  async function derivar(senha,sal,iter){const base=await crypto.subtle.importKey('raw',te.encode(senha),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt:sal,iterations:iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
+  async function cifrar(texto,k,sal,iter){const iv=rnd(12);const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,te.encode(texto));return JSON.stringify({v:2,alg:'AES-256-GCM',kdf:'PBKDF2-SHA256',iter,salt:b64(sal),iv:b64(iv),ct:b64(ct)});}
+  async function decifrar(blob,senha){const o=JSON.parse(blob);if(o.v!==2||!o.ct)throw new Error('Formato de arquivo desconhecido.');const sal=unb64(o.salt),k=await derivar(senha,sal,o.iter||ITER);let pt;try{pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},k,unb64(o.ct));}catch(e){throw new Error('Senha incorreta ou dados corrompidos.');}return{texto:td.decode(pt),k,sal,iter:o.iter||ITER};}
+  function senhaFraca(s){if(!s||s.length<MIN_SENHA)return'A senha deve ter ao menos '+MIN_SENHA+' caracteres.';if(/^\d+$/.test(s))return'A senha não pode ser composta apenas de números.';if(new Set(s).size<4)return'A senha é muito repetitiva.';return'';}
+  /* gravação cifrada, coalescida e serializada */
+  function persistir(s){if(!ativo||!chave)return;pendente=s;if(escrevendo)return;escrevendo=true;fila=(async()=>{try{while(pendente!==null){const t=pendente;pendente=null;localStorage.setItem(KEY_ENC,await cifrar(t,chave,salt,ITER));}}catch(e){toast('Falha ao gravar os dados cifrados: '+e.message,'err');}finally{escrevendo=false;}})();}
+  function limparTela(){['main','side','modal','printarea','tip','bar','topemp'].forEach(id=>{const el=document.getElementById(id);if(el){el.innerHTML='';if(id==='modal')el.classList.remove('on');}});}
+  function reiniciarInatividade(){clearTimeout(timer);if(ativo)timer=setTimeout(bloquear,INATIV_MS);}
+  function iniciarMonitor(){['mousemove','keydown','click','touchstart','scroll'].forEach(ev=>window.addEventListener(ev,reiniciarInatividade,{passive:true}));}
+  let monitorIniciado=false;
+  function estilo(){if(document.getElementById('segcss'))return;const st=document.createElement('style');st.id='segcss';st.textContent='#seglock{position:fixed;inset:0;background:#0f1a22;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}#seglock .box{background:#fff;border-radius:12px;max-width:440px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}#seglock h2{margin:0 0 6px}#seglock p{margin:6px 0;color:#445}#seglock label{display:block;font-weight:600;margin-top:12px}#seglock input{width:100%;padding:9px;border:1px solid #bcc7d1;border-radius:7px;font:inherit}#seglock .msg{color:#b3261e;min-height:20px;margin-top:8px;font-weight:600}#seglock .lnk{background:none;border:0;color:#7a1f1f;text-decoration:underline;cursor:pointer;margin-top:14px;padding:0;font:inherit}';document.head.appendChild(st);}
+  function mostrar(modo){estilo();let el=document.getElementById('seglock');if(!el){el=document.createElement('div');el.id='seglock';document.body.appendChild(el);}
+    const novo=modo!=='entrar';
+    el.innerHTML=`<div class="box"><h2>Folha<span style="color:#1b6e8f">Pro</span> — acesso protegido</h2>
+      <p>${modo==='entrar'?'Informe a senha para abrir os dados desta máquina.':modo==='migrar'?'Foram encontrados dados <b>sem proteção</b> neste navegador. Defina uma senha para cifrá-los agora.':'Defina uma senha para proteger os dados (CPF, dependentes e remunerações) neste navegador.'}</p>
+      <form id="segf" autocomplete="off"><label>Senha</label><input type="password" id="segs" autocomplete="${novo?'new-password':'current-password'}" required>
+      ${novo?'<label>Confirme a senha</label><input type="password" id="segc" autocomplete="new-password" required><p style="font-size:.85em">Mínimo de '+MIN_SENHA+' caracteres. <b>Não há recuperação de senha</b>: se a perder, só um backup cifrado restaura os dados.</p>':''}
+      <div class="msg" id="segm"></div><button class="btn pri" style="margin-top:10px;width:100%" id="segb">${modo==='entrar'?'Desbloquear':'Proteger e entrar'}</button></form>
+      ${modo==='entrar'?'<button class="lnk" id="segr">Esqueci a senha (apagar dados e começar de novo)</button>':''}</div>`;
+    const msg=t=>{document.getElementById('segm').textContent=t;};
+    const f=document.getElementById('segf');setTimeout(()=>document.getElementById('segs').focus(),50);
+    f.onsubmit=async ev=>{ev.preventDefault();const s=document.getElementById('segs').value,b=document.getElementById('segb');
+      try{b.disabled=true;
+        if(modo==='entrar'){const esp=bloqAte-Date.now();if(esp>0){msg('Aguarde '+Math.ceil(esp/1000)+' s para tentar novamente.');return;}
+          try{const r=await decifrar(localStorage.getItem(KEY_ENC),s);abrir(hidratar(JSON.parse(r.texto)),r.texto,r.k,r.sal);falhas=0;}catch(e){falhas++;bloqAte=Date.now()+Math.min(60000,500*Math.pow(2,falhas));msg(e.message);}}
+        else{const fr=senhaFraca(s);if(fr){msg(fr);return;}if(s!==document.getElementById('segc').value){msg('As senhas não conferem.');return;}
+          let base;if(modo==='migrar'){try{base=hidratar(JSON.parse(localStorage.getItem(KEY_LEGADO)));}catch(e){msg('Os dados antigos não puderam ser lidos; nada foi alterado.');return;}}else base=emptyDB();
+          const sal=rnd(16),k=await derivar(s,sal,ITER),txt=JSON.stringify(base);localStorage.setItem(KEY_ENC,await cifrar(txt,k,sal,ITER));
+          if(modo==='migrar')localStorage.removeItem(KEY_LEGADO);abrir(base,txt,k,sal);}
+      }finally{b.disabled=false;}};
+    const r=document.getElementById('segr');if(r)r.onclick=()=>{if(confirm('Isto apaga TODOS os dados deste navegador e a senha atual. Só prossiga se houver backup. Continuar?')){localStorage.removeItem(KEY_ENC);localStorage.removeItem(KEY_LEGADO);mostrar('criar');}};}
+  function abrir(db,txt,k,sal){DB=db;_mem=txt;chave=k;salt=sal;ativo=true;const el=document.getElementById('seglock');if(el)el.remove();if(!monitorIniciado){iniciarMonitor();monitorIniciado=true;}reiniciarInatividade();NAV.stack=[];NAV.cur={name:'home',params:{}};render();}
+  async function bloquear(){if(!ativo)return;await fila;ativo=false;clearTimeout(timer);DB=null;_mem=null;chave=null;salt=null;pendente=null;limparTela();mostrar('entrar');}
+  async function boot(){
+    if(!suporta()){estilo();const el=document.createElement('div');el.id='seglock';el.innerHTML='<div class="box"><h2>Navegador sem criptografia</h2><p>Este navegador, ou esta forma de acesso, não oferece a API de criptografia necessária. Abra o sistema por HTTPS em um navegador atual. Por segurança, os dados não são abertos sem proteção.</p></div>';document.body.appendChild(el);return;}
+    let enc=null,leg=null;try{enc=localStorage.getItem(KEY_ENC);leg=localStorage.getItem(KEY_LEGADO);}catch(e){}
+    mostrar(enc?'entrar':leg?'migrar':'criar');}
+  /* troca de senha: exige a atual */
+  async function trocarSenha(atual,nova){const fr=senhaFraca(nova);if(fr)throw new Error(fr);await fila;await decifrar(localStorage.getItem(KEY_ENC),atual);const sal=rnd(16),k=await derivar(nova,sal,ITER);localStorage.setItem(KEY_ENC,await cifrar(JSON.stringify(DB),k,sal,ITER));chave=k;salt=sal;}
+  /* backup cifrado, com senha própria (pode ser distinta da senha de acesso) */
+  async function exportarCifrado(senhaBackup){const fr=senhaFraca(senhaBackup);if(fr)throw new Error(fr);const sal=rnd(16),k=await derivar(senhaBackup,sal,ITER);return cifrar(JSON.stringify(DB),k,sal,ITER);}
+  async function lerBackup(texto,senhaBackup){const t=String(texto).trim();if(t.startsWith('{')&&/"v"\s*:\s*2/.test(t)&&/"ct"/.test(t)){if(!senhaBackup)throw new Error('Informe a senha do backup.');const r=await decifrar(t,senhaBackup);return JSON.parse(r.texto);}return JSON.parse(t);/* JSON em claro (backups antigos) */}
+  async function apagarTudo(){await fila;DB=emptyDB();saveDB();await fila;}
+  return{boot,persistir,bloquear,trocarSenha,exportarCifrado,lerBackup,apagarTudo,senhaFraca,get ativo(){return ativo;},MIN_SENHA};
+})();
 
 /* ===================== UI: infraestrutura ===================== */
 const $=(s,r=document)=>r.querySelector(s);
@@ -605,6 +707,7 @@ function renderBar(sc){const acts=(sc.actions?sc.actions(NAV.cur.params):[])||[]
   $('#bar').innerHTML=`<button class="btn" data-act="back" title="Alt+V">◀ Voltar</button><button class="btn" data-act="home" title="Alt+I">⌂ Tela inicial</button><span class="sp"></span><span class="hint">Alt+V voltar · Alt+I início · Alt+S salvar · Alt+E enviar</span>`+
   acts.map(a=>`<button class="btn ${a.cls||''}" data-act="${a.act}" ${a.arg!=null?`data-arg="${esc(a.arg)}"`:''} ${a.key?`data-primary="${a.key}"`:''}>${a.label}</button>`).join('');}
 function render(){const sc=SC[NAV.cur.name];DIRTY=false;$('#main').innerHTML=sc.view(NAV.cur.params);renderBar(sc);renderSide();sc.mount&&sc.mount(NAV.cur.params);}
+window.addEventListener('unhandledrejection',ev=>{const m=ev.reason&&ev.reason.message;if(m){toast(m,'err');ev.preventDefault();}});window.addEventListener('error',ev=>{if(ev.error&&/^Cadastro incompleto/.test(ev.error.message))toast(ev.error.message,'err');});
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;if(ACT[a]){e.preventDefault();ACT[a](el,e);}});
 document.addEventListener('input',e=>{if(e.target.closest('[data-form]'))DIRTY=true;});
 document.addEventListener('focusout',e=>{const el=e.target;if(!el.dataset)return;const m=el.dataset.mask;if(m==='cpf')el.value=fmtCPF(el.value);else if(m==='cnpj')el.value=fmtCNPJ(el.value);else if(m==='cep')el.value=fmtCEP(el.value);if(el.dataset.t==='money'&&el.value!=='')el.value=brIn(num(el.value));});
@@ -707,7 +810,7 @@ crud('estabs',{title:'Estabelecimentos (S-1005)',sub:'Matriz, filiais e obras (C
 const TPLOT=[['01','01 – Atividade econômica da empresa (FPAS do enquadramento)'],['02','02 – Obra de construção civil, empreitada total'],['03','03 – Obra de construção civil, empreitada parcial']];
 function infoLotacao(){const E=DB.empresa;if(!E||!E.regime)return 'Defina o regime tributário na tela da empresa.';
   if(E.regime==='sn'){const m=E.anexo==='misto';return `<b>Simples Nacional.</b> Terceiros: sempre 0000 (dispensados). ${E.anexo==='iv'?'Anexo IV: CPP 20% e RAT incidem na folha.':m?'Misto: marque em cada lotação se a atividade tem CPP <b>substituída</b> (sem CPP/RAT na folha) ou <b>não substituída</b> (CPP e RAT na folha).':'Anexos I–III/V: CPP e RAT já estão no DAS; nada de patronal é calculado na folha.'}`;}
-  return `<b>${REGIMES[E.regime]}.</b> CPP 20%, RAT×FAP e terceiros incidem sobre a base previdenciária. O FPAS e o código de terceiros dependem do enquadramento (ex.: FPAS 515 → terceiros 0115; FPAS 507 → 0079 [VERIFICAR FONTE OFICIAL — Tabela 4]).${E.cprb?' Com CPRB, indique em cada lotação se a atividade é desonerada.':''}`;}
+  return `<b>${REGIMES[E.regime]}.</b> CPP 20%, RAT×FAP e terceiros incidem sobre a base previdenciária. O FPAS e o código de terceiros dependem do enquadramento (ex.: FPAS 515 → terceiros 0115; FPAS 507 → 0079 **).${E.cprb?' Com CPRB, indique em cada lotação se a atividade é desonerada.':''}`;}
 crud('lotacoes',{title:'Lotações tributárias e departamentos (S-1020)',sub:'A lotação define como a folha é tributada para o grupo de empregados: FPAS, terceiros, atividade substituída (Simples misto) e CPRB.',tipo:'S-1020',key:'id',list:()=>DB.lotacoes,
   note:()=>`<b>Regras de lotação.</b> (1) Todo empregado precisa estar vinculado a uma lotação — é ela que vai no S-1200. (2) O <b>código</b> é único. (3) O <b>FPAS</b> (3 dígitos) e o <b>código de terceiros</b> (4 dígitos, Tabela 4) devem ser coerentes com o regime. (4) ${infoLotacao()}`,
   cols:[['cod','Código'],['desc','Departamento / descrição'],['tpLotacao','Tipo'],['fpas','FPAS'],['codTercs','Terceiros'],['inc','Incidências na folha',r=>{const R=regraLot(DB.empresa,r,compAtual(),DB.params);return [R.pat?badge('CPP'+(R.fator<100?' '+R.fator+'%':''),'blue'):'',R.rat?badge('RAT','blue'):'',R.terc?badge('Terceiros','blue'):''].join(' ')||badge('Só FGTS/segurado','gray');}],['n','Empregados',r=>String(DB.empregados.filter(e=>e.lotacao===r.id).length)]],
@@ -730,7 +833,7 @@ crud('cargos',{title:'Cargos e CBO',sub:'Cadastro interno de cargos/funções. P
   cols:[['cod','Código'],['nome','Cargo'],['cbo','CBO'],['sumula','Descrição sumária']],
   fields:r=>F('Código','cod',r.cod,{req:1,w:2})+F('Cargo / função','nome',r.nome,{req:1,w:4})+F('CBO (6 dígitos)','cbo',r.cbo,{req:1,w:2})+F('Descrição sumária','sumula',r.sumula,{w:4})});
 crud('rubricas',{title:'Rubricas da folha (S-1010)',sub:'Verbas usadas pelo cálculo. Natureza (Tabela 3) e códigos de incidência (CP, IRRF, FGTS) precisam ser conferidos nas tabelas oficiais antes do envio em produção.',tipo:'S-1010',key:'sys',list:()=>DB.rubricas,noAdd:true,noDel:true,
-  note:'As naturezas 1000 (salário), 1409 (salário-família), 9200 (desconto de adiantamentos), 9201 (contribuição previdenciária) e 9203 (IRRF) já vêm preenchidas conforme a Tabela 3. <b>As demais estão em branco de propósito</b>: preencha após consultar o Anexo I dos leiautes (Tabelas 3, 20, 21 e 22) e marque “conferida”. No modo webservice, o envio é bloqueado enquanto houver natureza em branco.',
+  note:'As naturezas 1000 (salário), 1409 (salário-família), 9200 (desconto de adiantamentos), 9201 (contribuição previdenciária) e 9203 (IRRF) já vêm preenchidas conforme a Tabela 3. <b>As demais foram sugeridas a partir da Tabela 3 do leiaute S-1.3 e devem ser conferidas pelo responsável antes da transmissão</b>. Permanecem em branco, por não terem correspondência segura, as rubricas de outros proventos, outros descontos, terço sobre abono e terço sobre férias na rescisão. No modo webservice, o envio é bloqueado enquanto houver natureza em branco.',
   cols:[['cod','Cód.'],['desc','Descrição'],['tp','Tipo',r=>r.tp===1?'Provento':r.tp===2?'Desconto':'Informativa'],['nat','Natureza',r=>r.nat?esc(r.nat):badge('preencher','warn')],['incCP','CP'],['incIRRF','IRRF'],['incFGTS','FGTS'],['conf','Conferida',r=>r.conf?badge('Sim','ok'):badge('Não','gray')]],
   fields:r=>F('Código','cod',r.cod,{req:1,w:2})+F('Descrição','desc',r.desc,{req:1,w:4})+F('Natureza (Tabela 3)','nat',r.nat,{w:2})+F('Incidência CP','incCP',r.incCP,{req:1,w:1})+F('Incidência IRRF','incIRRF',r.incIRRF,{req:1,w:1})+F('Incidência FGTS','incFGTS',r.incFGTS,{req:1,w:1})+F('Conferida nas tabelas oficiais','conf',r.conf,{t:'check',w:3,cl:'Natureza e incidências conferidas'})});
 
@@ -751,7 +854,7 @@ function regraPanel(E){E=E||{};const rg=E.regime||'lp',an=E.anexo||'std',cp=!!E.
   if(rg==='sn'){const iv=an==='iv',mx=an==='misto';
     rows=T('CPP patronal 20%',iv?sim:mx?par('só lotações não substituídas'):nao,'LC 123/2006, art. 13, §3º e art. 18, §5º-C (Anexo IV e atividades vedadas)')+T('RAT × FAP',iv?sim:mx?par('só lotações não substituídas'):nao,'Mesmo tratamento da CPP')+T('Terceiros (Sistema S, salário-educação, INCRA)',nao,'LC 123/2006, art. 13, §3º')+T('FGTS 8%',sim,'Lei 8.036/90, art. 15')+T('INSS do empregado e IRRF',sim,'Lei 8.212/91, art. 20; Lei 7.713/88');
     txt=`classTrib <b>${classTribDe(E)||classTribDe({regime:'sn',anexo:an})}</b>. `+(iv?'Anexo IV: a CPP não está no DAS; a folha apura CPP 20% e RAT.':mx?'Misto: a classificação 02 exige que cada lotação diga se a atividade é de CPP substituída ou não.':'A CPP está no DAS; a folha só apura FGTS, INSS do empregado e IRRF.');}
-  else{rows=T('CPP patronal 20%',cp?par('reduzida (reoneração gradual)'):sim,cp?'Lei 14.973/2024 (reoneração progressiva da folha: 25% em 2025, 50% em 2026, 75% em 2027) [VERIFICAR FONTE OFICIAL]':'Lei 8.212/91, art. 22, I')+T('RAT × FAP',sim,'Lei 8.212/91, art. 22, II; Lei 10.666/2003, art. 10')+T('Terceiros (conforme FPAS)',sim,'Tabela 4 do eSocial')+T('FGTS 8%',sim,'Lei 8.036/90, art. 15')+T('INSS do empregado e IRRF',sim,'Lei 8.212/91, art. 20; Lei 7.713/88');
+  else{rows=T('CPP patronal 20%',cp?par('reduzida (reoneração gradual)'):sim,cp?'Lei 14.973/2024 (reoneração progressiva da folha: 25% em 2025, 50% em 2026, 75% em 2027) **':'Lei 8.212/91, art. 22, I')+T('RAT × FAP',sim,'Lei 8.212/91, art. 22, II; Lei 10.666/2003, art. 10')+T('Terceiros (conforme FPAS)',sim,'Tabela 4 do eSocial')+T('FGTS 8%',sim,'Lei 8.036/90, art. 15')+T('INSS do empregado e IRRF',sim,'Lei 8.212/91, art. 20; Lei 7.713/88');
     txt=`classTrib <b>99</b>. ${REGIMES[rg]}: a folha tem a mesma incidência previdenciária; o regime afeta IRPJ/CSLL/PIS/COFINS, que não são tratados aqui. ${cp?'No S-1000, indDesFolha = 1.':'No S-1000, indDesFolha = 0.'}`;}
   return `<div class="tw"><table class="t"><thead><tr><th>Contribuição</th><th class="c">Incide na folha?</th><th>Base legal</th></tr></thead><tbody>${rows}</tbody></table></div><p class="sub" style="margin:8px 0 0">${txt}</p>`;}
 SC.empresa.mount=()=>{const f=$('#f');if(!f)return;const upd=()=>{const o=readForm(f);const E={regime:o.regime,anexo:o.anexo,cprb:o.cprb&&o.regime!=='sn'};
@@ -794,7 +897,7 @@ SC.empForm={view(p){const n=!p.id;const e=n?{mat:String((DB.empregados.reduce((m
   <div data-form id="f">
   <div class="card" data-tab="pess" ${tab!=='pess'?'hidden':''}><div class="grid">${F('Matrícula','mat',e.mat,{req:1,w:2})+F('Nome completo','nome',e.nome,{req:1,w:6})+F('CPF','cpf',fmtCPF(e.cpf),{req:1,w:4,mask:'cpf'})+F('Data de nascimento','nasc',e.nasc,{t:'date',req:1,w:3})+F('Sexo','sexo',e.sexo,{t:'select',opts:O.sexo,w:3})+F('Raça/cor','racaCor',e.racaCor,{t:'select',opts:O.raca,w:3})+F('Estado civil','estCiv',e.estCiv,{t:'select',opts:O.estCiv,w:3})+F('Grau de instrução','grauInstr',e.grauInstr,{t:'select',opts:O.instr,w:4})+F('Nome da mãe','mae',e.mae,{req:1,w:5})+F('PIS/NIS','pis',e.pis,{w:3})+F('CTPS (nº/série/UF)','ctps',e.ctps,{w:4})+F('Telefone','fone',e.fone,{w:3})+F('E-mail','email',e.email,{t:'email',w:5})}</div></div>
   <div class="card" data-tab="end" ${tab!=='end'?'hidden':''}><div class="grid">${F('CEP','cep',fmtCEP(e.cep),{req:1,w:2,mask:'cep'})+F('Tipo','tpLograd',e.tpLograd,{w:1})+F('Logradouro','logr',e.logr,{req:1,w:5})+F('Número','nr',e.nr,{w:1})+F('Complemento','compl',e.compl,{w:3})+F('Bairro','bairro',e.bairro,{w:3})+F('Município','municipio',e.municipio,{w:3})+F('Cód. IBGE (7 díg.)','codMunic',e.codMunic,{req:1,w:3})+F('UF','uf',e.uf,{t:'select',opts:O.uf,w:2,req:1})}</div></div>
-  <div class="card" data-tab="cont" ${tab!=='cont'?'hidden':''}><div class="grid">${F('Data de admissão','admissao',e.admissao,{t:'date',req:1,w:3})+F('Categoria (Tabela 1)','categoria',e.categoria,{t:'select',opts:O.categ,w:5})+F('Estabelecimento','estab',e.estab,{t:'select',opts:lstOpts(DB.estabs,x=>x.nome),w:4,req:1})+F('Departamento / lotação','lotacao',e.lotacao,{t:'select',opts:lstOpts(DB.lotacoes,x=>x.cod+' – '+x.desc),w:4,req:1})+F('Cargo','cargo',e.cargo,{t:'select',opts:lstOpts(DB.cargos,x=>x.nome+' (CBO '+x.cbo+')'),w:4,req:1})+F('Tipo de contrato','tpContr',e.tpContr,{t:'select',opts:[['1','1 – Prazo indeterminado'],['2','2 – Prazo determinado']],w:4})+F('Término (se determinado)','dtTerm',e.dtTerm,{t:'date',w:3})+F('Regime de jornada','tpRegJor',e.tpRegJor,{t:'select',opts:[['1','1 – Submetido a horário de trabalho'],['2','2 – Atividade externa'],['3','3 – Jornada 12x36']],w:4})+F('Natureza da atividade','natAtividade',e.natAtividade,{t:'select',opts:[['1','1 – Urbano'],['2','2 – Rural']],w:3})+F('Tipo de jornada','tpJornada',e.tpJornada,{t:'select',opts:O.jornada,w:5})+F('Horas semanais','hrsSem',e.hrsSem,{t:'number',w:2})+F('Divisor mensal','divisor',e.divisor,{t:'number',w:2})+F('CNPJ do sindicato','sindCnpj',e.sindCnpj,{w:3})+F('Data-base (mês)','dtBase',e.dtBase,{t:'number',w:2,ph:'1 a 12'})+F('Situação','situacao',e.situacao,{t:'select',opts:[['ativo','Ativo'],['afastado','Afastado'],['desligado','Desligado']],w:3})}</div></div>
+  <div class="card" data-tab="cont" ${tab!=='cont'?'hidden':''}><div class="grid">${F('Data de admissão','admissao',e.admissao,{t:'date',req:1,w:3})+F('Categoria (Tabela 1)','categoria',e.categoria,{t:'select',opts:O.categ,w:5})+F('Estabelecimento','estab',e.estab,{t:'select',opts:lstOpts(DB.estabs,x=>x.nome),w:4,req:1})+F('Departamento / lotação','lotacao',e.lotacao,{t:'select',opts:lstOpts(DB.lotacoes,x=>x.cod+' – '+x.desc),w:4,req:1})+F('Cargo','cargo',e.cargo,{t:'select',opts:lstOpts(DB.cargos,x=>x.nome+' (CBO '+x.cbo+')'),w:4,req:1})+F('Tipo de contrato','tpContr',e.tpContr,{t:'select',opts:[['1','1 – Prazo indeterminado'],['2','2 – Prazo determinado']],w:4})+F('Término (se determinado)','dtTerm',e.dtTerm,{t:'date',w:3})+F('Regime de jornada','tpRegJor',e.tpRegJor,{t:'select',opts:[['1','1 – Submetido a horário de trabalho'],['2','2 – Atividade externa'],['3','3 – Jornada 12x36']],w:4})+F('Natureza da atividade','natAtividade',e.natAtividade,{t:'select',opts:[['1','1 – Urbano'],['2','2 – Rural']],w:3})+F('Tipo de jornada','tpJornada',e.tpJornada,{t:'select',opts:O.jornada,w:5})+F('Horas semanais','hrsSem',e.hrsSem,{t:'number',w:2})+F('Descrição da jornada (S-2200)','dscJorn',e.dscJorn,{w:5,ph:'Ex.: segunda a sexta, 08h às 18h'})+F('Divisor mensal','divisor',e.divisor,{t:'number',w:2})+F('CNPJ do sindicato da categoria','sindCnpj',fmtCNPJ(e.sindCnpj||''),{w:3,req:1,mask:'cnpj'})+F('Data-base (mês)','dtBase',e.dtBase,{t:'number',w:2,ph:'1 a 12'})+F('Situação','situacao',e.situacao,{t:'select',opts:[['ativo','Ativo'],['afastado','Afastado'],['desligado','Desligado']],w:3})}</div></div>
   <div class="card" data-tab="rem" ${tab!=='rem'?'hidden':''}><div class="grid">${F('Salário contratual (mensal)','salario',e.salario,{t:'money',req:1,w:3})+F('Unidade de pagamento','undSalFixo',e.undSalFixo,{t:'select',opts:[['5','5 – Mensal']],w:3})+F('Insalubridade','insal',e.insal||'',{t:'select',opts:[['','Não'],['10','10% (mínimo)'],['20','20% (médio)'],['40','40% (máximo)']],w:3,hint:'Base: salário mínimo (CLT, art. 192)'})+F('Periculosidade','peric',e.peric,{t:'check',cl:'30% sobre o salário (CLT, art. 193, §1º)',w:3})+F('Vale-transporte','optaVT',e.optaVT,{t:'check',cl:'Optante pelo VT (desconto até 6%)',w:3})+F('Custo mensal do VT','vtValor',e.vtValor,{t:'money',w:3})+F('Pensão alimentícia (valor mensal)','pensao',e.pensao,{t:'money',w:3,hint:'Deduzida da base do IRRF'})}</div></div>
   <div class="card" data-tab="dep" ${tab!=='dep'?'hidden':''}><div class="row sp"><h2>Dependentes</h2><button class="btn pri sm" data-act="depAdd">＋ Adicionar dependente</button></div><p class="sub">Marque “IRRF” para dedução na base do imposto e “Sal.-família” para filhos de até 14 anos (ou inválidos).</p><div id="deps">${(e.deps||[]).map(depRow).join('')}</div></div>
   <div class="card" data-tab="banc" ${tab!=='banc'?'hidden':''}><div class="grid">${F('Forma de pagamento','formaPgto',e.formaPgto||'cc',{t:'select',opts:[['cc','Crédito em conta'],['din','Dinheiro'],['pix','PIX']],w:3})+F('Banco','banco',e.banco,{w:3})+F('Agência','agencia',e.agencia,{w:2})+F('Conta','conta',e.conta,{w:2})+F('Chave PIX','pix',e.pix,{w:4})}</div></div>
@@ -822,7 +925,7 @@ SC.movs={view(p){const tab=p.tab||'sal';const T=(k,l)=>`<a data-act="movTab" dat
   const ativos=DB.empregados.filter(e=>e.situacao!=='desligado');const eo=[['','Selecione o empregado…']].concat(ativos.map(e=>[e.id,e.mat+' – '+e.nome]));
   let form='';
   if(tab==='sal')form=F('Empregado','empId','',{t:'select',opts:eo,req:1,w:5})+F('Data da alteração','data',hoje(),{t:'date',req:1,w:3})+F('Novo salário','novoSalario','',{t:'money',req:1,w:4})+F('Motivo / observação','obs','',{w:12});
-  if(tab==='afast')form=F('Empregado','empId','',{t:'select',opts:eo,req:1,w:5})+F('Início do afastamento','data',hoje(),{t:'date',req:1,w:3})+F('Motivo (Tabela 18)','motivo','',{req:1,w:4,list:'dlAf',hint:'Código da Tabela 18 do eSocial'})+F('Afastado até a competência','ate','',{t:'month',w:3,hint:'Em branco = sem previsão (não calcula a folha)'})+'<datalist id="dlAf"><option value="01">01 – Acidente/doença do trabalho</option><option value="03">03 – Acidente/doença não relacionada ao trabalho</option><option value="16">16 – Licença remunerada</option><option value="17">17 – Licença-maternidade</option><option value="18">18 – Prorrogação da licença-maternidade (Empresa Cidadã)</option><option value="19">19 – Licença-maternidade por aborto não criminoso</option></datalist>';
+  if(tab==='afast')form=F('Empregado','empId','',{t:'select',opts:eo,req:1,w:5})+F('Início do afastamento','data',hoje(),{t:'date',req:1,w:3})+F('Motivo (Tabela 18)','motivo','',{req:1,w:4,list:'dlAf',hint:'Código da Tabela 18 do eSocial'})+F('Afastado até a competência','ate','',{t:'month',w:3,hint:'Em branco = sem previsão'})+F('Último dia do afastamento','fim','',{t:'date',w:3,hint:'Informe para pagar os dias trabalhados após o retorno'})+'<datalist id="dlAf"><option value="01">01 – Acidente/doença do trabalho</option><option value="03">03 – Acidente/doença não relacionada ao trabalho</option><option value="16">16 – Licença remunerada</option><option value="17">17 – Licença-maternidade</option><option value="18">18 – Prorrogação da licença-maternidade (Empresa Cidadã)</option><option value="19">19 – Licença-maternidade por aborto não criminoso</option></datalist>';
   if(tab==='deslig')form=`<div class="note info" style="grid-column:span 12">O desligamento agora é feito na tela <b>Rescisão</b>, que calcula aviso prévio, 13º e férias proporcionais, multa do FGTS, lança tudo na folha do mês e gera o S-2299 com as verbas. <button class="btn sm pri" data-act="nav" data-to="resc" style="margin-left:8px">Abrir Rescisão</button></div>`;
   const L=DB.movs.slice().reverse();
   return `<h1>Movimentações do contrato</h1><p class="sub">Alteração salarial/contratual (S-2206), afastamentos (S-2230) e desligamentos (S-2299).</p>${exigeEmpresa()}
@@ -833,7 +936,7 @@ SC.movs={view(p){const tab=p.tab||'sal';const T=(k,l)=>`<a data-act="movTab" dat
 ACT.movTab=el=>{NAV.cur.params.tab=el.dataset.t;refresh();};
 ACT.movSave=async el=>{if((NAV.cur.params.tab||'sal')==='deslig'){go('resc');return;}const f=$('#f'),mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return;}const o=readForm(f),tab=NAV.cur.params.tab||'sal',e=byId(DB.empregados,o.empId);let tipo,det;
   if(tab==='sal'){tipo='S-2206';det='Salário '+brl(num(e.salario))+' → '+brl(o.novoSalario)+(o.obs?' · '+o.obs:'');e.salario=o.novoSalario;}
-  else if(tab==='afast'){tipo='S-2230';det='Motivo '+o.motivo+(o.ate?' · até '+o.ate:' · sem previsão');e.situacao='afastado';e.afastAteComp=o.ate||'9999-12';}
+  else if(tab==='afast'){tipo='S-2230';det='Motivo '+o.motivo+(o.ate?' · até '+o.ate:' · sem previsão');e.situacao='afastado';e.afastAteComp=o.ate||'9999-12';e.afastIni=o.data;e.afastFim=o.fim||'';e.afastMotivo=o.motivo;}
   else{tipo='S-2299';det='Motivo '+o.motivo;e.situacao='desligado';e.desligamento=o.data;}
   const mov={id:uid('m'),tipo,empId:e.id,data:o.data,det,novoSalario:o.novoSalario,motivo:o.motivo};DB.movs.push(mov);
   const ev=criarEvento(tipo,{id:e.id,mov});mov.evId=ev.id;saveDB();DIRTY=false;
@@ -880,7 +983,7 @@ SC.folha={view(p){const comp=compSel(p),c=DB.comps[comp],t=totaisComp(comp);cons
     if(c.status==='fechada')a.push({label:'Reabrir competência',act:'folhaReabrir'});else a.push({label:'Fechar competência',act:'folhaFechar'});
     a.push({label:'Contracheques →',act:'folhaHolGo'},{label:'⚙ Calcular folha',act:'folhaCalc',cls:'pri',key:'save'},{label:'Enviar ao eSocial →',act:'folhaEnvioGo',cls:'send',key:'send'});return a;}};
 ACT.folhaCalc=()=>{const comp=compSel(NAV.cur.params);if(!DB.empresa){toast('Cadastre a empresa.','err');return;}const c=compCtx(comp);if(c.status==='fechada'){toast('Competência fechada: reabra para recalcular.','err');return;}
-  if(!DB.empregados.length){toast('Cadastre empregados.','err');return;}if(!c.dtPgto)c.dtPgto=proxMes(comp,5);calcFolha(comp);toast('Folha de '+compLabel(comp)+' calculada.','ok');refresh({comp});};
+  if(!DB.empregados.length){toast('Cadastre empregados.','err');return;}if(!c.dtPgto)c.dtPgto=proxMes(comp,5);calcFolha(comp);{const al=[];for(const id in (DB.comps[comp].res||{})){(DB.comps[comp].res[id].alertas||[]).forEach(a=>al.push((byId(DB.empregados,id)||{}).nome+': '+a));}if(al.length)toast('Atenção — '+al.slice(0,3).join(' | ')+(al.length>3?' (+'+(al.length-3)+')':''),'err');}toast('Folha de '+compLabel(comp)+' calculada.','ok');refresh({comp});};
 ACT.folhaDet=el=>detalheCalc(el.dataset.id,compSel(NAV.cur.params));
 ACT.folhaHol=el=>go('holerite',{comp:compSel(NAV.cur.params),empId:el.dataset.id});
 ACT.folhaHolGo=()=>go('holerite',{comp:compSel(NAV.cur.params)});
@@ -1082,7 +1185,7 @@ SC.d13={view(p){const ano=p.ano||String(new Date().getFullYear()),p1=p.p1||ano+'
   <div class="card" data-form id="f"><div class="grid">${F('Ano-base','ano',ano,{w:2})+F('Competência da 1ª parcela','p1',p1,{t:'month',w:3,hint:'Entre fevereiro e novembro (Lei 4.749/65, art. 2º)'})+F('Competência da 2ª parcela','p2',p2,{t:'month',w:3,hint:'Até 20 de dezembro (art. 1º)'})}</div></div>
   <div class="card"><h2>Empregados (${elig.length})</h2><div class="tw"><table class="t"><thead><tr><th>Empregado</th><th class="c">Avos</th><th class="r">Média variáveis R$</th><th class="r">13º bruto</th><th class="r">1ª parcela</th><th class="r">INSS</th><th class="r">IRRF</th><th class="r">Líquido 2ª</th><th>Competências</th></tr></thead><tbody>
   ${elig.map(e=>{const d=(DB.decimo||{})[ano+'|'+e.id];return `<tr><td>${esc(e.nome)}</td><td class="c">${d?d.avos:'—'}</td><td class="r"><input data-m="${e.id}" value="${d?brIn(num(d.media)):''}" style="width:90px;text-align:right;padding:4px;border:1px solid #c7d0d9;border-radius:5px"></td><td class="r">${d?brl(d.bruto):'—'}</td><td class="r">${d?brl(d.p1.valor):'—'}</td><td class="r">${d?brl(d.inss13):'—'}</td><td class="r">${d?brl(d.irrf13):'—'}</td><td class="r">${d?brl(d.liq2):'—'}</td><td>${d?compLabel(d.p1.comp)+' / '+compLabel(d.p2.comp):'—'}</td></tr>`;}).join('')||'<tr><td colspan="9" class="c" style="padding:16px;color:var(--mut)">Nenhum empregado elegível no ano.</td></tr>'}</tbody></table></div>
-  <div class="note info" style="margin-top:10px">O IRRF do 13º é calculado sobre o valor total, com dedução do INSS do 13º e dependentes (ou desconto simplificado, se mais vantajoso), <b>sem o redutor da Lei 15.270/2025</b> [VERIFICAR FONTE OFICIAL — IN RFB]. A competência de pagamento deve ser recalculada na aba Cálculo da folha.</div></div>`;},
+  <div class="note info" style="margin-top:10px">O IRRF do 13º é calculado sobre o valor total, com dedução do INSS do 13º e dependentes (ou desconto simplificado, se mais vantajoso), <b>com o redutor da Lei 15.270/2025</b>, que também se aplica ao 13º (Lei 9.250/1995, art. 3º-A, §3º, e IN RFB 2.299/2025) **. A competência de pagamento deve ser recalculada na aba Cálculo da folha.</div></div>`;},
   mount(){const f=$('#f');['ano','p1','p2'].forEach(n=>f.querySelector('[name='+n+']').addEventListener('change',e=>{const o=readForm(f);const np={ano:o.ano,p1:o.p1,p2:o.p2};if(n==='ano'){np.p1=o.ano+'-11';np.p2=o.ano+'-12';}DIRTY=false;refresh(np);}));},
   actions:()=>[{label:'💾 Calcular 13º do ano',act:'d13Calc',cls:'pri',key:'save'},{label:'Ir para o cálculo da folha',act:'nav',cls:'',arg:'',key:''}]};
 SC.d13.actions=()=>[{label:'💾 Calcular 13º do ano',act:'d13Calc',cls:'pri',key:'save'}];
@@ -1091,7 +1194,7 @@ ACT.d13Calc=()=>{const f=$('#f'),o=readForm(f),ano=o.ano;if(!/^\d{4}$/.test(ano)
   if(o.p2>ano+'-12'||o.p2.slice(0,4)!==ano){toast('A 2ª parcela deve ser paga até dezembro do ano-base.','err');return;}
   const av=[];if(o.p1<ano+'-02'||o.p1>ano+'-11')av.push('A 1ª parcela deve ser paga entre fevereiro e novembro (Lei 4.749/65, art. 2º).');
   let n=0;const med={};$$('[data-m]').forEach(i=>med[i.dataset.m]=num(i.value));
-  DB.empregados.filter(e=>e.admissao&&e.admissao.slice(0,4)<=ano&&(!e.desligamento||e.desligamento.slice(0,4)>=ano)&&e.situacao!=='desligado').forEach(e=>{const c=calc13(e,Number(ano),DB.params,med[e.id]);if(c.avos<=0)return;
+  DB.empregados.filter(e=>e.admissao&&e.admissao.slice(0,4)<=ano&&(!e.desligamento||e.desligamento.slice(0,4)>=ano)&&e.situacao!=='desligado').forEach(e=>{const mm=med[e.id]===undefined||isNaN(med[e.id])||$('[data-m="'+e.id+'"]').value.trim()===''?mediaVariaveis(e,o.p2,DB.params):med[e.id];med[e.id]=mm;const c=calc13(e,Number(ano),DB.params,mm);if(c.avos<=0)return;
     (DB.decimo=DB.decimo||{})[ano+'|'+e.id]=Object.assign(c,{ano,empId:e.id,media:med[e.id]||0,p1:{comp:o.p1,valor:c.p1},p2:{comp:o.p2}});n++;});
   saveDB();DIRTY=false;toast(n+' empregado(s) calculado(s). Recalcule a folha de '+compLabel(o.p1)+' e '+compLabel(o.p2)+'.','ok');if(av.length)toast(av[0],'err');refresh({ano,p1:o.p1,p2:o.p2});};
 
@@ -1099,7 +1202,7 @@ ACT.d13Calc=()=>{const f=$('#f'),o=readForm(f),ano=o.ano;if(!/^\d{4}$/.test(ano)
 SC.resc={view(p){const sel=p.empId||'';const e=byId(DB.empregados,sel);const rs=e&&DB.rescisoes[e.id];
   const ativos=DB.empregados.filter(x=>x.situacao!=='desligado'||(DB.rescisoes||{})[x.id]);
   const dat=p.data||hoje();let prev='';
-  if(e&&p.prev){const tmp=Object.assign({},e,{desligamento:dat});const r={motivo:p.motivo,aviso:p.aviso,ferVencPer:p.ferVencPer,saldoFgts:p.saldoFgts,media:p.media};const v=calcRescisaoVerbas(tmp,r,DB.params);
+  if(e&&p.prev){const tmp=Object.assign({},e,{desligamento:dat});const r={motivo:p.motivo,aviso:p.aviso,ferVencPer:p.ferVencPer,ferDobraPer:p.ferDobraPer,saldoFgts:p.saldoFgts,media:(p.media===''||p.media==null)?mediaVariaveis(e,dat.slice(0,7),DB.params):p.media};const v=calcRescisaoVerbas(tmp,r,DB.params);
     const sd=Number(dat.slice(8,10));const saldo=r2(num(e.salario)/30*Math.min(30,sd));
     prev=`<div class="card"><h2>Prévia das verbas — ${esc(e.nome)}</h2><div class="tw"><table class="t"><thead><tr><th>Verba</th><th>Referência</th><th class="r">Valor</th></tr></thead><tbody>
     <tr><td>Saldo de salário (estimado)</td><td>${Math.min(30,sd)} d</td><td class="r">${brl(saldo)}</td></tr>
@@ -1109,7 +1212,7 @@ SC.resc={view(p){const sel=p.empId||'';const e=byId(DB.empregados,sel);const rs=
     ${v.multaPct?`<tr><td>Multa do FGTS ${v.multaPct}% (informativa — paga via FGTS Digital)</td><td></td><td class="r">${brl(v.multaFgts)}</td></tr>`:''}</tbody></table></div>${v.notas.map(n=>`<p class="sub" style="margin:6px 0 0">• ${esc(n)}</p>`).join('')}<p class="sub">INSS e IRRF do saldo de salário são calculados na folha ao registrar a rescisão.</p></div>`;}
   return `<h1>Rescisão do contrato (S-2299)</h1><p class="sub">Calcula as verbas rescisórias, registra o desligamento, inclui os valores na folha do mês e gera o S-2299 com as verbas. Motivos suportados no cálculo automático: ${Object.keys(MOTIVOS_RESC).join(', ')}.</p>${exigeEmpresa()}
   <div class="card" data-form id="f"><div class="grid">${F('Empregado','empId',sel,{t:'select',opts:[['','Selecione…']].concat(ativos.map(x=>[x.id,x.mat+' – '+x.nome])),req:1,w:4})+F('Data do desligamento (último dia trabalhado)','data',dat,{t:'date',req:1,w:3})+F('Motivo (Tabela 19)','motivo',p.motivo||'02',{t:'select',opts:Object.entries(MOTIVOS_RESC).map(([k,v])=>[k,k+' – '+v]),w:5})
-  +F('Aviso prévio','aviso',p.aviso||'indenizado',{t:'select',opts:Object.entries(AVISOS),w:4})+F('Períodos de férias vencidas','ferVencPer',p.ferVencPer||0,{w:2,hint:'Completos e não gozados'})+F('Média de variáveis (R$)','media',p.media||'',{t:'money',w:2})+F('Saldo do FGTS (R$) p/ multa','saldoFgts',p.saldoFgts||'',{t:'money',w:4,hint:'Extrato do FGTS'})}</div>
+  +F('Aviso prévio','aviso',p.aviso||'indenizado',{t:'select',opts:Object.entries(AVISOS),w:4})+F('Períodos de férias vencidas','ferVencPer',p.ferVencPer||0,{w:2,hint:'Completos e não gozados'})+F('Dos quais em dobro','ferDobraPer',p.ferDobraPer||0,{w:2,hint:'Fora do prazo concessivo (CLT, art. 137) **'})+F('Média de variáveis (R$)','media',p.media||'',{t:'money',w:2,hint:'Em branco = média automática dos 12 meses lançados (CLT, art. 142) **'})+F('Saldo do FGTS (R$) p/ multa','saldoFgts',p.saldoFgts||'',{t:'money',w:4,hint:'Extrato do FGTS'})}</div>
   ${rs?`<div class="note ok" style="margin-top:10px">Rescisão registrada em ${fmtData(e.desligamento)} — motivo ${esc(rs.motivo)}. Veja o demonstrativo na folha da competência.</div>`:''}</div>${prev}`;},
   mount(p){const f=$('#f');if(!f)return;f.querySelector('[name=empId]').addEventListener('change',e=>{DIRTY=false;refresh({empId:e.target.value,prev:false});});},
   actions:(p)=>{const a=[{label:'Calcular prévia',act:'rescPrev',cls:''},{label:'Registrar rescisão',act:'rescSave',cls:'pri',key:'save',arg:'0'},{label:'Registrar e enviar S-2299',act:'rescSave',cls:'send',key:'send',arg:'1'}];if(p.empId&&DB.rescisoes[p.empId])a.unshift({label:'Imprimir demonstrativo',act:'rescPrint'},{label:'Desfazer rescisão',act:'rescUndo',cls:'danger'});return a;}};
@@ -1119,7 +1222,7 @@ ACT.rescSave=async el=>{const f=$('#f'),mis=faltando(f);if(mis.length){toast('Pr
   if(e.admissao&&o.data<e.admissao){toast('Data do desligamento anterior à admissão.','err');return;}
   const comp=o.data.slice(0,7),c=DB.comps[comp];if(c&&c.status==='fechada'){toast('A competência '+compLabel(comp)+' está fechada. Reabra-a para registrar a rescisão.','err');return;}
   if(DB.rescisoes[e.id]){toast('Já existe rescisão registrada para este empregado. Desfaça-a antes.','err');return;}
-  e.desligamento=o.data;e.situacao='desligado';DB.rescisoes[e.id]={empId:e.id,motivo:o.motivo,aviso:o.aviso,ferVencPer:o.ferVencPer,saldoFgts:o.saldoFgts,media:o.media,data:o.data};
+  e.desligamento=o.data;e.situacao='desligado';DB.rescisoes[e.id]={empId:e.id,motivo:o.motivo,aviso:o.aviso,ferVencPer:o.ferVencPer,ferDobraPer:o.ferDobraPer,saldoFgts:o.saldoFgts,media:(o.media===''||o.media==null)?mediaVariaveis(e,o.data.slice(0,7),DB.params):o.media,data:o.data};
   const mov={id:uid('m'),tipo:'S-2299',empId:e.id,data:o.data,det:'Motivo '+o.motivo+' · '+MOTIVOS_RESC[o.motivo],motivo:o.motivo};DB.movs.push(mov);
   const cc=DB.comps[comp]=DB.comps[comp]||{status:'aberta',lanc:{},res:{}};calcFolha(comp);
   const ev=criarEvento('S-2299',{id:e.id,mov});mov.evId=ev.id;saveDB();DIRTY=false;toast('Rescisão registrada e folha de '+compLabel(comp)+' recalculada.','ok');
@@ -1131,14 +1234,14 @@ ACT.rescPrint=()=>{const id=NAV.cur.params.empId,e=byId(DB.empregados,id);if(!e)
   $('#printarea').innerHTML=holeriteHTML(e,comp);document.body.classList.add('printing');try{window.print();}catch(x){toast('Impressão indisponível neste ambiente.','err');}setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};
 
 /* ===================== Relatórios e guias ===================== */
-SC.relat={view(p){const comp=compSel(p),c=DB.comps[comp];const R=c&&c.status!=='aberta'?resumoEstrutura(comp):null;const T=totaisComp(comp);const E=DB.empresa||{};
+SC.relat={view(p){const comp=compSel(p),c=DB.comps[comp];const R=c&&c.status!=='aberta'?resumoEstrutura(comp):null;const T=totaisComp(comp);const E=DB.empresa||{};const VG=vencimentosGuias(comp,DB.params),brDate=fmtData;
   const tab=(grp,nome,mapa)=>{const keys=Object.keys(R[grp]);return `<div class="card"><h2>Por ${nome}</h2><div class="tw"><table class="t"><thead><tr><th>${nome[0].toUpperCase()+nome.slice(1)}</th><th class="c">Empregados</th><th class="r">Base prev.</th><th class="r">INSS seg.</th><th class="r">IRRF</th><th class="r">FGTS</th><th class="r">CPP</th><th class="r">RAT</th><th class="r">Terceiros</th></tr></thead><tbody>${keys.map(k=>{const o=R[grp][k];return `<tr><td>${esc(mapa(k))}</td><td class="c">${o.n}</td><td class="r">${brl(o.base)}</td><td class="r">${brl(o.inss)}</td><td class="r">${brl(o.irrf)}</td><td class="r">${brl(o.fgts)}</td><td class="r">${brl(o.pat)}</td><td class="r">${brl(o.rat)}</td><td class="r">${brl(o.terc)}</td></tr>`;}).join('')}</tbody></table></div></div>`;};
   return `<h1>Relatórios e guias — ${compLabel(comp)}</h1><p class="sub">Totais por estabelecimento e por lotação, e o resumo do que deve ser recolhido, conforme o regime (${esc(regimeTxt(DB.empresa))}).</p>${exigeEmpresa()}${compBar(comp)}
-  ${R?`<div class="card"><h2>Resumo dos recolhimentos</h2><div class="tw"><table class="t"><thead><tr><th>Recolhimento</th><th class="r">Valor</th><th>Onde / como</th></tr></thead><tbody>
-  <tr><td>INSS dos empregados</td><td class="r">${brl(T.inss)}</td><td>DCTFWeb (DARF numerado) — apurado pelo S-1200 [VERIFICAR FONTE OFICIAL]</td></tr>
+  ${R?`<div class="card"><h2>Resumo dos recolhimentos e vencimentos</h2><div class="tw"><table class="t"><thead><tr><th>Recolhimento</th><th class="r">Valor</th><th>Onde / como</th></tr></thead><tbody>
+  <tr><td>INSS dos empregados</td><td class="r">${brl(T.inss)}</td><td>DCTFWeb (DARF numerado) — apurado pelo S-1200; vence em ${brDate(VG.inss)} **</td></tr>
   <tr><td>CPP patronal + RAT + terceiros</td><td class="r">${brl(T.pat+T.rat+T.terc)}</td><td>${E.regime==='sn'?(E.anexo==='std'?'Já incluídos no DAS (PGDAS-D); nada na DCTFWeb':'Somente lotações de CPP não substituída, na DCTFWeb'):'DCTFWeb (DARF numerado)'}</td></tr>
-  <tr><td>IRRF sobre rendimentos do trabalho</td><td class="r">${brl(T.irrf)}</td><td>DCTFWeb — código de receita 0561 [VERIFICAR FONTE OFICIAL]</td></tr>
-  <tr><td>FGTS</td><td class="r">${brl(T.fgts)}</td><td>FGTS Digital, até o dia 20 do mês seguinte (Lei 8.036/90, art. 15) [VERIFICAR FONTE OFICIAL]</td></tr>
+  <tr><td>IRRF sobre rendimentos do trabalho</td><td class="r">${brl(T.irrf)}</td><td>DCTFWeb — código de receita 0561 **</td></tr>
+  <tr><td>FGTS</td><td class="r">${brl(T.fgts)}</td><td>FGTS Digital, vence em ${brDate(VG.fgts)} (Lei 8.036/90, art. 15; regra de ${VG.regra==='prorroga'?'prorrogação':'antecipação'} para dia útil, feriados móveis e locais não considerados) **</td></tr>
   <tr><td>Salário-família (compensável)</td><td class="r">${brl(T.sf)}</td><td>Abatido das contribuições previdenciárias (Lei 8.213/91, art. 68)</td></tr></tbody></table></div></div>
   ${tab('estab','estabelecimento',k=>(byId(DB.estabs,k)||{nome:k}).nome)}${tab('lot','lotação',k=>{const l=byId(DB.lotacoes,k);return l?l.cod+' – '+l.desc:k;})}`:'<div class="note">Calcule a folha da competência para ver os relatórios.</div>'}`;},
   mount(){bindComp();},
@@ -1221,11 +1324,11 @@ SC.cmp={view(){const i=cmpEntrada();const serv=i.ativ==='serv';
   <div id="cmpOut">${cmpResultadoHtml(i)}</div>
   <div class="card"><h2>Premissas, limites e base legal</h2>
   <p style="margin:4px 0">• <b>Simples Nacional:</b> alíquota efetiva = (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 (LC 123/2006, art. 18 e Anexos I a V, redação da LC 155/2016). Fator R de 28% (art. 18, §§ 5º-I, 5º-J e 5º-M): folha dos 12 meses, com pró-labore e FGTS, dividida pela receita. Limite de R$ 4,8 milhões (art. 3º, II) e sublimite de R$ 3,6 milhões para ICMS/ISS (art. 13-A). Anexos IV: CPP fora do DAS (art. 18, §5º-C).</p>
-  <p style="margin:4px 0">• <b>Lucro Presumido:</b> presunção da Lei 9.249/1995, arts. 15 e 20; IRPJ de 15% com adicional de 10% sobre o que passar de R$ 20 mil por mês (art. 3º, caput e §1º); CSLL de 9%; PIS 0,65% e COFINS 3% cumulativos (Lei 9.718/1998). <b>LC 224/2025</b>: acréscimo de 10% nos percentuais de presunção sobre a parcela da receita anual acima de R$ 5 milhões (IN RFB 2.305/2025 e 2.306/2026); há ações judiciais em curso [VERIFICAR FONTE OFICIAL].</p>
+  <p style="margin:4px 0">• <b>Lucro Presumido:</b> presunção da Lei 9.249/1995, arts. 15 e 20; IRPJ de 15% com adicional de 10% sobre o que passar de R$ 20 mil por mês (art. 3º, caput e §1º); CSLL de 9%; PIS 0,65% e COFINS 3% cumulativos (Lei 9.718/1998). <b>LC 224/2025</b>: acréscimo de 10% nos percentuais de presunção sobre a parcela da receita anual acima de R$ 5 milhões (IN RFB 2.305/2025 e 2.306/2026); há ações judiciais em curso **.</p>
   <p style="margin:4px 0">• <b>Lucro Real:</b> IRPJ 15% + adicional de 10% e CSLL 9% sobre o lucro contábil ajustado; PIS 1,65% e COFINS 7,6% não cumulativos, com créditos (Leis 10.637/2002 e 10.833/2003). Sem adições e exclusões, sem compensação de prejuízos e sem JCP.</p>
   <p style="margin:4px 0">• <b>Encargos patronais</b> (Presumido, Real e Simples Anexo IV): 20% sobre salários e pró-labore, RAT×FAP e terceiros só sobre salários (Lei 8.212/1991, art. 22, I a III; terceiros dispensados no Simples — LC 123/2006, art. 13, §3º). FGTS de 8% é igual em todos os regimes.</p>
   <p style="margin:4px 0">• <b>Reforma do consumo em 2026:</b> CBS 0,9% e IBS 0,1% são alíquotas de teste, compensadas com PIS/COFINS, sem aumento de carga; o Simples fica fora do teste (LC 214/2025, arts. 343 e 346).</p>
-  <p style="margin:4px 0">• <b>Não considerado:</b> CPRB, retenções na fonte, atividades mistas, ICMS-ST, IPI, JCP, compensação de prejuízos, tributação dos lucros distribuídos (IRRF de 10% sobre dividendos acima de R$ 50 mil por mês — Lei 15.270/2025 [VERIFICAR FONTE OFICIAL]) e variações sazonais. O resultado é uma <b>estimativa para decisão preliminar</b>, não substitui o estudo de planejamento tributário.</p></div>`;},
+  <p style="margin:4px 0">• <b>Não considerado:</b> CPRB, retenções na fonte, atividades mistas, ICMS-ST, IPI, JCP, compensação de prejuízos, tributação dos lucros distribuídos (IRRF de 10% sobre dividendos acima de R$ 50 mil por mês — Lei 15.270/2025 **) e variações sazonais. O resultado é uma <b>estimativa para decisão preliminar</b>, não substitui o estudo de planejamento tributário.</p></div>`;},
   mount(){const f=$('#f');if(!f)return;const upd=()=>{const o=readForm(f);o.lc224=!!o.lc224;DB.cmp=Object.assign({},o);saveDB();$('#cmpOut').innerHTML=cmpResultadoHtml(cmpEntrada());DIRTY=false;};
     $$('[name]',f).forEach(el=>{el.addEventListener('input',upd);el.addEventListener('change',upd);});},
   actions:()=>[{label:'Usar folha calculada',act:'cmpFolha'},{label:'Restaurar padrão',act:'cmpReset'},{label:'🖨 Imprimir',act:'cmpPrint',cls:'pri',key:'save'}]};
@@ -1268,14 +1371,14 @@ SC.params={view(){const P=DB.params;
   return `<h1>Parâmetros legais (2026)</h1><p class="sub">Tabelas usadas pelo cálculo. Edite quando houver nova portaria ou lei.</p>
   <div data-form id="f"><div class="card"><h2>INSS do empregado — contribuição progressiva</h2><div class="tw"><table class="t"><thead><tr><th>Faixa</th><th class="r">Até (R$)</th><th class="r">Alíquota (%)</th></tr></thead><tbody>${P.inss.map((f,i)=>`<tr><td>${i+1}ª</td><td class="r">${pin('inss.'+i+'.0')}</td><td class="r">${pin('inss.'+i+'.1',60)}</td></tr>`).join('')}</tbody></table></div>
   <div class="grid" style="margin-top:10px"><div class="f" style="grid-column:span 3"><label>Salário mínimo</label>${pin('salMin')}</div><div class="f" style="grid-column:span 3"><label>Teto do salário de contribuição</label>${pin('tetoInss')}</div></div><p class="sub" style="margin:8px 0 0">Base: Portaria Interministerial MPS/MF nº 13/2026 (faixas e teto) e Decreto nº 12.797/2025 (salário mínimo); Lei nº 8.212/1991, art. 28 (salário de contribuição) e EC nº 103/2019, art. 28 (alíquotas progressivas).</p></div>
-  <div class="card"><h2>CPRB — reoneração gradual da contribuição patronal (Lei 14.973/2024)</h2><div class="grid"><div class="f" style="grid-column:span 3"><label>2025 — % da CPP devida</label>${pin('cprbFrac.2025')}</div><div class="f" style="grid-column:span 3"><label>2026 — % da CPP devida</label>${pin('cprbFrac.2026')}</div><div class="f" style="grid-column:span 3"><label>2027 — % da CPP devida</label>${pin('cprbFrac.2027')}</div></div><p class="sub" style="margin:8px 0 0">Percentual da contribuição patronal de 20% que volta a incidir sobre a folha das atividades desoneradas; a CPRB sobre a receita bruta é apurada fora da folha. [VERIFICAR FONTE OFICIAL]</p></div>
+  <div class="card"><h2>CPRB — reoneração gradual da contribuição patronal (Lei 14.973/2024)</h2><div class="grid"><div class="f" style="grid-column:span 3"><label>2025 — % da CPP devida</label>${pin('cprbFrac.2025')}</div><div class="f" style="grid-column:span 3"><label>2026 — % da CPP devida</label>${pin('cprbFrac.2026')}</div><div class="f" style="grid-column:span 3"><label>2027 — % da CPP devida</label>${pin('cprbFrac.2027')}</div></div><p class="sub" style="margin:8px 0 0">Percentual da contribuição patronal de 20% que volta a incidir sobre a folha das atividades desoneradas; a CPRB sobre a receita bruta é apurada fora da folha. **</p></div>
   <div class="card"><h2>IRRF — tabela mensal, deduções e redução</h2><div class="tw"><table class="t"><thead><tr><th>Faixa</th><th class="r">Base até (R$)</th><th class="r">Alíquota (%)</th><th class="r">Parcela a deduzir (R$)</th></tr></thead><tbody>${P.irrf.map((f,i)=>`<tr><td>${i+1}ª</td><td class="r">${pin('irrf.'+i+'.0')}</td><td class="r">${pin('irrf.'+i+'.1',60)}</td><td class="r">${pin('irrf.'+i+'.2')}</td></tr>`).join('')}</tbody></table></div>
   <div class="grid" style="margin-top:10px"><div class="f" style="grid-column:span 3"><label>Dedução por dependente</label>${pin('depIr')}</div><div class="f" style="grid-column:span 3"><label>Desconto simplificado</label>${pin('simpl')}</div><div class="f" style="grid-column:span 3"><label>Redução total até (rendimento)</label>${pin('redutor.isento')}</div><div class="f" style="grid-column:span 3"><label>Redução parcial até</label>${pin('redutor.teto')}</div><div class="f" style="grid-column:span 3"><label>Redução: constante A</label>${pin('redutor.a')}</div><div class="f" style="grid-column:span 3"><label>Redução: coeficiente B</label>${pin('redutor.b',110)}</div></div>
   <p class="sub" style="margin:8px 0 0">Redução mensal: rendimento tributável até R$ 5.000,00 zera o imposto; entre R$ 5.000,01 e R$ 7.350,00, redução = A − (B × rendimento), limitada ao imposto apurado — Lei nº 15.270/2025. Dedução por dependente e desconto simplificado conforme tabela vigente da Receita Federal. O sistema usa o método (deduções legais ou simplificado) que resultar em menor imposto.</p></div>
-  <div class="card"><h2>Salário-família, FGTS, vale-transporte e adicionais</h2><div class="grid"><div class="f" style="grid-column:span 3"><label>Cota do salário-família</label>${pin('salFam.cota')}</div><div class="f" style="grid-column:span 3"><label>Limite de remuneração</label>${pin('salFam.limite')}</div><div class="f" style="grid-column:span 2"><label>Idade máxima do filho</label>${pin('salFam.idade',60)}</div><div class="f" style="grid-column:span 2"><label>FGTS (%)</label>${pin('fgts',60)}</div><div class="f" style="grid-column:span 2"><label>FGTS aprendiz (%)</label>${pin('fgtsAprendiz',60)}</div><div class="f" style="grid-column:span 2"><label>Desconto do VT (%)</label>${pin('vtPerc',60)}</div><div class="f" style="grid-column:span 2"><label>Adicional noturno (%)</label>${pin('adNoturno',60)}</div><div class="f" style="grid-column:span 2"><label>Periculosidade (%)</label>${pin('peric',60)}</div><div class="f" style="grid-column:span 2"><label>Hora extra (%)</label>${pin('he50',60)}</div><div class="f" style="grid-column:span 2"><label>Hora extra 100% (%)</label>${pin('he100',60)}</div><div class="f" style="grid-column:span 2"><label>Divisor padrão (h/mês)</label>${pin('divisor',60)}</div><div class="f" style="grid-column:span 2"><label>CPP patronal padrão (%)</label>${pin('patronal',60)}</div></div>
+  <div class="card"><h2>Salário-família, FGTS, vale-transporte e adicionais</h2><div class="grid"><div class="f" style="grid-column:span 3"><label>Cota do salário-família</label>${pin('salFam.cota')}</div><div class="f" style="grid-column:span 3"><label>Limite de remuneração</label>${pin('salFam.limite')}</div><div class="f" style="grid-column:span 2"><label>Idade máxima do filho</label>${pin('salFam.idade',60)}</div><div class="f" style="grid-column:span 2"><label>FGTS (%)</label>${pin('fgts',60)}</div><div class="f" style="grid-column:span 2"><label>FGTS aprendiz (%)</label>${pin('fgtsAprendiz',60)}</div><div class="f" style="grid-column:span 2"><label>Desconto do VT (%)</label>${pin('vtPerc',60)}</div><div class="f" style="grid-column:span 2"><label>Adicional noturno (%)</label>${pin('adNoturno',60)}</div><div class="f" style="grid-column:span 2"><label>Periculosidade (%)</label>${pin('peric',60)}</div><div class="f" style="grid-column:span 2"><label>Hora extra (%)</label>${pin('he50',60)}</div><div class="f" style="grid-column:span 2"><label>Hora extra 100% (%)</label>${pin('he100',60)}</div><div class="f" style="grid-column:span 2"><label>Divisor padrão (h/mês)</label>${pin('divisor',60)}</div><div class="f" style="grid-column:span 2"><label>CPP patronal padrão (%)</label>${pin('patronal',60)}</div><div class="f" style="grid-column:span 3"><label>Base do adicional noturno</label><select id="pbBase"><option value="vh" ${DB.params.adnotBase!=='sal'?'selected':''}>Salário + adicionais</option><option value="sal" ${DB.params.adnotBase==='sal'?'selected':''}>Somente salário</option></select></div><div class="f" style="grid-column:span 3"><label>Hora noturna reduzida (52min30s) **</label><select id="pbRed"><option value="0">Não</option><option value="1" ${DB.params.horaNotRed?'selected':''}>Sim</option></select></div><div class="f" style="grid-column:span 3"><label>DSR perdido automático **</label><select id="pbDsr"><option value="0">Não (lançamento manual)</option><option value="1" ${DB.params.dsrAuto?'selected':''}>Sim</option></select></div><div class="f" style="grid-column:span 3"><label>Vencimento de INSS/FGTS em dia não útil **</label><select id="pbReg"><option value="antecipa">Antecipa</option><option value="prorroga" ${(DB.params.venc||{}).regra==='prorroga'?'selected':''}>Prorroga</option></select></div></div>
   <p class="sub" style="margin:8px 0 0">Bases: salário-família — Lei nº 8.213/1991, art. 65, e Portaria MPS/MF nº 13/2026; FGTS — Lei nº 8.036/1990, art. 15, caput e §7º (aprendiz); vale-transporte — Lei nº 7.418/1985, art. 4º, parágrafo único; horas extras — CF, art. 7º, XVI, e CLT, art. 59, §1º; adicional noturno — CLT, art. 73, caput; periculosidade — CLT, art. 193, §1º; insalubridade — CLT, art. 192; contribuição patronal — Lei nº 8.212/1991, art. 22, I e II.</p></div></div>`;},
   actions:()=>[{label:'Restaurar padrão 2026',act:'parDef'},{label:'💾 Salvar parâmetros',act:'parSave',cls:'pri',key:'save'}]};
-ACT.parSave=()=>{$$('[data-pp]').forEach(i=>setP(DB.params,i.dataset.pp,num(i.value)));saveDB();DIRTY=false;toast('Parâmetros salvos. Recalcule as folhas abertas.','ok');refresh();};
+ACT.parSave=()=>{DB.params.adnotBase=($('#pbBase')||{}).value||'vh';DB.params.horaNotRed=($('#pbRed')||{}).value==='1';DB.params.dsrAuto=($('#pbDsr')||{}).value==='1';DB.params.venc=DB.params.venc||{};DB.params.venc.regra=($('#pbReg')||{}).value||'antecipa';$$('[data-pp]').forEach(i=>setP(DB.params,i.dataset.pp,num(i.value)));saveDB();DIRTY=false;toast('Parâmetros salvos. Recalcule as folhas abertas.','ok');refresh();};
 ACT.parDef=()=>modalConfirm('Restaurar todas as tabelas para os valores padrão de 2026?',()=>{DB.params=defaultParams();saveDB();refresh();},{yes:'Restaurar'});
 
 /* ===================== BACKUP / DEMO ===================== */
@@ -1295,14 +1398,19 @@ function seedDemo(regime){regime=typeof regime==='string'?regime:'lp';DB=emptyDB
   DB.comps[comp]={status:'aberta',lanc:{[j]:{he50:'10'},[m]:{faltas:'1'}},res:{},diasUteis:'25',domFer:'5',dtPgto:proxMes(comp,5)};
   saveDB();}
 SC.backup={view(){return `<h1>Backup e dados</h1><p class="sub">Os dados ficam salvos no navegador deste dispositivo. Faça backup periódico.</p>
-  <div class="card"><h2>Exportar / importar</h2><div class="row"><button class="btn pri" data-act="bkExport">Exportar backup (JSON)</button><button class="btn" data-act="bkImport">Importar backup</button></div></div>
+  <div class="card"><h2>Segurança do acesso</h2><p class="sub">Os dados são gravados <b>cifrados</b> neste navegador (AES-256-GCM, chave derivada da sua senha) e o sistema se bloqueia após 15 minutos sem uso. É proteção local de um único usuário: não há perfis nem trilha de auditoria, e a senha não pode ser recuperada.</p><div class="row"><button class="btn pri" data-act="segBloquear">Bloquear agora</button><button class="btn" data-act="segTrocar">Trocar senha</button></div></div>
+  <div class="card"><h2>Exportar / importar</h2><div class="row"><button class="btn pri" data-act="bkExport">Exportar backup cifrado</button><button class="btn" data-act="bkImport">Importar backup</button></div></div>
   <div class="card"><h2>Dados de demonstração</h2><p class="sub">Carrega uma empresa fictícia (matriz e filial), 3 empregados e lançamentos para percorrer todo o fluxo. Escolha o regime a simular (substitui os dados atuais).</p><div class="row"><button class="btn" data-act="bkDemo" data-arg="sn">Simples Nacional (Anexo III/V)</button><button class="btn" data-act="bkDemo" data-arg="sn4">Simples Nacional (Anexo IV)</button><button class="btn" data-act="bkDemo" data-arg="lp">Lucro Presumido</button><button class="btn" data-act="bkDemo" data-arg="lr">Lucro Real</button><button class="btn" data-act="bkDemo" data-arg="lpcprb">Presumido com CPRB</button></div></div>
   <div class="card"><h2>Apagar tudo</h2><p class="sub">Remove todos os cadastros, folhas e eventos deste navegador.</p><button class="btn danger" data-act="bkReset">Apagar todos os dados</button></div>
-  <div class="note info">Armazenamento local: ${(JSON.stringify(DB).length/1024).toFixed(0)} KB. Em páginas publicadas como artefato, o armazenamento pode ser limpo pelo navegador — mantenha sempre um backup.</div>`;},actions:()=>[]};
-ACT.bkExport=()=>{const s=JSON.stringify(DB);modal(`<textarea id="bkt" style="width:100%;height:280px" class="mono" readonly>${esc(s)}</textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="bkc">Copiar</button><button class="btn" id="bkd">Baixar .json</button></div>`,{title:'Backup completo',wide:true});
-  $('#bkc').onclick=async()=>{try{await navigator.clipboard.writeText(s);toast('Copiado.','ok');}catch(e){$('#bkt').select();toast('Selecione e copie manualmente (Ctrl+C).');}};$('#bkd').onclick=()=>baixar('folhapro_backup_'+hoje()+'.json',s,'application/json');};
-ACT.bkImport=()=>{modal(`<p class="sub">Cole o conteúdo do backup (JSON). Os dados atuais serão substituídos.</p><textarea id="bki" style="width:100%;height:260px" class="mono"></textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="bkok">Importar</button></div>`,{title:'Importar backup',wide:true});
-  $('#bkok').onclick=()=>{try{const d=JSON.parse($('#bki').value);if(!d||typeof d!=='object'||!Array.isArray(d.empregados))throw new Error('formato inválido');const e=emptyDB();DB=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});migrar(DB);saveDB();closeModal();toast('Backup importado.','ok');refresh();}catch(x){toast('Backup inválido: '+x.message,'err');}};};
+  <div class="note info">Armazenamento local (cifrado): ${(JSON.stringify(DB).length/1024).toFixed(0)} KB. O navegador pode limpar o armazenamento local — mantenha sempre um backup cifrado.</div>`;},actions:()=>[]};
+ACT.bkExport=()=>{modal(`<p class="sub">O backup é gravado <b>cifrado</b> (AES-256-GCM) com a senha que você definir abaixo. Sem essa senha, o arquivo não pode ser aberto. Guarde-a em local seguro.</p><label>Senha do backup</label><input type="password" id="bks1" autocomplete="new-password" style="width:100%"><label style="margin-top:8px">Confirme a senha</label><input type="password" id="bks2" autocomplete="new-password" style="width:100%"><div class="row" style="margin-top:12px"><button class="btn pri" id="bkd">Gerar e baixar backup cifrado</button></div>`,{title:'Backup cifrado'});
+  $('#bkd').onclick=async()=>{const a=$('#bks1').value;if(a!==$('#bks2').value){toast('As senhas não conferem.','err');return;}try{const t=await SEG.exportarCifrado(a);baixar('folhapro_backup_'+hoje()+'.folhapro',t,'application/json');closeModal();toast('Backup cifrado gerado.','ok');}catch(x){toast(x.message,'err');}};};
+ACT.bkImport=()=>{modal(`<p class="sub">Selecione o arquivo de backup (.folhapro ou .json) ou cole o conteúdo. Os dados atuais serão substituídos. Backups cifrados exigem a senha do backup.</p><input type="file" id="bkf" accept=".folhapro,.json,application/json"><textarea id="bki" style="width:100%;height:200px;margin-top:8px" class="mono"></textarea><label>Senha do backup (se cifrado)</label><input type="password" id="bkp" autocomplete="off" style="width:100%"><div class="row" style="margin-top:8px"><button class="btn pri" id="bkok">Importar</button></div>`,{title:'Importar backup',wide:true});
+  $('#bkf').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('#bki').value=r.result;};r.readAsText(f);};
+  $('#bkok').onclick=async()=>{try{const d=await SEG.lerBackup($('#bki').value,$('#bkp').value);if(!d||typeof d!=='object'||!Array.isArray(d.empregados))throw new Error('formato inválido');DB=hidratar(d);saveDB();closeModal();toast('Backup importado.','ok');refresh();}catch(x){toast('Backup inválido: '+x.message,'err');}};};
+ACT.segBloquear=()=>SEG.bloquear();
+ACT.segTrocar=()=>{modal(`<p class="sub">Informe a senha atual e a nova senha (mínimo de ${SEG.MIN_SENHA} caracteres). Não há recuperação de senha.</p><label>Senha atual</label><input type="password" id="sg0" autocomplete="current-password" style="width:100%"><label style="margin-top:8px">Nova senha</label><input type="password" id="sg1" autocomplete="new-password" style="width:100%"><label style="margin-top:8px">Confirme a nova senha</label><input type="password" id="sg2" autocomplete="new-password" style="width:100%"><div class="row" style="margin-top:12px"><button class="btn pri" id="sgok">Trocar senha</button></div>`,{title:'Trocar senha de acesso'});
+  $('#sgok').onclick=async()=>{if($('#sg1').value!==$('#sg2').value){toast('As senhas não conferem.','err');return;}try{await SEG.trocarSenha($('#sg0').value,$('#sg1').value);closeModal();toast('Senha alterada. Os dados foram recifrados.','ok');}catch(x){toast(x.message,'err');}};};
 ACT.bkDemo=el=>modalConfirm('Substituir todos os dados atuais pelos dados de demonstração?',()=>{seedDemo(el&&el.dataset&&el.dataset.arg||'lp');toast('Dados de demonstração carregados.','ok');home();render();},{yes:'Carregar'});
 ACT.bkReset=()=>modalConfirm('<b>Apagar todos os dados?</b> Esta ação não pode ser desfeita.',()=>{DB=emptyDB();saveDB();toast('Dados apagados.');home();render();},{yes:'Apagar tudo'});
 
@@ -1332,5 +1440,5 @@ SC.home.actions=()=>[{label:'Biblioteca de eventos',act:'goBib'},{label:'Cálcul
 ACT.goBib=()=>go('biblioteca');ACT.goFolha=()=>go('folha',{comp:DB.cfg.comp});ACT.goEnvio=()=>go('envio',{comp:DB.cfg.comp});
 
 /* ===================== INIT ===================== */
-DB=loadDB();render();
+SEG.boot();
 </script></body></html>

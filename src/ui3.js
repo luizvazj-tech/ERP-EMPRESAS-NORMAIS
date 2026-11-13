@@ -40,7 +40,7 @@ SC.folha={view(p){const comp=compSel(p),c=DB.comps[comp],t=totaisComp(comp);cons
     if(c.status==='fechada')a.push({label:'Reabrir competência',act:'folhaReabrir'});else a.push({label:'Fechar competência',act:'folhaFechar'});
     a.push({label:'Contracheques →',act:'folhaHolGo'},{label:'⚙ Calcular folha',act:'folhaCalc',cls:'pri',key:'save'},{label:'Enviar ao eSocial →',act:'folhaEnvioGo',cls:'send',key:'send'});return a;}};
 ACT.folhaCalc=()=>{const comp=compSel(NAV.cur.params);if(!DB.empresa){toast('Cadastre a empresa.','err');return;}const c=compCtx(comp);if(c.status==='fechada'){toast('Competência fechada: reabra para recalcular.','err');return;}
-  if(!DB.empregados.length){toast('Cadastre empregados.','err');return;}if(!c.dtPgto)c.dtPgto=proxMes(comp,5);calcFolha(comp);toast('Folha de '+compLabel(comp)+' calculada.','ok');refresh({comp});};
+  if(!DB.empregados.length){toast('Cadastre empregados.','err');return;}if(!c.dtPgto)c.dtPgto=proxMes(comp,5);calcFolha(comp);{const al=[];for(const id in (DB.comps[comp].res||{})){(DB.comps[comp].res[id].alertas||[]).forEach(a=>al.push((byId(DB.empregados,id)||{}).nome+': '+a));}if(al.length)toast('Atenção — '+al.slice(0,3).join(' | ')+(al.length>3?' (+'+(al.length-3)+')':''),'err');}toast('Folha de '+compLabel(comp)+' calculada.','ok');refresh({comp});};
 ACT.folhaDet=el=>detalheCalc(el.dataset.id,compSel(NAV.cur.params));
 ACT.folhaHol=el=>go('holerite',{comp:compSel(NAV.cur.params),empId:el.dataset.id});
 ACT.folhaHolGo=()=>go('holerite',{comp:compSel(NAV.cur.params)});
