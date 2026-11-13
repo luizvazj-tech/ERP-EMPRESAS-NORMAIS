@@ -76,7 +76,7 @@ ACT.d13Calc=()=>{const f=$('#f'),o=readForm(f),ano=o.ano;if(!/^\d{4}$/.test(ano)
   if(o.p2>ano+'-12'||o.p2.slice(0,4)!==ano){toast('A 2ª parcela deve ser paga até dezembro do ano-base.','err');return;}
   const av=[];if(o.p1<ano+'-02'||o.p1>ano+'-11')av.push('A 1ª parcela deve ser paga entre fevereiro e novembro (Lei 4.749/65, art. 2º).');
   let n=0;const med={};$$('[data-m]').forEach(i=>med[i.dataset.m]=num(i.value));
-  DB.empregados.filter(e=>e.admissao&&e.admissao.slice(0,4)<=ano&&(!e.desligamento||e.desligamento.slice(0,4)>=ano)&&e.situacao!=='desligado').forEach(e=>{const c=calc13(e,Number(ano),DB.params,med[e.id]);if(c.avos<=0)return;
+  DB.empregados.filter(e=>e.admissao&&e.admissao.slice(0,4)<=ano&&(!e.desligamento||e.desligamento.slice(0,4)>=ano)&&e.situacao!=='desligado').forEach(e=>{const mm=med[e.id]===undefined||isNaN(med[e.id])||$('[data-m="'+e.id+'"]').value.trim()===''?mediaVariaveis(e,o.p2,DB.params):med[e.id];med[e.id]=mm;const c=calc13(e,Number(ano),DB.params,mm);if(c.avos<=0)return;
     (DB.decimo=DB.decimo||{})[ano+'|'+e.id]=Object.assign(c,{ano,empId:e.id,media:med[e.id]||0,p1:{comp:o.p1,valor:c.p1},p2:{comp:o.p2}});n++;});
   saveDB();DIRTY=false;toast(n+' empregado(s) calculado(s). Recalcule a folha de '+compLabel(o.p1)+' e '+compLabel(o.p2)+'.','ok');if(av.length)toast(av[0],'err');refresh({ano,p1:o.p1,p2:o.p2});};
 
@@ -84,7 +84,7 @@ ACT.d13Calc=()=>{const f=$('#f'),o=readForm(f),ano=o.ano;if(!/^\d{4}$/.test(ano)
 SC.resc={view(p){const sel=p.empId||'';const e=byId(DB.empregados,sel);const rs=e&&DB.rescisoes[e.id];
   const ativos=DB.empregados.filter(x=>x.situacao!=='desligado'||(DB.rescisoes||{})[x.id]);
   const dat=p.data||hoje();let prev='';
-  if(e&&p.prev){const tmp=Object.assign({},e,{desligamento:dat});const r={motivo:p.motivo,aviso:p.aviso,ferVencPer:p.ferVencPer,saldoFgts:p.saldoFgts,media:p.media};const v=calcRescisaoVerbas(tmp,r,DB.params);
+  if(e&&p.prev){const tmp=Object.assign({},e,{desligamento:dat});const r={motivo:p.motivo,aviso:p.aviso,ferVencPer:p.ferVencPer,ferDobraPer:p.ferDobraPer,saldoFgts:p.saldoFgts,media:(p.media===''||p.media==null)?mediaVariaveis(e,dat.slice(0,7),DB.params):p.media};const v=calcRescisaoVerbas(tmp,r,DB.params);
     const sd=Number(dat.slice(8,10));const saldo=r2(num(e.salario)/30*Math.min(30,sd));
     prev=`<div class="card"><h2>Prévia das verbas — ${esc(e.nome)}</h2><div class="tw"><table class="t"><thead><tr><th>Verba</th><th>Referência</th><th class="r">Valor</th></tr></thead><tbody>
     <tr><td>Saldo de salário (estimado)</td><td>${Math.min(30,sd)} d</td><td class="r">${brl(saldo)}</td></tr>
@@ -94,7 +94,7 @@ SC.resc={view(p){const sel=p.empId||'';const e=byId(DB.empregados,sel);const rs=
     ${v.multaPct?`<tr><td>Multa do FGTS ${v.multaPct}% (informativa — paga via FGTS Digital)</td><td></td><td class="r">${brl(v.multaFgts)}</td></tr>`:''}</tbody></table></div>${v.notas.map(n=>`<p class="sub" style="margin:6px 0 0">• ${esc(n)}</p>`).join('')}<p class="sub">INSS e IRRF do saldo de salário são calculados na folha ao registrar a rescisão.</p></div>`;}
   return `<h1>Rescisão do contrato (S-2299)</h1><p class="sub">Calcula as verbas rescisórias, registra o desligamento, inclui os valores na folha do mês e gera o S-2299 com as verbas. Motivos suportados no cálculo automático: ${Object.keys(MOTIVOS_RESC).join(', ')}.</p>${exigeEmpresa()}
   <div class="card" data-form id="f"><div class="grid">${F('Empregado','empId',sel,{t:'select',opts:[['','Selecione…']].concat(ativos.map(x=>[x.id,x.mat+' – '+x.nome])),req:1,w:4})+F('Data do desligamento (último dia trabalhado)','data',dat,{t:'date',req:1,w:3})+F('Motivo (Tabela 19)','motivo',p.motivo||'02',{t:'select',opts:Object.entries(MOTIVOS_RESC).map(([k,v])=>[k,k+' – '+v]),w:5})
-  +F('Aviso prévio','aviso',p.aviso||'indenizado',{t:'select',opts:Object.entries(AVISOS),w:4})+F('Períodos de férias vencidas','ferVencPer',p.ferVencPer||0,{w:2,hint:'Completos e não gozados'})+F('Média de variáveis (R$)','media',p.media||'',{t:'money',w:2})+F('Saldo do FGTS (R$) p/ multa','saldoFgts',p.saldoFgts||'',{t:'money',w:4,hint:'Extrato do FGTS'})}</div>
+  +F('Aviso prévio','aviso',p.aviso||'indenizado',{t:'select',opts:Object.entries(AVISOS),w:4})+F('Períodos de férias vencidas','ferVencPer',p.ferVencPer||0,{w:2,hint:'Completos e não gozados'})+F('Dos quais em dobro','ferDobraPer',p.ferDobraPer||0,{w:2,hint:'Fora do prazo concessivo (CLT, art. 137) **'})+F('Média de variáveis (R$)','media',p.media||'',{t:'money',w:2,hint:'Em branco = média automática dos 12 meses lançados (CLT, art. 142) **'})+F('Saldo do FGTS (R$) p/ multa','saldoFgts',p.saldoFgts||'',{t:'money',w:4,hint:'Extrato do FGTS'})}</div>
   ${rs?`<div class="note ok" style="margin-top:10px">Rescisão registrada em ${fmtData(e.desligamento)} — motivo ${esc(rs.motivo)}. Veja o demonstrativo na folha da competência.</div>`:''}</div>${prev}`;},
   mount(p){const f=$('#f');if(!f)return;f.querySelector('[name=empId]').addEventListener('change',e=>{DIRTY=false;refresh({empId:e.target.value,prev:false});});},
   actions:(p)=>{const a=[{label:'Calcular prévia',act:'rescPrev',cls:''},{label:'Registrar rescisão',act:'rescSave',cls:'pri',key:'save',arg:'0'},{label:'Registrar e enviar S-2299',act:'rescSave',cls:'send',key:'send',arg:'1'}];if(p.empId&&DB.rescisoes[p.empId])a.unshift({label:'Imprimir demonstrativo',act:'rescPrint'},{label:'Desfazer rescisão',act:'rescUndo',cls:'danger'});return a;}};
@@ -104,7 +104,7 @@ ACT.rescSave=async el=>{const f=$('#f'),mis=faltando(f);if(mis.length){toast('Pr
   if(e.admissao&&o.data<e.admissao){toast('Data do desligamento anterior à admissão.','err');return;}
   const comp=o.data.slice(0,7),c=DB.comps[comp];if(c&&c.status==='fechada'){toast('A competência '+compLabel(comp)+' está fechada. Reabra-a para registrar a rescisão.','err');return;}
   if(DB.rescisoes[e.id]){toast('Já existe rescisão registrada para este empregado. Desfaça-a antes.','err');return;}
-  e.desligamento=o.data;e.situacao='desligado';DB.rescisoes[e.id]={empId:e.id,motivo:o.motivo,aviso:o.aviso,ferVencPer:o.ferVencPer,saldoFgts:o.saldoFgts,media:o.media,data:o.data};
+  e.desligamento=o.data;e.situacao='desligado';DB.rescisoes[e.id]={empId:e.id,motivo:o.motivo,aviso:o.aviso,ferVencPer:o.ferVencPer,ferDobraPer:o.ferDobraPer,saldoFgts:o.saldoFgts,media:(o.media===''||o.media==null)?mediaVariaveis(e,o.data.slice(0,7),DB.params):o.media,data:o.data};
   const mov={id:uid('m'),tipo:'S-2299',empId:e.id,data:o.data,det:'Motivo '+o.motivo+' · '+MOTIVOS_RESC[o.motivo],motivo:o.motivo};DB.movs.push(mov);
   const cc=DB.comps[comp]=DB.comps[comp]||{status:'aberta',lanc:{},res:{}};calcFolha(comp);
   const ev=criarEvento('S-2299',{id:e.id,mov});mov.evId=ev.id;saveDB();DIRTY=false;toast('Rescisão registrada e folha de '+compLabel(comp)+' recalculada.','ok');
@@ -116,14 +116,14 @@ ACT.rescPrint=()=>{const id=NAV.cur.params.empId,e=byId(DB.empregados,id);if(!e)
   $('#printarea').innerHTML=holeriteHTML(e,comp);document.body.classList.add('printing');try{window.print();}catch(x){toast('Impressão indisponível neste ambiente.','err');}setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};
 
 /* ===================== Relatórios e guias ===================== */
-SC.relat={view(p){const comp=compSel(p),c=DB.comps[comp];const R=c&&c.status!=='aberta'?resumoEstrutura(comp):null;const T=totaisComp(comp);const E=DB.empresa||{};
+SC.relat={view(p){const comp=compSel(p),c=DB.comps[comp];const R=c&&c.status!=='aberta'?resumoEstrutura(comp):null;const T=totaisComp(comp);const E=DB.empresa||{};const VG=vencimentosGuias(comp,DB.params),brDate=fmtData;
   const tab=(grp,nome,mapa)=>{const keys=Object.keys(R[grp]);return `<div class="card"><h2>Por ${nome}</h2><div class="tw"><table class="t"><thead><tr><th>${nome[0].toUpperCase()+nome.slice(1)}</th><th class="c">Empregados</th><th class="r">Base prev.</th><th class="r">INSS seg.</th><th class="r">IRRF</th><th class="r">FGTS</th><th class="r">CPP</th><th class="r">RAT</th><th class="r">Terceiros</th></tr></thead><tbody>${keys.map(k=>{const o=R[grp][k];return `<tr><td>${esc(mapa(k))}</td><td class="c">${o.n}</td><td class="r">${brl(o.base)}</td><td class="r">${brl(o.inss)}</td><td class="r">${brl(o.irrf)}</td><td class="r">${brl(o.fgts)}</td><td class="r">${brl(o.pat)}</td><td class="r">${brl(o.rat)}</td><td class="r">${brl(o.terc)}</td></tr>`;}).join('')}</tbody></table></div></div>`;};
   return `<h1>Relatórios e guias — ${compLabel(comp)}</h1><p class="sub">Totais por estabelecimento e por lotação, e o resumo do que deve ser recolhido, conforme o regime (${esc(regimeTxt(DB.empresa))}).</p>${exigeEmpresa()}${compBar(comp)}
-  ${R?`<div class="card"><h2>Resumo dos recolhimentos</h2><div class="tw"><table class="t"><thead><tr><th>Recolhimento</th><th class="r">Valor</th><th>Onde / como</th></tr></thead><tbody>
-  <tr><td>INSS dos empregados</td><td class="r">${brl(T.inss)}</td><td>DCTFWeb (DARF numerado) — apurado pelo S-1200 **</td></tr>
+  ${R?`<div class="card"><h2>Resumo dos recolhimentos e vencimentos</h2><div class="tw"><table class="t"><thead><tr><th>Recolhimento</th><th class="r">Valor</th><th>Onde / como</th></tr></thead><tbody>
+  <tr><td>INSS dos empregados</td><td class="r">${brl(T.inss)}</td><td>DCTFWeb (DARF numerado) — apurado pelo S-1200; vence em ${brDate(VG.inss)} **</td></tr>
   <tr><td>CPP patronal + RAT + terceiros</td><td class="r">${brl(T.pat+T.rat+T.terc)}</td><td>${E.regime==='sn'?(E.anexo==='std'?'Já incluídos no DAS (PGDAS-D); nada na DCTFWeb':'Somente lotações de CPP não substituída, na DCTFWeb'):'DCTFWeb (DARF numerado)'}</td></tr>
   <tr><td>IRRF sobre rendimentos do trabalho</td><td class="r">${brl(T.irrf)}</td><td>DCTFWeb — código de receita 0561 **</td></tr>
-  <tr><td>FGTS</td><td class="r">${brl(T.fgts)}</td><td>FGTS Digital, até o dia 20 do mês seguinte (Lei 8.036/90, art. 15) **</td></tr>
+  <tr><td>FGTS</td><td class="r">${brl(T.fgts)}</td><td>FGTS Digital, vence em ${brDate(VG.fgts)} (Lei 8.036/90, art. 15; regra de ${VG.regra==='prorroga'?'prorrogação':'antecipação'} para dia útil, feriados móveis e locais não considerados) **</td></tr>
   <tr><td>Salário-família (compensável)</td><td class="r">${brl(T.sf)}</td><td>Abatido das contribuições previdenciárias (Lei 8.213/91, art. 68)</td></tr></tbody></table></div></div>
   ${tab('estab','estabelecimento',k=>(byId(DB.estabs,k)||{nome:k}).nome)}${tab('lot','lotação',k=>{const l=byId(DB.lotacoes,k);return l?l.cod+' – '+l.desc:k;})}`:'<div class="note">Calcule a folha da competência para ver os relatórios.</div>'}`;},
   mount(){bindComp();},

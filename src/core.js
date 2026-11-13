@@ -34,7 +34,7 @@ function defaultParams(){return{
   redutor:{isento:5000.00,teto:7350.00,a:978.62,b:0.133145},
   salFam:{cota:67.54,limite:1980.38,idade:14},
   fgts:8, fgtsAprendiz:2, vtPerc:6,
-  patronal:20, rat:2, fap:1, terceiros:5.8, adNoturno:20, peric:30, he50:50, he100:100, divisor:220, cprbFrac:{2025:25,2026:50,2027:75}, venc:{inss:20,fgts:20}
+  patronal:20, rat:2, fap:1, terceiros:5.8, adNoturno:20, peric:30, he50:50, he100:100, divisor:220, cprbFrac:{2025:25,2026:50,2027:75}, venc:{inss:20,fgts:20,regra:'antecipa'}, adnotBase:'vh', horaNotRed:false, dsrAuto:false
 };}
 
 /* ---------------- Rubricas padrão ---------------- */
@@ -86,11 +86,12 @@ const LS_KEY='folhaPro.v1';
 let DB=null,_mem=null;
 function emptyDB(){return{ver:1,empresa:null,estabs:[],lotacoes:[],cargos:[],rubricas:defaultRubricas(),empregados:[],comps:{},eventos:[],seq:0,entregues:{},movs:[],ferias:[],decimo:{},rescisoes:{},
   cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams()};}
-function loadDB(){let r=null;try{r=localStorage.getItem(LS_KEY);}catch(e){}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{if(!o.rubricas.some(x=>x.sys===r.sys))o.rubricas.push(r);});o.rubricas.forEach(x=>{if(!x.nat&&NAT_SUGERIDA[x.sys])x.nat=NAT_SUGERIDA[x.sys];});migrar(o);return o;}catch(e){}}return emptyDB();}
+function hidratar(d){const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{if(!o.rubricas.some(x=>x.sys===r.sys))o.rubricas.push(r);});o.rubricas.forEach(x=>{if(!x.nat&&NAT_SUGERIDA[x.sys])x.nat=NAT_SUGERIDA[x.sys];});migrar(o);return o;}
+function loadDB(){let r=null;try{r=localStorage.getItem(LS_KEY);}catch(e){}if(!r)r=_mem;if(r){try{return hidratar(JSON.parse(r));}catch(e){}}return emptyDB();}
 function migrar(o){const E=o.empresa;if(E&&!E.regime){const ct=E.classTrib;E.regime=['01','02','03'].includes(ct)?'sn':'lp';E.anexo=ct==='03'?'iv':ct==='02'?'misto':'std';E.cprb=false;}
   if(E&&E.regime)E.classTrib=classTribDe(E);
   (o.lotacoes||[]).forEach(l=>{if(l.terceiros==null)l.terceiros='';});}
-function saveDB(){const s=JSON.stringify(DB);_mem=s;try{localStorage.setItem(LS_KEY,s);}catch(e){}}
+function saveDB(){const s=JSON.stringify(DB);_mem=s;/* com o módulo de segurança presente (navegador), nunca grava em claro */if(typeof SEG!=='undefined'){SEG.persistir(s);return;}try{localStorage.setItem(LS_KEY,s);}catch(e){}}
 const uid=(p)=>p+Math.random().toString(36).slice(2,9);
 const byId=(arr,id)=>(arr||[]).find(x=>x.id===id);
 
@@ -146,7 +147,8 @@ function calcEmpregado(e,comp,L,P,emp){
   if(insal)add('INSAL',e.insal+'%',insal);
   if(peric)add('PERIC',P.peric+'%',peric);
   (DB.ferias||[]).filter(f=>f.empId===e.id&&f.compPgto===comp).forEach(f=>{const c=f.calc;add('FERIAS',f.diasGozo+' d',c.ferias);add('FERTERCO','',c.terco);if(c.abono>0){add('ABONO',f.diasAbono+' d',c.abono);add('ABONOTERCO','',c.abonoTerco);}});
-  const hAdn=num(L.adnot);if(hAdn>0)add('ADNOT',hAdn+' h',r2(hAdn*vh*P.adNoturno/100));
+  let hAdn=num(L.adnot);if(hAdn>0&&P.horaNotRed){hAdn=hAdn*60/52.5;alertas.push('Hora noturna reduzida (52min30s) aplicada ao adicional noturno (CLT, art. 73, §1º) **.');}
+  if(hAdn>0)add('ADNOT',num(L.adnot)+' h',r2(hAdn*(P.adnotBase==='sal'?vhSal:vh)*P.adNoturno/100));
   const h50=num(L.he50),h100=num(L.he100);
   const vHE50=r2(h50*vh*(1+P.he50/100)),vHE100=r2(h100*vh*(1+P.he100/100));
   if(h50>0)add('HE50',h50+' h',vHE50);
@@ -170,7 +172,8 @@ function calcEmpregado(e,comp,L,P,emp){
     if(v.avisoDesc>0)add('AVISOD','',v.avisoDesc);}
   // faltas e atrasos
   const fal=num(L.faltas);if(fal>0)add('FALTAS',fal+' d',r2(sal/30*fal));
-  const dsp=num(L.dsrperd);if(dsp>0)add('DSRFALTA',dsp+' d',r2(sal/30*dsp));
+  let dsp=num(L.dsrperd);if(L.dsrperd===undefined||L.dsrperd===''||L.dsrperd===null){if(P.dsrAuto&&fal>0){const nd=num(ctx.domFer);dsp=nd>0?Math.min(Math.ceil(fal),nd):0;if(dsp>0)alertas.push('DSR perdido apurado automaticamente (um por semana com falta injustificada, limitado aos domingos/feriados da competência): confira a escala (Lei 605/1949, art. 6º) **.');else alertas.push('Faltas lançadas sem DSR perdido: informe os domingos/feriados da competência para a apuração automática **.');}else dsp=0;}
+  if(dsp>0)add('DSRFALTA',dsp+' d',r2(sal/30*dsp));
   if(sal>0&&sal<P.salMin)alertas.push('Salário inferior ao mínimo nacional: confirme se há jornada reduzida proporcional (CF, art. 7º, IV).');
   const atr=num(L.atrasos);if(atr>0)add('ATRASOS',atr+' h',r2(vhSal*atr));
   // bases
@@ -254,6 +257,22 @@ function totaisComp(comp){
 }
 
 
+
+/* Média de variáveis (CLT, art. 142, §§ 3º e 4º): média dos últimos n meses de comissões, gratificações e horas extras/adicional noturno lançados */
+function mediaVariaveis(e,compRef,P,n){n=n||12;const meses=[];let [a,m]=compRef.split('-').map(Number);
+  for(let i=0;i<n;i++){m--;if(m<1){m=12;a--;}meses.push(a+'-'+String(m).padStart(2,'0'));}
+  let tot=0,cont=0;const div=num(e.divisor)||P.divisor,vh=(num(e.salario)+(e.peric?num(e.salario)*P.peric/100:0)+(e.insal?P.salMin*Number(e.insal)/100:0))/div;
+  meses.forEach(c=>{if(!empAtivoNaComp(e,c))return;const L=((DB.comps[c]||{}).lanc||{})[e.id];if(!L)return;cont++;
+    tot+=num(L.comis)+num(L.grat)+num(L.he50)*vh*(1+P.he50/100)+num(L.he100)*vh*(1+P.he100/100)+num(L.adnot)*vh*P.adNoturno/100;});
+  return cont?r2(tot/cont):0;}
+/* Vencimentos das guias: dia fixo do mês seguinte, com antecipação/prorrogação para dia útil (feriados nacionais fixos considerados; móveis e locais não) */
+function diaUtilAjustado(ano,mes,dia,regra){const fer=['01-01','04-21','05-01','09-07','10-12','11-02','11-15','11-20','12-25'];
+  const ehUtil=d=>{const w=d.getDay();if(w===0||w===6)return false;const k=String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');return !fer.includes(k);};
+  let d=new Date(ano,mes-1,dia,12);const passo=regra==='prorroga'?1:-1;while(!ehUtil(d))d=new Date(d.getTime()+passo*864e5);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function vencimentosGuias(comp,P){let [a,m]=comp.split('-').map(Number);m++;if(m>12){m=1;a++;}const v=P.venc||{},reg=v.regra||'antecipa';
+  return{inss:diaUtilAjustado(a,m,num(v.inss)||20,reg),fgts:diaUtilAjustado(a,m,num(v.fgts)||20,reg),regra:reg};}
+
 /* ---------------- Férias, 13º salário e rescisão ---------------- */
 const remunBase=(e,P,med)=>r2(num(e.salario)+(e.peric?num(e.salario)*P.peric/100:0)+(e.insal?P.salMin*Number(e.insal)/100:0)+num(med));
 /* CLT art. 130: dias de férias conforme faltas injustificadas no período aquisitivo */
@@ -295,7 +314,8 @@ function calcRescisaoVerbas(e,r,P){const notas=[],mt=r.motivo;const anos=anosCom
   if(mt!=='01'){avos13c=avos13(e,Number(e.desligamento.slice(0,4)),fimProj);d13=r2(rem/12*avos13c);
     const nDep=(e.deps||[]).filter(x=>x.irrf).length;inss13=calcInss(d13,P);irrf13=calcIrrf(d13,inss13,nDep,0,P).irrf;}
   else notas.push('Justa causa: sem 13º proporcional nem férias proporcionais (Lei 4.090/62, art. 3º; CLT, art. 146, parágrafo único) **.');
-  const ferVencPer=num(r.ferVencPer),ferVenc=r2(rem*ferVencPer),ferVencTerco=r2(ferVenc/3);
+  const ferVencPer=num(r.ferVencPer),ferDobraPer=Math.min(ferVencPer,num(r.ferDobraPer)),ferVenc=r2(rem*(ferVencPer+ferDobraPer)),ferVencTerco=r2(ferVenc/3);
+  if(ferDobraPer>0)notas.push('Férias vencidas pagas em dobro em '+ferDobraPer+' período(s) fora do prazo concessivo (CLT, art. 137; o terço incide também sobre a dobra, Súmula 328 do TST) **.');
   let avosFer=0,ferProp=0,ferPropTerco=0;
   if(mt!=='01'){const adm=new Date(e.admissao+'T12:00:00'),fim=fimProj||new Date(e.desligamento+'T12:00:00');
     let ult=new Date(fim.getFullYear(),adm.getMonth(),adm.getDate(),12);if(ult>fim)ult=new Date(fim.getFullYear()-1,adm.getMonth(),adm.getDate(),12);
