@@ -1,6 +1,6 @@
 const {JSDOM}=require('jsdom');const fs=require('fs');
-const html=fs.readFileSync('/home/claude/folha/index.html','utf8');
-const w=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'https://x.test/',beforeParse(w){w.print=()=>{};}}).window;
+const html=fs.readFileSync(''+(process.env.FP_HTML||__dirname+'/../index.html')+'','utf8');
+const w=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'https://x.test/',beforeParse(w){w.print=()=>{};w.__FP_NOGATE=true;}}).window;
 const ev=s=>w.eval(s);ev(`seedDemo('lp')`);
 let ok=0,bad=0;
 const chk=(nome,got,exp)=>{const d=Math.abs(got-exp)<=0.011;d?ok++:bad++;console.log((d?'OK   ':'DIVERGE ')+nome+' obtido='+got+' esperado='+exp);};

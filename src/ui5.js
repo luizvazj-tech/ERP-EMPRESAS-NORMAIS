@@ -4,7 +4,7 @@ function checarEstrutura(){const E=DB.empresa,o=[];const add=(n,t)=>o.push({n,t}
   if(!E.regime)add('err','Regime tributário não informado na empresa.');else add('ok','Regime: '+regimeTxt(E)+' (classTrib '+classTribDe(E)+').');
   const ms=DB.estabs.filter(x=>x.tipoEstab==='matriz');
   if(ms.length===1)add('ok','Uma matriz cadastrada.');else add('err',ms.length?'Há mais de uma matriz.':'Nenhuma matriz cadastrada.');
-  DB.estabs.forEach(s=>{if(s.tpInsc==='1'&&onlyD(s.nrInsc).slice(0,8)!==onlyD(E.cnpj).slice(0,8))add('err','Estabelecimento '+s.nome+': raiz do CNPJ diferente da do empregador.');
+  DB.estabs.forEach(s=>{if(s.tpInsc==='1'&&onlyC(s.nrInsc).slice(0,8)!==onlyC(E.cnpj).slice(0,8))add('err','Estabelecimento '+s.nome+': raiz do CNPJ diferente da do empregador.');
     if(ratIncide(E)&&![1,2,3].includes(Number(s.rat)))add('err','Estabelecimento '+s.nome+': grau de risco (RAT) deve ser 1, 2 ou 3.');
     if(!DB.empregados.some(e=>e.estab===s.id))add('warn','Estabelecimento '+s.nome+' sem empregados vinculados.');});
   DB.lotacoes.forEach(l=>{if(E.regime==='sn'&&String(l.codTercs)!=='0000')add('err','Lotação '+l.cod+': Simples Nacional exige terceiros 0000.');

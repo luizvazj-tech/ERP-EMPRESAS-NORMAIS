@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-s46orSteC6+ooZF7Xlwsj4jt/p+kapeCzo9F9ylUqpg='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
 :root{--bg:#f3f5f7;--card:#fff;--ink:#17212b;--mut:#5d6b79;--line:#dbe2e9;--pri:#0f5c63;--pri2:#0a4146;--pri3:#e3f1f2;--acc:#b7791f;--ok:#1a7f4b;--okb:#e2f4ea;--warn:#9a6700;--warnb:#fff4d6;--err:#b42318;--errb:#fde8e6;--blue:#1f5fbf;--blueb:#e4edfb}
@@ -83,18 +85,31 @@ code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
 .cmpg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}@media(max-width:900px){.cmpg{grid-template-columns:1fr}}
 .cmpc{margin:0}.cmpc.best{border:2px solid var(--ok)}.cmpc.off{opacity:.8}.cmpc .big{font-size:24px;font-weight:700;margin:6px 0 2px}
 details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);font-size:13px}
+
+.skip{position:absolute;left:-999px;top:0;background:#fff;color:#000;padding:8px 12px;z-index:200}.skip:focus{left:8px;top:8px}
+:focus-visible{outline:3px solid #2563eb;outline-offset:2px}#main:focus{outline:none}
+#mnav{display:none;max-width:48vw;padding:6px;border-radius:6px}
+#gate{position:fixed;inset:0;background:var(--pri2);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.gbox{background:#fff;border-radius:12px;max-width:460px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4)}.gbox h1{margin-bottom:8px}.gm{color:var(--err);min-height:18px;margin:6px 0}.gl{font-size:12px;color:var(--mut);margin-top:14px}
+#ckb{position:fixed;left:12px;right:12px;bottom:12px;z-index:120;background:#fff;border:2px solid var(--pri);border-radius:12px;padding:14px 16px;max-width:860px;margin:0 auto;box-shadow:0 12px 40px rgba(0,0,0,.35)}#ckb h2{margin:0 0 4px}#ckb p{margin:0 0 10px;font-size:13px}#ckb .row{justify-content:flex-end}
+.legal h3{margin:14px 0 4px}.legal p{margin:0 0 8px}
+@media (max-width:900px){#mnav{display:block;flex:1 1 100%;max-width:none;order:9}#top{flex-wrap:wrap;gap:8px;padding:8px 10px}#top .emp{display:none}#top button{padding:5px 9px;white-space:nowrap}#bar .hint{display:none}#bar{overflow-x:auto;padding:8px 10px}#bar .btn{white-space:nowrap;padding:7px 10px}#main{padding:14px 12px 30px}#ckb{left:6px;right:6px;bottom:6px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media print{#gate,#ckb{display:none!important}}
 </style>
 </head>
 <body>
+<a class="skip" href="#main" data-act="skipMain">Ir para o conteúdo</a>
 <header id="top">
   <div class="logo" id="logo"></div>
   <button data-act="home" title="Alt+I">⌂ Tela inicial</button>
   <button data-act="back" title="Alt+V">◀ Voltar</button>
+  <select id="mnav" aria-label="Menu de navegação"></select>
   <div class="emp" id="topemp"></div>
 </header>
-<div id="app"><nav id="side"></nav><main id="main"></main></div>
-<footer id="bar"></footer>
-<div id="modal"></div><div id="tip"></div><div id="toast"></div><div id="printarea"></div>
+<div id="app"><nav id="side" aria-label="Menu principal"></nav><main id="main"></main></div>
+<footer id="bar" role="contentinfo"></footer>
+<div id="modal"></div><div id="tip"></div><div id="toast" role="status" aria-live="polite"></div><div id="printarea"></div>
 <script>
 'use strict';
 /* =====================================================================
@@ -109,9 +124,17 @@ const num=v=>{ if(typeof v==='number') return v; let s=String(v==null?'':v).trim
 const fx=v=>r2(v).toFixed(2);
 const brIn=v=>(v===''||v==null||isNaN(v))?'':Number(v).toFixed(2).replace('.',',');
 function cpfValido(c){c=onlyD(c);if(c.length!==11||/^(\d)\1+$/.test(c))return false;for(let t=9;t<11;t++){let s=0;for(let i=0;i<t;i++)s+=c[i]*(t+1-i);if((s*10)%11%10!=c[t])return false;}return true;}
-function cnpjValido(c){c=onlyD(c);if(c.length!==14||/^(\d)\1+$/.test(c))return false;const f=n=>{let p=n-7,s=0;for(let i=0;i<n;i++){s+=c[i]*p--;if(p<2)p=9;}const r=s%11;return r<2?0:11-r;};return f(12)==c[12]&&f(13)==c[13];}
+const onlyC=s=>String(s==null?'':s).toUpperCase().replace(/[^A-Z0-9]/g,'');
+/* CNPJ alfanumérico (IN RFB nº 2.229/2024): 8 posições de raiz e 4 de ordem em [A-Z0-9], 2 DV numéricos.
+   DV por módulo 11, pesos 5,4,3,2,9,8,7,6,5,4,3,2 (1º) e 6,5,...,2 (2º); valor do caractere = código ASCII − 48.
+   Para CNPJ só numérico o resultado é idêntico ao algoritmo anterior. */
+const cnpjDV=(b)=>{const p1=[5,4,3,2,9,8,7,6,5,4,3,2],p2=[6,5,4,3,2,9,8,7,6,5,4,3,2];const v=i=>b.charCodeAt(i)-48;
+  let s=0;for(let i=0;i<12;i++)s+=v(i)*p1[i];let r=s%11;const d1=r<2?0:11-r;
+  s=0;for(let i=0;i<12;i++)s+=v(i)*p2[i];s+=d1*p2[12];r=s%11;const d2=r<2?0:11-r;return ''+d1+d2;};
+function cnpjValido(c){c=onlyC(c);if(!/^[A-Z0-9]{12}\d{2}$/.test(c)||/^(.)\1+$/.test(c))return false;return cnpjDV(c.slice(0,12))===c.slice(12);}
+const cnpjGerar=b=>{b=onlyC(b).slice(0,12).padEnd(12,'0');return b+cnpjDV(b);};
 const fmtCPF=c=>{c=onlyD(c);return c.length===11?c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4'):c;};
-const fmtCNPJ=c=>{c=onlyD(c);return c.length===14?c.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5'):c;};
+const fmtCNPJ=c=>{c=onlyC(c);return c.length===14?c.replace(/^(.{2})(.{3})(.{3})(.{4})(.{2})$/,'$1.$2.$3/$4-$5'):c;};
 const fmtCEP=c=>{c=onlyD(c);return c.length===8?c.replace(/(\d{5})(\d{3})/,'$1-$2'):c;};
 const fmtData=d=>d?String(d).split('-').reverse().join('/'):'';
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -139,17 +162,17 @@ function defaultParams(){return{
 /* ---------------- Identidade visual (white-label) ---------------- */
 // Padrão: cliente Mallora Tecnologia. Única cor confirmada no site: #0B0B0B (meta theme-color); demais valores provisórios [CONFIRMAR COM O MANUAL DE MARCA].
 const BRAND_KEY='folhaPro.brand.v1';
-const BRAND_DEF={nome:'Mallora',produto:'Folha',titulo:'Folha de Pagamento e eSocial',slogan:'Onde soluções se conectam.',pri:'#0B0B0B',pri2:'#0B0B0B',acc:'#F2B544',fonte:'Inter',logo:''};
+const BRAND_DEF={nome:'Mallora',produto:'Folha',titulo:'Folha de Pagamento e eSocial',slogan:'Onde soluções se conectam.',pri:'#0B0B0B',pri2:'#0B0B0B',acc:'#F2B544',fonte:'Inter',logo:'',fornecedor:'',dpoNome:'',dpoEmail:''};
 let BRAND=Object.assign({},BRAND_DEF);
 function brandLoad(){try{const r=localStorage.getItem(BRAND_KEY);if(r)BRAND=Object.assign({},BRAND_DEF,JSON.parse(r));}catch(e){}}
-function brandSave(){try{localStorage.setItem(BRAND_KEY,JSON.stringify(BRAND));}catch(e){}}
+function brandSave(){if(!(typeof CONSENT!=='undefined'&&CONSENT&&CONSENT.pref))return;try{localStorage.setItem(BRAND_KEY,JSON.stringify(BRAND));}catch(e){}}
 function mixHex(a,b,t){const p=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');return[0,2,4].map(i=>parseInt(h.substr(i,2),16));};const A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v*(1-t)+B[i]*t).toString(16).padStart(2,'0')).join('');}
 function applyBrand(b){b=b||BRAND;const s=document.documentElement.style;
   s.setProperty('--pri',b.pri);s.setProperty('--pri2',b.pri2);s.setProperty('--pri3',mixHex(b.pri,'#ffffff',.9));s.setProperty('--acc2',b.acc);s.setProperty('--acc',mixHex(b.acc,'#000000',.3));
   const fam=b.fonte?`"${b.fonte}",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`:'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
   document.body.style.fontFamily=fam;
   let l=document.getElementById('brandfont');if(!l){l=document.createElement('link');l.id='brandfont';l.rel='stylesheet';document.head.appendChild(l);}
-  l.href=b.fonte?'https://fonts.googleapis.com/css2?family='+encodeURIComponent(b.fonte).replace(/%20/g,'+')+':wght@400;600;700&display=swap':'';
+  l.href=(b.fonte&&typeof CONSENT!=='undefined'&&CONSENT&&CONSENT.pref)?'https://fonts.googleapis.com/css2?family='+encodeURIComponent(b.fonte).replace(/%20/g,'+')+':wght@400;600;700&display=swap':'';
   document.title=b.nome+' — '+b.titulo;
   const lg=document.getElementById('logo');if(lg)lg.innerHTML=(b.logo?`<img alt="" src="${b.logo}">`:'')+esc(b.nome)+' <span>'+esc(b.produto)+'</span>';
 }
@@ -204,11 +227,11 @@ const LS_KEY='folhaPro.v1';
 let DB=null,_mem=null;
 function emptyDB(){return{ver:1,empresa:null,estabs:[],lotacoes:[],cargos:[],rubricas:defaultRubricas(),empregados:[],comps:{},eventos:[],seq:0,entregues:{},movs:[],ferias:[],decimo:{},rescisoes:{},
   cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams()};}
-function loadDB(){let r=null;try{r=localStorage.getItem(LS_KEY);}catch(e){}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{const x=o.rubricas.find(y=>y.sys===r.sys);if(!x)o.rubricas.push(r);else if(!x.nat&&r.nat)x.nat=r.nat;});const FIX={INSS:[['00','31'],['31','41']],IRRF:[['00','00'],['00','31']],D13INSS:[['00','32'],['32','42']],D13IRRF:[['00','00'],['00','32']]};o.rubricas.forEach(x=>{const f=FIX[x.sys];if(f&&x.incCP===f[0][0]&&x.incIRRF===f[0][1]){x.incCP=f[1][0];x.incIRRF=f[1][1];}});migrar(o);return o;}catch(e){}}return emptyDB();}
+function loadDB(src){let r=src||null;if(!r){try{r=localStorage.getItem(LS_KEY);}catch(e){}}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{const x=o.rubricas.find(y=>y.sys===r.sys);if(!x)o.rubricas.push(r);else if(!x.nat&&r.nat)x.nat=r.nat;});const FIX={INSS:[['00','31'],['31','41']],IRRF:[['00','00'],['00','31']],D13INSS:[['00','32'],['32','42']],D13IRRF:[['00','00'],['00','32']]};o.rubricas.forEach(x=>{const f=FIX[x.sys];if(f&&x.incCP===f[0][0]&&x.incIRRF===f[0][1]){x.incCP=f[1][0];x.incIRRF=f[1][1];}});migrar(o);return o;}catch(e){}}return emptyDB();}
 function migrar(o){const E=o.empresa;if(E&&!E.regime){const ct=E.classTrib;E.regime=['01','02','03'].includes(ct)?'sn':'lp';E.anexo=ct==='03'?'iv':ct==='02'?'misto':'std';E.cprb=false;}
   if(E&&E.regime)E.classTrib=classTribDe(E);
   (o.lotacoes||[]).forEach(l=>{if(l.terceiros==null)l.terceiros='';});}
-function saveDB(){const s=JSON.stringify(DB);_mem=s;try{localStorage.setItem(LS_KEY,s);}catch(e){}}
+function saveDB(){if(!DB)return;const s=JSON.stringify(DB);if(typeof VAULT!=='undefined'&&VAULT.on){if(!DB.audit&&VAULT.audit)DB.audit=VAULT.audit;VAULT.audit=DB.audit;vaultPersist(JSON.stringify(DB));return;}_mem=s;try{localStorage.setItem(LS_KEY,s);}catch(e){}}
 const uid=(p)=>p+Math.random().toString(36).slice(2,9);
 const byId=(arr,id)=>(arr||[]).find(x=>x.id===id);
 
@@ -419,11 +442,13 @@ const XV='v_S_01_03_00';
 const xe=esc;
 const tag=(t,v)=>(v===''||v==null)?'':`<${t}>${xe(v)}</${t}>`;
 function ts14(){const d=new Date();const p=n=>String(n).padStart(2,'0');return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());}
-function novoId(){const cnpj=onlyD(DB.empresa&&DB.empresa.cnpj).padEnd(14,'0');DB.seq=(DB.seq||0)+1;return 'ID1'+cnpj+ts14()+String(DB.seq%100000).padStart(5,'0');}
-const rz=()=>onlyD(DB.empresa&&DB.empresa.cnpj).slice(0,8);
+function novoId(){const cnpj=onlyC(DB.empresa&&DB.empresa.cnpj).padEnd(14,'0');DB.seq=(DB.seq||0)+1;return 'ID1'+cnpj+ts14()+String(DB.seq%100000).padStart(5,'0');}
+const rz=()=>onlyC(DB.empresa&&DB.empresa.cnpj).slice(0,8);
 function ideEmp(){return `<ideEmpregador><tpInsc>1</tpInsc><nrInsc>${rz()}</nrInsc></ideEmpregador>`;}
-function ideEvt(o){o=o||{};return `<ideEvento>${o.retif?`<indRetif>${o.retif.n}</indRetif>${tag('nrRecibo',o.retif.rec)}`:'<indRetif>1</indRetif>'}${o.per?`<indApuracao>1</indApuracao><perApur>${o.per}</perApur>`:''}<tpAmb>${DB.cfg.ambiente}</tpAmb><procEmi>1</procEmi><verProc>FolhaPro-1.0</verProc></ideEvento>`;}
-function ideEvtMensal(o){o=o||{};return `<ideEvento><indRetif>${o.retif?o.retif.n:1}</indRetif>${o.retif?tag('nrRecibo',o.retif.rec):''}<perApur>${o.per}</perApur><tpAmb>${DB.cfg.ambiente}</tpAmb><procEmi>1</procEmi><verProc>FolhaPro-1.0</verProc></ideEvento>`;}
+const hojeISO=()=>new Date().toISOString().slice(0,10);
+const recXml=r=>String(r||'').replace(/^SIM-/,'');
+function ideEvt(o){o=o||{};return `<ideEvento>${o.retif?`<indRetif>${o.retif.n}</indRetif>${tag('nrRecibo',recXml(o.retif.rec))}`:'<indRetif>1</indRetif>'}${o.per?`<indApuracao>1</indApuracao><perApur>${o.per}</perApur>`:''}<tpAmb>${DB.cfg.ambiente}</tpAmb><procEmi>1</procEmi><verProc>FolhaPro-1.0</verProc></ideEvento>`;}
+function ideEvtMensal(o){o=o||{};return `<ideEvento><indRetif>${o.retif?o.retif.n:1}</indRetif>${o.retif?tag('nrRecibo',recXml(o.retif.rec)):''}<perApur>${o.per}</perApur><tpAmb>${DB.cfg.ambiente}</tpAmb><procEmi>1</procEmi><verProc>FolhaPro-1.0</verProc></ideEvento>`;}
 function ideEvtTab(){return `<ideEvento><tpAmb>${DB.cfg.ambiente}</tpAmb><procEmi>1</procEmi><verProc>FolhaPro-1.0</verProc></ideEvento>`;}
 function envelope(evt,id,corpo){return `<?xml version="1.0" encoding="UTF-8"?>\n<eSocial xmlns="http://www.esocial.gov.br/schema/evt/${evt}/${XV}">\n<${evt} Id="${id}">\n${corpo}\n</${evt}>\n</eSocial>`;}
 // versão simples e segura de indentação
@@ -449,7 +474,7 @@ GEN['S-1000']=(a,o)=>{const E=DB.empresa,id=novoId();
   const corpo=`${ideEvtTab()}${ideEmp()}<infoEmpregador><${a.alt?'alteracao':'inclusao'}><idePeriodo><iniValid>${E.iniValid||compAtual()}</iniValid></idePeriodo><infoCadastro><classTrib>${classTribDe(E)||E.classTrib}</classTrib><indCoop>0</indCoop><indConstr>${E.construtora?1:0}</indConstr><indDesFolha>${E.regime!=='sn'&&E.cprb?1:0}</indDesFolha>${E.porte==='S'?'<indPorte>S</indPorte>':''}<indOptRegEletron>${E.regEletron||0}</indOptRegEletron></infoCadastro></${a.alt?'alteracao':'inclusao'}></infoEmpregador>`;
   return{id,evt:'evtInfoEmpregador',titulo:'Informações do empregador — '+E.razao,ref:'',xml:envelope('evtInfoEmpregador',id,corpo)};};
 GEN['S-1005']=(a)=>{const s=byId(DB.estabs,a.id),id=novoId();
-  const corpo=`${ideEvtTab()}${ideEmp()}<infoEstab><inclusao><ideEstab><tpInsc>${s.tpInsc}</tpInsc><nrInsc>${onlyD(s.nrInsc)}</nrInsc><iniValid>${s.iniValid||compAtual()}</iniValid></ideEstab><dadosEstab>${tag('cnaePrep',onlyD(s.cnae))}${ratIncide(DB.empresa)?`<aliqGilrat><aliqRat>${s.rat||'2'}</aliqRat>${tag('fap',s.fap)}</aliqGilrat>`:''}</dadosEstab></inclusao></infoEstab>`;
+  const corpo=`${ideEvtTab()}${ideEmp()}<infoEstab><inclusao><ideEstab><tpInsc>${s.tpInsc}</tpInsc><nrInsc>${onlyC(s.nrInsc)}</nrInsc><iniValid>${s.iniValid||compAtual()}</iniValid></ideEstab><dadosEstab>${tag('cnaePrep',onlyD(s.cnae))}${ratIncide(DB.empresa)?`<aliqGilrat><aliqRat>${s.rat||'2'}</aliqRat>${tag('fap',s.fap)}</aliqGilrat>`:''}</dadosEstab></inclusao></infoEstab>`;
   return{id,evt:'evtTabEstab',titulo:'Estabelecimento — '+s.nome,ref:s.nrInsc,xml:envelope('evtTabEstab',id,corpo)};};
 GEN['S-1010']=(a)=>{const r=DB.rubricas.find(x=>x.sys===a.id),id=novoId();
   const corpo=`${ideEvtTab()}${ideEmp()}<infoRubrica><inclusao><ideRubrica><codRubr>${r.cod}</codRubr><ideTabRubr>FOLHAPRO</ideTabRubr><iniValid>${compAtual()}</iniValid></ideRubrica><dadosRubrica><dscRubr>${xe(r.desc)}</dscRubr><natRubr>${r.nat}</natRubr><tpRubr>${r.tp}</tpRubr><codIncCP>${r.incCP}</codIncCP><codIncIRRF>${r.incIRRF}</codIncIRRF><codIncFGTS>${r.incFGTS}</codIncFGTS></dadosRubrica></inclusao></infoRubrica>`;
@@ -460,10 +485,10 @@ GEN['S-1020']=(a)=>{const l=byId(DB.lotacoes,a.id),id=novoId();
 GEN['S-2200']=(a,o)=>{const e=byId(DB.empregados,a.id),id=novoId(),car=byId(DB.cargos,e.cargo)||{},lot=byId(DB.lotacoes,e.lotacao)||{},est=byId(DB.estabs,e.estab)||{};
   const deps=(e.deps||[]).map(d=>`<dependente><tpDep>${d.tp}</tpDep><nmDep>${xe(d.nome)}</nmDep><dtNascto>${d.nasc}</dtNascto>${tag('cpfDep',onlyD(d.cpf))}<depIRRF>${d.irrf?'S':'N'}</depIRRF><depSF>${d.sf?'S':'N'}</depSF><incTrab>N</incTrab></dependente>`).join('');
   const corpo=`${ideEvt(o)}${ideEmp()}<trabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab><nmTrab>${xe(e.nome)}</nmTrab><sexo>${e.sexo}</sexo><racaCor>${e.racaCor}</racaCor><estCiv>${e.estCiv}</estCiv><grauInstr>${e.grauInstr}</grauInstr><nascimento><dtNascto>${e.nasc}</dtNascto><paisNascto>105</paisNascto><paisNac>105</paisNac></nascimento>${ENDERECO(e)}${deps}${(e.fone||e.email)?`<contato>${tag('fonePrinc',onlyD(e.fone))}${tag('emailPrinc',e.email)}</contato>`:''}</trabalhador>`+
-  `<vinculo><matricula>${xe(e.mat)}</matricula><tpRegTrab>1</tpRegTrab><tpRegPrev>1</tpRegPrev><cadIni>N</cadIni><infoRegimeTrab><infoCeletista><dtAdm>${e.admissao}</dtAdm><tpAdmissao>1</tpAdmissao><indAdmissao>1</indAdmissao><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}${tag('cnpjSindCategProf',onlyD(e.sindCnpj))}</infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(e.salario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr>${e.tpContr==2?tag('dtTerm',e.dtTerm):''}</duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc>${e.horNoturno?`<horNoturno>${e.horNoturno}</horNoturno>`:''}${tag('dscJorn',e.dscJorn)}</horContratual></infoContrato></vinculo>`;
+  `<vinculo><matricula>${xe(e.mat)}</matricula><tpRegTrab>1</tpRegTrab><tpRegPrev>1</tpRegPrev><cadIni>N</cadIni><infoRegimeTrab><infoCeletista><dtAdm>${e.admissao}</dtAdm><tpAdmissao>1</tpAdmissao><indAdmissao>1</indAdmissao><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}${tag('cnpjSindCategProf',onlyC(e.sindCnpj))}</infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(e.salario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr>${e.tpContr==2?tag('dtTerm',e.dtTerm):''}</duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyC(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc>${e.horNoturno?`<horNoturno>${e.horNoturno}</horNoturno>`:''}${tag('dscJorn',e.dscJorn)}</horContratual></infoContrato></vinculo>`;
   return{id,evt:'evtAdmissao',titulo:'Admissão — '+e.nome,ref:e.mat,xml:envelope('evtAdmissao',id,corpo)};};
 GEN['S-2206']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId(),car=byId(DB.cargos,e.cargo)||{},est=byId(DB.estabs,e.estab)||{};
-  const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><altContratual><dtAlteracao>${m.data}</dtAlteracao><vinculo><tpRegPrev>1</tpRegPrev><infoRegimeTrab><infoCeletista><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}${tag('cnpjSindCategProf',onlyD(e.sindCnpj))}</infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(m.novoSalario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr></duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc>${tag('dscJorn',e.dscJorn)}</horContratual></infoContrato></vinculo></altContratual>`;
+  const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><altContratual><dtAlteracao>${m.data}</dtAlteracao><vinculo><tpRegPrev>1</tpRegPrev><infoRegimeTrab><infoCeletista><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}${tag('cnpjSindCategProf',onlyC(e.sindCnpj))}</infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(m.novoSalario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr></duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyC(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc>${tag('dscJorn',e.dscJorn)}</horContratual></infoContrato></vinculo></altContratual>`;
   return{id,evt:'evtAltContratual',titulo:'Alteração contratual — '+e.nome,ref:e.mat,xml:envelope('evtAltContratual',id,corpo)};};
 GEN['S-2230']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId();
   const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><infoAfastamento>${m.fim?`<fimAfastamento><dtTermAfast>${m.fim}</dtTermAfast></fimAfastamento>`:`<iniAfastamento><dtIniAfast>${m.data}</dtIniAfast><codMotAfast>${m.motivo}</codMotAfast>${m.perAqIni?`<perAquis><dtInicio>${m.perAqIni}</dtInicio><dtFim>${m.perAqFim}</dtFim></perAquis>`:''}</iniAfastamento>`}</infoAfastamento>`;
@@ -471,14 +496,14 @@ GEN['S-2230']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId();
 GEN['S-2299']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId();
   const comp=m.data.slice(0,7),c=DB.comps[comp],r=c&&c.res[e.id];const lot=byId(DB.lotacoes,e.lotacao)||{},est=byId(DB.estabs,e.estab)||{};
   let verbas='';if(r){const dv=r.itens.filter(i=>i.tp===1||i.tp===2).map(i=>{const ru=DB.rubricas.find(x=>x.sys===i.sys);return `<detVerbas><codRubr>${ru.cod}</codRubr><ideTabRubr>FOLHAPRO</ideTabRubr>${/ d$/.test(i.ref)?`<qtdRubr>${num(i.ref)}</qtdRubr>`:''}<vrRubr>${fx(i.valor)}</vrRubr><indApurIR>${i.sep?1:0}</indApurIR></detVerbas>`;}).join('');
-    verbas=`<verbasResc><dmDev><ideDmDev>R${comp.replace('-','')}${e.mat}</ideDmDev><infoPerApur><ideEstabLot><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc><codLotacao>${xe(lot.cod||'')}</codLotacao>${dv}</ideEstabLot></infoPerApur></dmDev></verbasResc>`;}
+    verbas=`<verbasResc><dmDev><ideDmDev>R${comp.replace('-','')}${e.mat}</ideDmDev><infoPerApur><ideEstabLot><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyC(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc><codLotacao>${xe(lot.cod||'')}</codLotacao>${dv}</ideEstabLot></infoPerApur></dmDev></verbasResc>`;}
   const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><infoDeslig><mtvDeslig>${m.motivo}</mtvDeslig><dtDeslig>${m.data}</dtDeslig><indPagtoAPI>N</indPagtoAPI><pensAlim>0</pensAlim>${verbas}</infoDeslig>`;
   return{id,evt:'evtDeslig',titulo:'Desligamento — '+e.nome,ref:e.mat,xml:envelope('evtDeslig',id,corpo)};};
 GEN['S-1200']=(a,o)=>{const e=byId(DB.empregados,a.id),c=DB.comps[a.comp],r=c&&c.res[a.id],id=novoId();
   const lot=byId(DB.lotacoes,e.lotacao)||{},est=byId(DB.estabs,e.estab)||{};
   const itens=r.itens.filter(i=>i.tp===1||i.tp===2).map(i=>{const ru=DB.rubricas.find(x=>x.sys===i.sys);return `<itensRemun><codRubr>${ru.cod}</codRubr><ideTabRubr>FOLHAPRO</ideTabRubr>${/h$/.test(i.ref)||/d$/.test(i.ref)?`<qtdRubr>${num(i.ref)}</qtdRubr>`:''}<vrRubr>${fx(i.valor)}</vrRubr><indApurIR>${i.sep?1:0}</indApurIR></itensRemun>`;}).join('');
   const indS=classTribDe(DB.empresa)==='03'?(lot.atvSimples==='nsub'?2:1):'';
-  const corpo=`${ideEvt(Object.assign({per:a.comp},o))}${ideEmp()}<ideTrabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab></ideTrabalhador><dmDev><ideDmDev>${a.comp.replace('-','')}${e.mat}</ideDmDev><codCateg>${e.categoria}</codCateg><infoPerApur><ideEstabLot><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyD(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc><codLotacao>${xe(lot.cod||'')}</codLotacao><remunPerApur>${tag('matricula',e.mat)}${tag('indSimples',indS)}${itens}</remunPerApur></ideEstabLot></infoPerApur></dmDev>`;
+  const corpo=`${ideEvt(Object.assign({per:a.comp},o))}${ideEmp()}<ideTrabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab></ideTrabalhador><dmDev><ideDmDev>${a.comp.replace('-','')}${e.mat}</ideDmDev><codCateg>${e.categoria}</codCateg><infoPerApur><ideEstabLot><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyC(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc><codLotacao>${xe(lot.cod||'')}</codLotacao><remunPerApur>${tag('matricula',e.mat)}${tag('indSimples',indS)}${itens}</remunPerApur></ideEstabLot></infoPerApur></dmDev>`;
   return{id,evt:'evtRemun',titulo:'Remuneração '+compLabel(a.comp)+' — '+e.nome,ref:a.comp,xml:envelope('evtRemun',id,corpo)};};
 GEN['S-1210']=(a,o)=>{const e=byId(DB.empregados,a.id),c=DB.comps[a.comp],r=c&&c.res[a.id],id=novoId();
   const corpo=`${ideEvtMensal(Object.assign({per:a.comp},o))}${ideEmp()}<ideBenef><cpfBenef>${onlyD(e.cpf)}</cpfBenef><infoPgto><dtPgto>${c.dtPgto}</dtPgto><tpPgto>1</tpPgto><perRef>${a.comp}</perRef><ideDmDev>${rescNoMes(a.id,a.comp)?'R':''}${a.comp.replace('-','')}${e.mat}</ideDmDev><vrLiq>${fx(r.liquido)}</vrLiq></infoPgto></ideBenef>`;
@@ -486,9 +511,25 @@ GEN['S-1210']=(a,o)=>{const e=byId(DB.empregados,a.id),c=DB.comps[a.comp],r=c&&c
 GEN['S-1299']=(a,o)=>{const id=novoId();
   const corpo=`${ideEvt(Object.assign({per:a.comp},o)).replace(/<indRetif>1<\/indRetif>/,'')}${ideEmp()}<infoFech><evtRemun>S</evtRemun><evtPgtos>S</evtPgtos><evtComProd>N</evtComProd><evtContratAvNP>N</evtContratAvNP><evtInfoComplPer>N</evtInfoComplPer></infoFech>`;
   return{id,evt:'evtFechaEvPer',titulo:'Fechamento dos eventos periódicos — '+compLabel(a.comp),ref:a.comp,xml:envelope('evtFechaEvPer',id,corpo)};};
-const TIPOS={'S-1000':'Informações do empregador','S-1005':'Estabelecimentos','S-1010':'Rubricas','S-1020':'Lotações tributárias','S-2200':'Admissão','S-2206':'Alteração contratual','S-2230':'Afastamento temporário','S-2299':'Desligamento','S-1200':'Remuneração','S-1210':'Pagamentos','S-1299':'Fechamento periódico'};
+
+/* S-2205 — alteração de dados cadastrais do trabalhador */
+GEN['S-2205']=(a,o)=>{const e=byId(DB.empregados,a.id),id=novoId();
+  const deps=(e.deps||[]).map(d=>`<dependente><tpDep>${d.tp}</tpDep><nmDep>${xe(d.nome)}</nmDep><dtNascto>${d.nasc}</dtNascto>${tag('cpfDep',onlyD(d.cpf))}<depIRRF>${d.irrf?'S':'N'}</depIRRF><depSF>${d.sf?'S':'N'}</depSF><incTrab>N</incTrab></dependente>`).join('');
+  const corpo=`${ideEvt(o)}${ideEmp()}<ideTrabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab></ideTrabalhador><alteracao><dtAlteracao>${a.data||hojeISO()}</dtAlteracao><dadosTrabalhador><nmTrab>${xe(e.nome)}</nmTrab><sexo>${e.sexo}</sexo><racaCor>${e.racaCor}</racaCor><estCiv>${e.estCiv}</estCiv><grauInstr>${e.grauInstr}</grauInstr><paisNac>105</paisNac>${ENDERECO(e)}${deps}${(e.fone||e.email)?`<contato>${tag('fonePrinc',onlyD(e.fone))}${tag('emailPrinc',e.email)}</contato>`:''}</dadosTrabalhador></alteracao>`;
+  return{id,evt:'evtAltCadastral',titulo:'Alteração cadastral — '+e.nome,ref:null,xml:envelope('evtAltCadastral',id,corpo)};};
+/* S-1298 — reabertura dos eventos periódicos */
+GEN['S-1298']=(a,o)=>{const id=novoId();
+  const corpo=`${ideEvt(Object.assign({per:a.comp},o)).replace(/<indRetif>1<\/indRetif>/,'')}${ideEmp()}`;
+  return{id,evt:'evtReabreEvPer',titulo:'Reabertura dos eventos periódicos — '+compLabel(a.comp),ref:a.comp,xml:envelope('evtReabreEvPer',id,corpo)};};
+/* S-3000 — exclusão de evento (regras de preenchimento conforme documentação do XSD evtExclusao) */
+GEN['S-3000']=(a)=>{const alvo=byId(DB.eventos,a.evId),id=novoId();const t=alvo.tipo,n=+t.slice(2);
+  const ehTrab=(n>=2190&&n<=2420)||n===8200||n===8299||(n>=1200&&n<=1210),ehPer=(n>=1200&&n<=1280)||n===1300;
+  const e=alvo.empId?byId(DB.empregados,alvo.empId):null;
+  const corpo=`${ideEvtTab()}<ideEmpregador><tpInsc>1</tpInsc><nrInsc>${rz()}</nrInsc></ideEmpregador><infoExclusao><tpEvento>${t}</tpEvento><nrRecEvt>${recXml(alvo.recibo)}</nrRecEvt>${ehTrab&&e?`<ideTrabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab></ideTrabalhador>`:''}${ehPer?`<ideFolhaPagto><indApuracao>1</indApuracao><perApur>${alvo.comp}</perApur></ideFolhaPagto>`:''}</infoExclusao>`;
+  return{id,evt:'evtExclusao',titulo:'Exclusão do '+t+' — recibo '+alvo.recibo,ref:alvo.comp||null,xml:envelope('evtExclusao',id,corpo)};};
+const TIPOS={'S-1000':'Informações do empregador','S-1005':'Estabelecimentos','S-1010':'Rubricas','S-1020':'Lotações tributárias','S-2200':'Admissão','S-2206':'Alteração contratual','S-2230':'Afastamento temporário','S-2299':'Desligamento','S-1200':'Remuneração','S-1210':'Pagamentos','S-1299':'Fechamento periódico','S-2205':'Alteração cadastral','S-1298':'Reabertura de eventos periódicos','S-3000':'Exclusão de evento'};
 const ratIncide=E=>!E||E.regime!=='sn'||E.anexo==='iv'||E.anexo==='misto';
-const ORDEM=['S-1000','S-1005','S-1020','S-1010','S-2200','S-2206','S-2230','S-2299','S-1200','S-1210','S-1299'];
+const ORDEM=['S-1000','S-1005','S-1020','S-1010','S-2200','S-2205','S-2206','S-2230','S-2299','S-1298','S-1200','S-1210','S-3000','S-1299'];
 
 function criarEvento(tipo,args,opts){
   const g=GEN[tipo](args,opts);
@@ -507,7 +548,7 @@ function validarBase(ev){
   if(tipo==='S-2200'||tipo==='S-2206'||tipo==='S-2230'||tipo==='S-2299'||tipo==='S-1200'||tipo==='S-1210'){
     const e=byId(DB.empregados,args.id);if(!e){o.push('Empregado não encontrado.');return o;}
     if(!cpfValido(e.cpf))o.push('CPF do empregado inválido.');
-    if(tipo==='S-2200'){['nome','nasc','admissao','salario','mae','logr','cep','codMunic','uf'].forEach(k=>{if(!e[k]||(k==='salario'&&!num(e[k])))o.push('Campo obrigatório ausente no empregado: '+k);});if(!e.lotacao)o.push('Informe a lotação.');if(!e.estab)o.push('Informe o estabelecimento.');if(onlyD(e.sindCnpj).length!==14)o.push('Informe o CNPJ do sindicato da categoria profissional (S-2200: cnpjSindCategProf é obrigatório no leiaute S-1.3).');if(!String(e.dscJorn||'').trim())o.push('Informe a descrição da jornada contratual (S-2200: dscJorn é obrigatório no leiaute S-1.3).');}
+    if(tipo==='S-2200'){['nome','nasc','admissao','salario','mae','logr','cep','codMunic','uf'].forEach(k=>{if(!e[k]||(k==='salario'&&!num(e[k])))o.push('Campo obrigatório ausente no empregado: '+k);});if(!e.lotacao)o.push('Informe a lotação.');if(!e.estab)o.push('Informe o estabelecimento.');if(onlyC(e.sindCnpj).length!==14)o.push('Informe o CNPJ do sindicato da categoria profissional (S-2200: cnpjSindCategProf é obrigatório no leiaute S-1.3).');if(!String(e.dscJorn||'').trim())o.push('Informe a descrição da jornada contratual (S-2200: dscJorn é obrigatório no leiaute S-1.3).');}
   }
   if(['S-1010','S-1200','S-2299'].includes(tipo)){const rb=DB.rubricas.filter(r=>!r.nat||!/^\d{4}$/.test(r.nat));if(tipo==='S-1010'&&args.id){const r1=DB.rubricas.find(x=>x.sys===args.id);if(r1&&(!r1.nat||!/^\d{4}$/.test(r1.nat)))o.push('Rubrica '+r1.cod+' sem natureza válida (Tabela 3 do eSocial; XSD: natRubr obrigatório, 4 dígitos).');}else if(tipo!=='S-1010'&&rb.length)o.push('Rubricas sem natureza (Tabela 3 do eSocial): '+rb.map(r=>r.cod).join(', '));}
   /* dependências */
@@ -530,11 +571,11 @@ function validarEvento(ev){const o=validarBase(ev),E=DB.empresa;if(!E||!ev.gen)r
     if(E.cprb&&!E.cnae)o.push('CPRB: informe o CNAE principal para conferir o enquadramento na atividade desonerada (Lei 12.546/2011, art. 7º-A) [VERIFICAR FONTE OFICIAL].');}
   if(tipo==='S-1005'){const s=byId(DB.estabs,args.id);if(s){
     if(String(s.tpInsc)==='1'&&!cnpjValido(s.nrInsc))o.push('CNPJ do estabelecimento inválido.');
-    if(String(s.tpInsc)==='1'&&onlyD(s.nrInsc).slice(0,8)!==onlyD(E.cnpj).slice(0,8))o.push('O CNPJ do estabelecimento deve ter a mesma raiz (8 primeiros dígitos) do empregador.');
+    if(String(s.tpInsc)==='1'&&onlyC(s.nrInsc).slice(0,8)!==onlyC(E.cnpj).slice(0,8))o.push('O CNPJ do estabelecimento deve ter a mesma raiz (8 primeiros dígitos) do empregador.');
     if(onlyD(s.cnae).length!==7)o.push('CNAE do estabelecimento deve ter 7 dígitos.');
     if(ratIncide(E)){if(![1,2,3].includes(Number(s.rat)))o.push('RAT (grau de risco) deve ser 1, 2 ou 3 conforme o CNAE (Decreto 3.048/99, Anexo V) [VERIFICAR FONTE OFICIAL].');
       const f=num(s.fap);if(!(f>=0.5&&f<=2))o.push('FAP deve estar entre 0,5000 e 2,0000 (Lei 10.666/2003, art. 10).');}
-    if(DB.estabs.filter(x=>x.tpInsc==s.tpInsc&&onlyD(x.nrInsc)===onlyD(s.nrInsc)).length>1)o.push('Inscrição de estabelecimento duplicada.');}}
+    if(DB.estabs.filter(x=>x.tpInsc==s.tpInsc&&onlyC(x.nrInsc)===onlyC(s.nrInsc)).length>1)o.push('Inscrição de estabelecimento duplicada.');}}
   if(tipo==='S-1020'){const l=byId(DB.lotacoes,args.id);if(l){
     if(!FPAS_OK.test(String(l.fpas||'')))o.push('FPAS deve ter 3 dígitos (Tabela 4).');
     if(!/^\d{4}$/.test(String(l.codTercs||'')))o.push('Código de terceiros deve ter 4 dígitos (Tabela 4); use 0000 quando não houver recolhimento a terceiros.');
@@ -623,7 +664,7 @@ const MENU=[['','home','⌂ Início'],['Cadastros','empresa','Empresa e regime (
  ['Departamento Pessoal','empregados','Empregados (S-2200)'],['','movs','Movimentações (S-2206/2230/2299)'],
  ['Folha de pagamento','lanc','Lançamentos do mês'],['','folha','Cálculo da folha'],['','ferias','Férias'],['','d13','13º salário'],['','resc','Rescisão (S-2299)'],['','holerite','Contracheques'],['','relat','Relatórios e guias'],
  ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','integr','Webservice / Integração'],
- ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados'],['','marca','Identidade visual']];
+ ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados'],['','seguranca','Segurança e acesso'],['','auditoria','Trilha de auditoria'],['','privacidade','Privacidade e cookies'],['','marca','Identidade visual']];
 function renderSide(){const cur=NAV.cur.name==='empForm'?'empregados':NAV.cur.name;let h='';MENU.forEach(([g,k,l])=>{if(g)h+=`<h6>${g}</h6>`;h+=`<a data-act="nav" data-to="${k}" class="${k===cur?'on':''}">${l}</a>`;});$('#side').innerHTML=h;
   $('#topemp').innerHTML=DB.empresa?`<b>${esc(DB.empresa.razao)}</b><br>CNPJ ${fmtCNPJ(DB.empresa.cnpj)} · eSocial: ${DB.cfg.ambiente==1?'Produção':'Produção restrita'} · ${DB.cfg.modo==='sim'?'modo simulação':'webservice'}`:'Empresa não cadastrada';}
 function renderBar(sc){const acts=(sc.actions?sc.actions(NAV.cur.params):[])||[];
@@ -632,6 +673,7 @@ function renderBar(sc){const acts=(sc.actions?sc.actions(NAV.cur.params):[])||[]
 function render(){const sc=SC[NAV.cur.name];DIRTY=false;$('#main').innerHTML=sc.view(NAV.cur.params);renderBar(sc);renderSide();sc.mount&&sc.mount(NAV.cur.params);}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;if(ACT[a]){e.preventDefault();ACT[a](el,e);}});
 document.addEventListener('input',e=>{if(e.target.closest('[data-form]'))DIRTY=true;});
+document.addEventListener('input',e=>{const el=e.target;if(el.dataset&&el.dataset.mask==='cnpj'){const p=el.selectionStart;el.value=el.value.toUpperCase();try{el.setSelectionRange(p,p)}catch(_){}}});
 document.addEventListener('focusout',e=>{const el=e.target;if(!el.dataset)return;const m=el.dataset.mask;if(m==='cpf')el.value=fmtCPF(el.value);else if(m==='cnpj')el.value=fmtCNPJ(el.value);else if(m==='cep')el.value=fmtCEP(el.value);if(el.dataset.t==='money'&&el.value!=='')el.value=brIn(num(el.value));});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();if(!e.altKey)return;const k=e.key.toLowerCase();
   if(k==='v'||e.key==='ArrowLeft'){back();e.preventDefault();}else if(k==='i'||e.key==='Home'){home();e.preventDefault();}
@@ -640,15 +682,16 @@ ACT.back=()=>back();ACT.home=()=>home();ACT.closeModal=()=>closeModal();ACT.nav=
 ACT.go=el=>go(el.dataset.to,el.dataset.p?JSON.parse(el.dataset.p):{});
 
 /* ---------- helpers de formulário ---------- */
-function F(label,name,val,o){o=o||{};const t=o.t||'text',span=o.w?` style="grid-column:span ${o.w}"`:'';const v=val==null?'':val;
-  const c=`name="${name}" ${o.req?'required':''} ${o.ro?'readonly':''} ${o.ph?`placeholder="${esc(o.ph)}"`:''} ${o.mask?`data-mask="${o.mask}"`:''} ${o.max?`maxlength="${o.max}"`:''}`;
+let _fid=0;
+function F(label,name,val,o){o=o||{};const fid='f'+(++_fid);const t=o.t||'text',span=o.w?` style="grid-column:span ${o.w}"`:'';const v=val==null?'':val;
+  const c=`id="${fid}" name="${name}" ${o.req?'required':''} ${o.ro?'readonly':''} ${o.ph?`placeholder="${esc(o.ph)}"`:''} ${o.mask?`data-mask="${o.mask}"`:''} ${o.max?`maxlength="${o.max}"`:''}`;
   let inp;
   if(t==='select')inp=`<select ${c}>${(o.opts||[]).map(x=>{const [k,l]=Array.isArray(x)?x:[x,x];return `<option value="${esc(k)}" ${String(k)===String(v)?'selected':''}>${esc(l)}</option>`;}).join('')}</select>`;
   else if(t==='money')inp=`<input type="text" inputmode="decimal" data-t="money" ${c} value="${v===''?'':brIn(num(v))}">`;
   else if(t==='check')inp=`<label class="chk"><input type="checkbox" name="${name}" ${v?'checked':''}> ${esc(o.cl||'Sim')}</label>`;
   else if(t==='textarea')inp=`<textarea ${c} rows="${o.rows||3}">${esc(v)}</textarea>`;
   else inp=`<input type="${t}" ${c} ${o.list?`list="${o.list}"`:''} value="${esc(v)}">`;
-  return `<div class="f"${span}><label>${esc(label)}${o.req?' <b class="rq">*</b>':''}</label>${inp}${o.hint?`<small>${o.hint}</small>`:''}</div>`;}
+  return `<div class="f"${span}><label for="${fid}">${esc(label)}${o.req?' <b class="rq">*</b>':''}</label>${inp}${o.hint?`<small>${o.hint}</small>`:''}</div>`;}
 function readForm(root){const o={};$$('[name]',root).forEach(el=>{const n=el.name;if(el.type==='checkbox')o[n]=el.checked;else if(el.dataset.t==='money')o[n]=num(el.value);else o[n]=el.value.trim();});return o;}
 function faltando(root){const m=[];$$('[required]',root).forEach(el=>{if(!el.value.trim()){const l=el.closest('.f');m.push(l?l.querySelector('label').textContent.replace('*','').trim():el.name);}});return m;}
 const badge=(t,c)=>`<span class="badge b-${c||'gray'}">${esc(t)}</span>`;
@@ -717,15 +760,15 @@ crud('estabs',{title:'Estabelecimentos (S-1005)',sub:'Matriz, filiais e obras (C
   novo:()=>({tipoEstab:DB.estabs.some(x=>x.tipoEstab==='matriz')?'filial':'matriz',tpInsc:'1',rat:2,fap:1,iniValid:DB.empresa?DB.empresa.iniValid:compAtual()}),
   fields:r=>F('Nome / identificação','nome',r.nome,{req:1,w:3})+F('Natureza','tipoEstab',r.tipoEstab||'matriz',{t:'select',opts:Object.entries(TPEST),w:2})+F('Tipo de inscrição','tpInsc',r.tpInsc,{t:'select',opts:[['1','1 – CNPJ'],['4','4 – CNO']],w:2})+F('Nº de inscrição','nrInsc',r.nrInsc,{req:1,w:3})+F('CNAE preponderante (7 dígitos)','cnae',r.cnae,{req:1,w:3})+F('Grau de risco / RAT (%)','rat',r.rat,{w:2,hint:'1, 2 ou 3'})+F('FAP','fap',r.fap,{w:2,hint:'0,5 a 2,0'})+F('Início de validade (AAAA-MM)','iniValid',r.iniValid,{t:'month',req:1,w:3})+`<div class="note info" style="grid-column:span 12">${infoRatEstab()}</div>`,
   validate:o=>{const E=DB.empresa;if(!E)return 'Cadastre a empresa antes.';const ed=NAV.cur.params.edit;
-    o.nrInsc=onlyD(o.nrInsc);
+    o.nrInsc=onlyC(o.nrInsc);
     if(o.tpInsc==='1'){if(!cnpjValido(o.nrInsc))return 'CNPJ do estabelecimento inválido.';
-      if(o.nrInsc.slice(0,8)!==onlyD(E.cnpj).slice(0,8))return 'O CNPJ do estabelecimento deve ter a mesma raiz (8 primeiros dígitos) do CNPJ do empregador.';
-      if(o.tipoEstab==='matriz'&&o.nrInsc!==onlyD(E.cnpj))return 'A matriz deve ter o mesmo CNPJ do empregador ('+fmtCNPJ(E.cnpj)+').';
-      if(o.tipoEstab==='filial'&&o.nrInsc===onlyD(E.cnpj))return 'Filial não pode ter o CNPJ da matriz.';
+      if(o.nrInsc.slice(0,8)!==onlyC(E.cnpj).slice(0,8))return 'O CNPJ do estabelecimento deve ter a mesma raiz (8 primeiros dígitos) do CNPJ do empregador.';
+      if(o.tipoEstab==='matriz'&&o.nrInsc!==onlyC(E.cnpj))return 'A matriz deve ter o mesmo CNPJ do empregador ('+fmtCNPJ(E.cnpj)+').';
+      if(o.tipoEstab==='filial'&&o.nrInsc===onlyC(E.cnpj))return 'Filial não pode ter o CNPJ da matriz.';
       if(o.tipoEstab==='obra')return 'Obra deve ser cadastrada com inscrição tipo 4 (CNO).';}
-    else{if(o.tipoEstab!=='obra')return 'Inscrição CNO (tipo 4) só se aplica a obras.';if(o.nrInsc.length!==12)return 'O CNO deve ter 12 dígitos.';}
+    else{if(o.tipoEstab!=='obra')return 'Inscrição CNO (tipo 4) só se aplica a obras.';if(!/^\d{12}$/.test(o.nrInsc))return 'O CNO deve ter 12 dígitos numéricos.';}
     if(onlyD(o.cnae).length!==7)return 'O CNAE deve ter 7 dígitos.';
-    if(DB.estabs.some(x=>x.id!==ed&&x.tpInsc===o.tpInsc&&onlyD(x.nrInsc)===o.nrInsc))return 'Já existe estabelecimento com esta inscrição.';
+    if(DB.estabs.some(x=>x.id!==ed&&x.tpInsc===o.tpInsc&&onlyC(x.nrInsc)===o.nrInsc))return 'Já existe estabelecimento com esta inscrição.';
     if(o.tipoEstab==='matriz'&&DB.estabs.some(x=>x.id!==ed&&x.tipoEstab==='matriz'))return 'Já existe uma matriz cadastrada.';
     if(ratIncide(E)){if(![1,2,3].includes(Number(o.rat)))return 'Informe o grau de risco (RAT) 1, 2 ou 3.';const f=num(o.fap);if(!(f>=0.5&&f<=2))return 'FAP deve estar entre 0,5 e 2,0.';}
     return null;}});
@@ -786,7 +829,7 @@ SC.empresa.mount=()=>{const f=$('#f');if(!f)return;const upd=()=>{const o=readFo
   ['regime','anexo','cprb'].forEach(n=>f.querySelector('[name='+n+']').addEventListener('change',upd));upd();DIRTY=false;};
 function empSalvar(){const f=$('#f'),mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return false;}const o=readForm(f);
   if(!cnpjValido(o.cnpj)){toast('CNPJ inválido.','err');return false;}if(!cpfValido(o.ctCpf)){toast('CPF do contato inválido.','err');return false;}
-  o.cnpj=onlyD(o.cnpj);o.ctCpf=onlyD(o.ctCpf);delete o.classTribV;if(o.regime==='sn')o.cprb=false;else o.anexo='std';o.classTrib=classTribDe(o);DB.empresa=Object.assign(DB.empresa||{},o);
+  o.cnpj=onlyC(o.cnpj);o.ctCpf=onlyD(o.ctCpf);delete o.classTribV;if(o.regime==='sn')o.cprb=false;else o.anexo='std';o.classTrib=classTribDe(o);DB.empresa=Object.assign(DB.empresa||{},o);
   if(!DB.estabs.length)DB.estabs.push({id:uid('e'),nome:'Matriz',tipoEstab:'matriz',tpInsc:'1',nrInsc:o.cnpj,cnae:o.cnae||'',rat:o.rat,fap:o.fap,iniValid:o.iniValid});
   saveDB();DIRTY=false;toast('Empresa salva.','ok');return true;}
 ACT.empSave=()=>{if(empSalvar())refresh();};
@@ -819,7 +862,7 @@ SC.empForm={view(p){const n=!p.id;const e=n?{mat:String((DB.empregados.reduce((m
   <div data-form id="f">
   <div class="card" data-tab="pess" ${tab!=='pess'?'hidden':''}><div class="grid">${F('Matrícula','mat',e.mat,{req:1,w:2})+F('Nome completo','nome',e.nome,{req:1,w:6})+F('CPF','cpf',fmtCPF(e.cpf),{req:1,w:4,mask:'cpf'})+F('Data de nascimento','nasc',e.nasc,{t:'date',req:1,w:3})+F('Sexo','sexo',e.sexo,{t:'select',opts:O.sexo,w:3})+F('Raça/cor','racaCor',e.racaCor,{t:'select',opts:O.raca,w:3})+F('Estado civil','estCiv',e.estCiv,{t:'select',opts:O.estCiv,w:3})+F('Grau de instrução','grauInstr',e.grauInstr,{t:'select',opts:O.instr,w:4})+F('Nome da mãe','mae',e.mae,{req:1,w:5})+F('PIS/NIS','pis',e.pis,{w:3})+F('CTPS (nº/série/UF)','ctps',e.ctps,{w:4})+F('Telefone','fone',e.fone,{w:3})+F('E-mail','email',e.email,{t:'email',w:5})}</div></div>
   <div class="card" data-tab="end" ${tab!=='end'?'hidden':''}><div class="grid">${F('CEP','cep',fmtCEP(e.cep),{req:1,w:2,mask:'cep'})+F('Tipo','tpLograd',e.tpLograd,{w:1})+F('Logradouro','logr',e.logr,{req:1,w:5})+F('Número','nr',e.nr,{w:1})+F('Complemento','compl',e.compl,{w:3})+F('Bairro','bairro',e.bairro,{w:3})+F('Município','municipio',e.municipio,{w:3})+F('Cód. IBGE (7 díg.)','codMunic',e.codMunic,{req:1,w:3})+F('UF','uf',e.uf,{t:'select',opts:O.uf,w:2,req:1})}</div></div>
-  <div class="card" data-tab="cont" ${tab!=='cont'?'hidden':''}><div class="grid">${F('Data de admissão','admissao',e.admissao,{t:'date',req:1,w:3})+F('Categoria (Tabela 1)','categoria',e.categoria,{t:'select',opts:O.categ,w:5})+F('Estabelecimento','estab',e.estab,{t:'select',opts:lstOpts(DB.estabs,x=>x.nome),w:4,req:1})+F('Departamento / lotação','lotacao',e.lotacao,{t:'select',opts:lstOpts(DB.lotacoes,x=>x.cod+' – '+x.desc),w:4,req:1})+F('Cargo','cargo',e.cargo,{t:'select',opts:lstOpts(DB.cargos,x=>x.nome+' (CBO '+x.cbo+')'),w:4,req:1})+F('Tipo de contrato','tpContr',e.tpContr,{t:'select',opts:[['1','1 – Prazo indeterminado'],['2','2 – Prazo determinado']],w:4})+F('Término (se determinado)','dtTerm',e.dtTerm,{t:'date',w:3})+F('Regime de jornada','tpRegJor',e.tpRegJor,{t:'select',opts:[['1','1 – Submetido a horário de trabalho'],['2','2 – Atividade externa'],['3','3 – Jornada 12x36']],w:4})+F('Natureza da atividade','natAtividade',e.natAtividade,{t:'select',opts:[['1','1 – Urbano'],['2','2 – Rural']],w:3})+F('Tipo de jornada','tpJornada',e.tpJornada,{t:'select',opts:O.jornada,w:5})+F('Descrição da jornada (dscJorn)','dscJorn',e.dscJorn,{w:7,ph:'Ex.: segunda a sexta, 08h às 17h, 1h de intervalo'})+F('Horas semanais','hrsSem',e.hrsSem,{t:'number',w:2})+F('Divisor mensal','divisor',e.divisor,{t:'number',w:2})+F('CNPJ do sindicato','sindCnpj',e.sindCnpj,{w:3})+F('Data-base (mês)','dtBase',e.dtBase,{t:'number',w:2,ph:'1 a 12'})+F('Situação','situacao',e.situacao,{t:'select',opts:[['ativo','Ativo'],['afastado','Afastado'],['desligado','Desligado']],w:3})}</div></div>
+  <div class="card" data-tab="cont" ${tab!=='cont'?'hidden':''}><div class="grid">${F('Data de admissão','admissao',e.admissao,{t:'date',req:1,w:3})+F('Categoria (Tabela 1)','categoria',e.categoria,{t:'select',opts:O.categ,w:5})+F('Estabelecimento','estab',e.estab,{t:'select',opts:lstOpts(DB.estabs,x=>x.nome),w:4,req:1})+F('Departamento / lotação','lotacao',e.lotacao,{t:'select',opts:lstOpts(DB.lotacoes,x=>x.cod+' – '+x.desc),w:4,req:1})+F('Cargo','cargo',e.cargo,{t:'select',opts:lstOpts(DB.cargos,x=>x.nome+' (CBO '+x.cbo+')'),w:4,req:1})+F('Tipo de contrato','tpContr',e.tpContr,{t:'select',opts:[['1','1 – Prazo indeterminado'],['2','2 – Prazo determinado']],w:4})+F('Término (se determinado)','dtTerm',e.dtTerm,{t:'date',w:3})+F('Regime de jornada','tpRegJor',e.tpRegJor,{t:'select',opts:[['1','1 – Submetido a horário de trabalho'],['2','2 – Atividade externa'],['3','3 – Jornada 12x36']],w:4})+F('Natureza da atividade','natAtividade',e.natAtividade,{t:'select',opts:[['1','1 – Urbano'],['2','2 – Rural']],w:3})+F('Tipo de jornada','tpJornada',e.tpJornada,{t:'select',opts:O.jornada,w:5})+F('Descrição da jornada (dscJorn)','dscJorn',e.dscJorn,{w:7,ph:'Ex.: segunda a sexta, 08h às 17h, 1h de intervalo'})+F('Horas semanais','hrsSem',e.hrsSem,{t:'number',w:2})+F('Divisor mensal','divisor',e.divisor,{t:'number',w:2})+F('CNPJ do sindicato','sindCnpj',fmtCNPJ(e.sindCnpj),{w:3,mask:'cnpj'})+F('Data-base (mês)','dtBase',e.dtBase,{t:'number',w:2,ph:'1 a 12'})+F('Situação','situacao',e.situacao,{t:'select',opts:[['ativo','Ativo'],['afastado','Afastado'],['desligado','Desligado']],w:3})}</div></div>
   <div class="card" data-tab="rem" ${tab!=='rem'?'hidden':''}><div class="grid">${F('Salário contratual (mensal)','salario',e.salario,{t:'money',req:1,w:3})+F('Unidade de pagamento','undSalFixo',e.undSalFixo,{t:'select',opts:[['5','5 – Mensal']],w:3})+F('Insalubridade','insal',e.insal||'',{t:'select',opts:[['','Não'],['10','10% (mínimo)'],['20','20% (médio)'],['40','40% (máximo)']],w:3,hint:'Base: salário mínimo (CLT, art. 192)'})+F('Periculosidade','peric',e.peric,{t:'check',cl:'30% sobre o salário (CLT, art. 193, §1º)',w:3})+F('Vale-transporte','optaVT',e.optaVT,{t:'check',cl:'Optante pelo VT (desconto até 6%)',w:3})+F('Custo mensal do VT','vtValor',e.vtValor,{t:'money',w:3})+F('Pensão alimentícia (valor mensal)','pensao',e.pensao,{t:'money',w:3,hint:'Deduzida da base do IRRF'})}</div></div>
   <div class="card" data-tab="dep" ${tab!=='dep'?'hidden':''}><div class="row sp"><h2>Dependentes</h2><button class="btn pri sm" data-act="depAdd">＋ Adicionar dependente</button></div><p class="sub">Marque “IRRF” para dedução na base do imposto e “Sal.-família” para filhos de até 14 anos (ou inválidos).</p><div id="deps">${(e.deps||[]).map(depRow).join('')}</div></div>
   <div class="card" data-tab="banc" ${tab!=='banc'?'hidden':''}><div class="grid">${F('Forma de pagamento','formaPgto',e.formaPgto||'cc',{t:'select',opts:[['cc','Crédito em conta'],['din','Dinheiro'],['pix','PIX']],w:3})+F('Banco','banco',e.banco,{w:3})+F('Agência','agencia',e.agencia,{w:2})+F('Conta','conta',e.conta,{w:2})+F('Chave PIX','pix',e.pix,{w:4})}</div></div>
@@ -833,12 +876,12 @@ function empSalvarForm(){const f=$('#f');
   // os campos obrigatórios de abas ocultas também precisam ser validados
   const mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return null;}
   const o=readForm(f);if(!cpfValido(o.cpf)){toast('CPF inválido.','err');return null;}if(!num(o.salario)){toast('Informe o salário.','err');return null;}
-  o.cpf=onlyD(o.cpf);const p=NAV.cur.params;
+  o.cpf=onlyD(o.cpf);o.sindCnpj=onlyC(o.sindCnpj);if(o.sindCnpj&&!cnpjValido(o.sindCnpj)){toast('CNPJ do sindicato inválido (verifique os dígitos verificadores).','err');return null;}const p=NAV.cur.params;
   if(DB.empregados.some(x=>x.cpf===o.cpf&&x.id!==p.id)){toast('Já existe empregado com este CPF.','err');return null;}
   if(DB.empregados.some(x=>x.mat===o.mat&&x.id!==p.id)){toast('Matrícula já utilizada.','err');return null;}
   o.deps=lerDeps();for(const d of o.deps){if(d.cpf&&!cpfValido(d.cpf)){toast('CPF inválido do dependente '+d.nome,'err');return null;}}
-  let rec;if(p.id){rec=byId(DB.empregados,p.id);Object.assign(rec,o);}else{rec=Object.assign({id:uid('emp')},o);DB.empregados.push(rec);NAV.cur.params.id=rec.id;}
-  saveDB();DIRTY=false;toast('Empregado salvo.','ok');return rec;}
+  let rec,alt=false;if(p.id){rec=byId(DB.empregados,p.id);const K=['nome','sexo','racaCor','estCiv','grauInstr','cep','tpLograd','logr','nr','compl','bairro','codMunic','uf','fone','email','deps'];const antes=JSON.stringify(K.map(k=>rec[k]||''));Object.assign(rec,o);alt=antes!==JSON.stringify(K.map(k=>rec[k]||''))&&DB.eventos.some(x=>x.tipo==='S-2200'&&x.empId===rec.id&&x.status==='processado');}else{rec=Object.assign({id:uid('emp')},o);DB.empregados.push(rec);NAV.cur.params.id=rec.id;}
+  saveDB();DIRTY=false;toast('Empregado salvo.','ok');if(alt){try{criarEvento('S-2205',{id:rec.id});toast('Dados cadastrais alterados: evento S-2205 gerado na biblioteca, pronto para envio.','ok');}catch(e){toast('Não foi possível gerar o S-2205: '+e.message,'err');}}return rec;}
 ACT.empSalvar=()=>{if(empSalvarForm())refresh();};
 ACT.empSalvarEnviar=async()=>{const r=empSalvarForm();if(!r)return;const ev=criarEvento('S-2200',{id:r.id});const x=await enviarEventos([ev]);resumoEnvio(x,[ev]);refresh();};
 
@@ -913,7 +956,7 @@ ACT.folhaEnvioGo=()=>go('envio',{comp:compSel(NAV.cur.params)});
 ACT.folhaFechar=()=>{const comp=compSel(NAV.cur.params),c=DB.comps[comp];if(!c||c.status!=='calculada'){toast('Calcule a folha antes de fechar.','err');return;}
   modalConfirm('Fechar a competência '+compLabel(comp)+'? Os valores ficam travados para o envio ao eSocial (S-1200/S-1210/S-1299).',()=>{c.status='fechada';c.fechadaEm=agoraISO();saveDB();refresh();toast('Competência fechada.','ok');},{yes:'Fechar competência'});};
 ACT.folhaReabrir=()=>{const comp=compSel(NAV.cur.params),c=DB.comps[comp];const env=DB.eventos.some(e=>e.comp===comp&&e.status==='processado');
-  modalConfirm('Reabrir a competência '+compLabel(comp)+'?'+(env?' <b>Há eventos desta competência já processados no eSocial</b>: alterações exigirão retificação e, após o S-1299, a reabertura (S-1298).':''),()=>{c.status='calculada';saveDB();refresh();},{yes:'Reabrir'});};
+  modalConfirm('Reabrir a competência '+compLabel(comp)+'?'+(env?' <b>Há eventos desta competência já processados no eSocial</b>: alterações exigirão retificação e, após o S-1299, a reabertura (S-1298).':''),()=>{c.status='calculada';const fech=DB.eventos.some(e=>e.tipo==='S-1299'&&e.comp===comp&&e.status==='processado');if(fech){try{criarEvento('S-1298',{comp});toast('Evento S-1298 (reabertura) gerado: envie-o antes de retificar a remuneração.','ok');}catch(e){toast('Falha ao gerar o S-1298: '+e.message,'err');}}saveDB();refresh();},{yes:'Reabrir'});};
 
 /* ===================== CONTRACHEQUE ===================== */
 function holeriteHTML(e,comp){const r=DB.comps[comp].res[e.id],E=DB.empresa,c=DB.comps[comp],cg=byId(DB.cargos,e.cargo)||{},lo=byId(DB.lotacoes,e.lotacao)||{};const I=r.irrfInfo;
@@ -1014,7 +1057,7 @@ SC.biblioteca={view(p){const q=(p.q||'').toLowerCase();let L=DB.eventos.filter(e
   <select id="fSt" style="padding:7px;border:1px solid #c7d0d9;border-radius:6px"><option value="">Todos os status</option>${optSel(Object.keys(ST).map(k=>[k,ST[k][0]]),p.status||'')}</select><input id="fComp" type="month" value="${p.comp||''}" style="padding:6px;border:1px solid #c7d0d9;border-radius:6px"><input id="fQ" placeholder="Buscar (título, ID, recibo…)" value="${esc(p.q||'')}" style="padding:8px;border:1px solid #c7d0d9;border-radius:6px;min-width:220px"><button class="btn sm" data-act="bibLimpar">Limpar</button></div>
   <div class="tw" style="margin-top:12px"><table class="t"><thead><tr><th><input type="checkbox" id="selAll"></th><th>Evento</th><th>Descrição</th><th>Comp.</th><th>Status</th><th>Recibo / protocolo</th><th>Data</th><th></th></tr></thead><tbody>
   ${L.map(e=>`<tr><td><input type="checkbox" class="sel" value="${e.id}"></td><td><b>${e.tipo}</b>${e.retif?' <span class="badge b-warn">retif.</span>':''}</td><td>${esc(e.titulo)}</td><td>${e.comp?compLabel(e.comp):''}</td><td>${stBadge(e)}</td><td class="mono">${esc(e.recibo||e.protocolo||'')}</td><td>${dtHora(e.processadoEm||e.enviadoEm||e.criado)}</td>
-  <td class="r"><button class="btn sm" data-act="bibVer" data-id="${e.id}">XML / detalhes</button> ${e.status==='processado'?`<button class="btn sm" data-act="bibRetif" data-id="${e.id}" ${['S-1299'].includes(e.tipo)?'disabled':''}>Retificar</button>`:e.status==='enviado'?`<button class="btn sm" data-act="bibCons" data-id="${e.id}">Consultar</button>`:`<button class="btn sm send" data-act="bibEnv" data-id="${e.id}">${e.status==='rejeitado'?'Reenviar':'Enviar'}</button>`} ${e.status==='processado'?'':`<button class="btn sm danger" data-act="bibDel" data-id="${e.id}">✕</button>`}</td></tr>`).join('')||'<tr><td colspan="8" class="c" style="padding:20px;color:var(--mut)">Nenhum evento encontrado.</td></tr>'}
+  <td class="r"><button class="btn sm" data-act="bibVer" data-id="${e.id}">XML / detalhes</button> ${e.status==='processado'?`<button class="btn sm" data-act="bibRetif" data-id="${e.id}" ${['S-1299','S-1298','S-3000'].includes(e.tipo)?'disabled':''}>Retificar</button> <button class="btn sm danger" data-act="bibExcl" data-id="${e.id}" ${['S-1299','S-1298','S-3000'].includes(e.tipo)?'disabled':''}>Excluir (S-3000)</button>`:e.status==='enviado'?`<button class="btn sm" data-act="bibCons" data-id="${e.id}">Consultar</button>`:`<button class="btn sm send" data-act="bibEnv" data-id="${e.id}">${e.status==='rejeitado'?'Reenviar':'Enviar'}</button>`} ${e.status==='processado'?'':`<button class="btn sm danger" data-act="bibDel" data-id="${e.id}">✕</button>`}</td></tr>`).join('')||'<tr><td colspan="8" class="c" style="padding:20px;color:var(--mut)">Nenhum evento encontrado.</td></tr>'}
   </tbody></table></div></div>`;},
   mount(){const f=()=>{NAV.cur.params=Object.assign({},NAV.cur.params,{tipo:$('#fTipo').value,status:$('#fSt').value,comp:$('#fComp').value,q:$('#fQ').value});};
     ['fTipo','fSt','fComp'].forEach(i=>$('#'+i).addEventListener('change',()=>{f();render();}));let tm;$('#fQ').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>{f();render();$('#fQ').focus();$('#fQ').setSelectionRange(99,99);},350);});
@@ -1033,6 +1076,7 @@ ACT.bibEnv=async el=>{const e=byId(DB.eventos,el.dataset.id);const r=await envia
 ACT.bibCons=async el=>{const e=byId(DB.eventos,el.dataset.id);
   if(DB.cfg.modo==='sim'){e.status='processado';e.recibo='SIM-1.2.'+ts14()+'00001';e.processadoEm=agoraISO();hist(e,'Consulta (SIMULAÇÃO): processado');saveDB();refresh();toast('Evento processado (simulação).','ok');return;}
   try{const q=await fetch(DB.cfg.gateway.replace(/\/$/,'')+'/lotes/'+encodeURIComponent(e.protocolo));const j=await q.json();if(j.status!=='processado'){toast('Lote ainda em processamento.');return;}const x=(j.eventos||[]).find(y=>y.id===e.id);if(x&&x.situacao==='sucesso'){e.status='processado';e.recibo=x.recibo;e.processadoEm=agoraISO();hist(e,'Processado — recibo '+x.recibo);}else if(x){e.status='rejeitado';e.ocorr=(x.ocorrencias||[]).map(o=>(o.codigo?o.codigo+' – ':'')+o.descricao);hist(e,'Rejeitado pelo eSocial');}saveDB();refresh();}catch(err){toast('Falha na consulta: '+err.message,'err');}};
+ACT.bibExcl=el=>{const e=byId(DB.eventos,el.dataset.id);modalConfirm('Gerar o <b>S-3000</b> para excluir o evento <b>'+esc(e.tipo+' — '+e.titulo)+'</b> (recibo '+esc(e.recibo)+')? A exclusão só é aceita se o evento não tiver sido retificado ou excluído antes.',()=>{try{criarEvento('S-3000',{evId:e.id});toast('S-3000 gerado: envie-o pela biblioteca.','ok');refresh();}catch(x){toast('Não foi possível gerar o S-3000: '+x.message,'err');}},{yes:'Gerar S-3000'});};
 ACT.bibRetif=el=>{const e=byId(DB.eventos,el.dataset.id);modalConfirm('Gerar a retificação (indRetif=2) do evento <b>'+esc(e.tipo+' — '+e.titulo)+'</b> com os dados atuais, referenciando o recibo '+esc(e.recibo)+'?',()=>{try{criarEvento(e.tipo,e.gen.args,{retif:{n:2,rec:e.recibo}});toast('Retificação gerada: envie-a pela biblioteca.','ok');refresh();}catch(x){toast('Não foi possível gerar a retificação: '+x.message,'err');}},{yes:'Gerar retificação'});};
 ACT.bibDel=el=>modalConfirm('Excluir este evento da biblioteca (somente eventos não processados)?',()=>{DB.eventos=DB.eventos.filter(x=>x.id!==el.dataset.id);saveDB();refresh();},{yes:'Excluir'});
 ACT.bibEnvSel=async()=>{const ids=$$('.sel:checked').map(c=>c.value);if(!ids.length){toast('Selecione eventos.');return;}const evs=ids.map(i=>byId(DB.eventos,i)).sort((a,b)=>ORDEM.indexOf(a.tipo)-ORDEM.indexOf(b.tipo));const r=await enviarEventos(evs);resumoEnvio(r,evs);refresh();};
@@ -1044,7 +1088,7 @@ function checarEstrutura(){const E=DB.empresa,o=[];const add=(n,t)=>o.push({n,t}
   if(!E.regime)add('err','Regime tributário não informado na empresa.');else add('ok','Regime: '+regimeTxt(E)+' (classTrib '+classTribDe(E)+').');
   const ms=DB.estabs.filter(x=>x.tipoEstab==='matriz');
   if(ms.length===1)add('ok','Uma matriz cadastrada.');else add('err',ms.length?'Há mais de uma matriz.':'Nenhuma matriz cadastrada.');
-  DB.estabs.forEach(s=>{if(s.tpInsc==='1'&&onlyD(s.nrInsc).slice(0,8)!==onlyD(E.cnpj).slice(0,8))add('err','Estabelecimento '+s.nome+': raiz do CNPJ diferente da do empregador.');
+  DB.estabs.forEach(s=>{if(s.tpInsc==='1'&&onlyC(s.nrInsc).slice(0,8)!==onlyC(E.cnpj).slice(0,8))add('err','Estabelecimento '+s.nome+': raiz do CNPJ diferente da do empregador.');
     if(ratIncide(E)&&![1,2,3].includes(Number(s.rat)))add('err','Estabelecimento '+s.nome+': grau de risco (RAT) deve ser 1, 2 ou 3.');
     if(!DB.empregados.some(e=>e.estab===s.id))add('warn','Estabelecimento '+s.nome+' sem empregados vinculados.');});
   DB.lotacoes.forEach(l=>{if(E.regime==='sn'&&String(l.codTercs)!=='0000')add('err','Lotação '+l.cod+': Simples Nacional exige terceiros 0000.');
@@ -1259,6 +1303,154 @@ ACT.cmpFolha=()=>{const comp=DB.cfg.comp,c=DB.comps[comp];if(!c||!Object.keys(c.
 ACT.cmpReset=()=>{DB.cmp={};saveDB();refresh();};
 ACT.cmpPrint=()=>{$('#printarea').innerHTML='<div style="padding:12px"><h2>Comparativo de regimes — '+esc((DB.empresa||{}).razao||'')+'</h2>'+$('#cmpOut').innerHTML+'</div>';document.body.classList.add('printing');try{window.print();}catch(e){toast('Impressão indisponível neste ambiente.','err');}setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};
 
+/* ===================== SEGURANÇA, PRIVACIDADE (LGPD), COOKIES, ACESSIBILIDADE ===================== */
+/* Cofre local: PBKDF2-SHA-256 (600.000 iterações) + AES-GCM-256. A senha nunca é gravada; sem ela os dados não são recuperáveis. */
+const VK='folhaPro.vault.v1',FAILK='folhaPro.fail.v1',CONSENT_KEY='folhaPro.consent.v1',CONSENT_VER='2026-11-13';
+const VAULT={on:false,key:null,salt:null,it:600000,pend:null,busy:false,idleT:null,flushing:null};
+let CONSENT=null;
+const b64=u=>{u=new Uint8Array(u);let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s);};
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const hex=u=>[...new Uint8Array(u)].map(x=>x.toString(16).padStart(2,'0')).join('');
+async function sha256(t){return hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)));}
+async function deriveKey(pw,salt,it){const m=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:it,hash:'SHA-256'},m,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
+async function vEnc(str){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},VAULT.key,new TextEncoder().encode(str));
+  return JSON.stringify({v:1,it:VAULT.it,salt:b64(VAULT.salt),iv:b64(iv),ct:b64(ct)});}
+async function vTry(raw,pw){const o=JSON.parse(raw);const k=await deriveKey(pw,unb64(o.salt),o.it);const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},k,unb64(o.ct));return{key:k,salt:unb64(o.salt),it:o.it,text:new TextDecoder().decode(pt)};}
+/* persistência assíncrona com fila (último estado vence) */
+function vaultPersist(s){VAULT.pend=s;if(VAULT.busy)return;VAULT.busy=true;VAULT.flushing=(async()=>{try{while(VAULT.pend!=null){const x=VAULT.pend;VAULT.pend=null;const out=await vEnc(x);try{localStorage.setItem(VK,out);}catch(e){toast('Não foi possível gravar os dados (armazenamento cheio ou bloqueado). Exporte um backup agora.','err');}}}finally{VAULT.busy=false;}})();}
+const vaultFlush=async()=>{while(VAULT.busy||VAULT.pend!=null){await VAULT.flushing;}};
+/* tentativas */
+function failGet(){try{return JSON.parse(localStorage.getItem(FAILK)||'{"n":0,"until":0}');}catch(e){return{n:0,until:0};}}
+function failSet(o){try{localStorage.setItem(FAILK,JSON.stringify(o));}catch(e){}}
+function senhaForca(p){let c=0;if(/[a-z]/.test(p))c++;if(/[A-Z]/.test(p))c++;if(/\d/.test(p))c++;if(/[^A-Za-z0-9]/.test(p))c++;return{ok:p.length>=12&&c>=3,len:p.length,c};}
+/* ---------- trilha de auditoria (LGPD, art. 37) ---------- */
+function audit(a,d){if(!DB)return;(DB.audit=DB.audit||[]).push({ts:new Date().toISOString(),a:String(a).slice(0,60),d:d==null?'':String(d).slice(0,200)});if(DB.audit.length>3000)DB.audit.splice(0,DB.audit.length-3000);VAULT.audit=DB.audit;}
+function wrapAudit(){const re=/(Save|Del|Send|Env|Export|Import|Reset|Demo|Fechar|Reabr|Excl|Cancel|Gerar|Calc|bkFile|bkLoad|titular|ckAll|ckNec|pwd)/;Object.keys(ACT).forEach(k=>{if(!re.test(k)||ACT[k].__au)return;const f=ACT[k];ACT[k]=function(el,ev){try{audit('ação:'+k,(el&&el.dataset&&el.dataset.arg)||NAV.cur.name);}catch(e){}return f.apply(this,arguments);};ACT[k].__au=1;});}
+
+/* ---------- consentimento / cookies ---------- */
+function consentLoad(){try{const r=JSON.parse(localStorage.getItem(CONSENT_KEY)||'null');if(r&&r.ver===CONSENT_VER)CONSENT=r;}catch(e){}}
+function consentSet(pref){CONSENT={ver:CONSENT_VER,ts:new Date().toISOString(),pref:!!pref};try{localStorage.setItem(CONSENT_KEY,JSON.stringify(CONSENT));}catch(e){}
+  if(pref)brandSave();else{try{localStorage.removeItem(BRAND_KEY);}catch(e){}}applyBrand();bannerHide();if(DB)audit('consentimento',pref?'necessários + preferências':'somente necessários');}
+function bannerShow(){if(document.getElementById('ckb'))return;const d=document.createElement('div');d.id='ckb';d.setAttribute('role','dialog');d.setAttribute('aria-labelledby','ckt');d.setAttribute('aria-describedby','ckd');
+  d.innerHTML=`<h2 id="ckt">Privacidade e cookies</h2><p id="ckd">Este sistema usa o armazenamento local do navegador <b>estritamente necessário</b> para funcionar (seus dados, criptografados com a sua senha, e o controle de acesso). Se você permitir, também guardamos <b>preferências de aparência</b> (cores e logotipo) e carregamos a <b>fonte da marca</b> do Google Fonts, serviço de terceiro que recebe o seu endereço IP. Não usamos cookies de publicidade nem de análise de comportamento. <a href="#" data-act="ckPolicy" data-arg="cookies">Política de cookies</a> · <a href="#" data-act="ckPolicy" data-arg="privacidade">Política de privacidade</a></p>
+  <div class="row"><button class="btn" data-act="ckNec">Somente necessários</button><button class="btn" data-act="ckCustom">Personalizar</button><button class="btn pri" data-act="ckAll">Aceitar todos</button></div>`;document.body.appendChild(d);}
+function bannerHide(){const d=document.getElementById('ckb');if(d)d.remove();}
+ACT.ckAll=()=>{consentSet(true);toast('Preferências salvas.','ok');if(SC[NAV.cur.name]&&NAV.cur.name==='cookies'&&DB)render();};
+ACT.ckNec=()=>{consentSet(false);toast('Somente os cookies/armazenamento necessários permanecem ativos.','ok');if(NAV.cur.name==='cookies'&&DB)render();};
+ACT.ckCustom=()=>{modal(`<p class="sub">Escolha o que permitir. O armazenamento necessário não pode ser desativado, pois sem ele o sistema não funciona.</p>
+  <div class="card"><label class="chk"><input type="checkbox" checked disabled> <b>Estritamente necessários</b> — cofre de dados criptografado, controle de acesso, registro de consentimento.</label></div>
+  <div class="card"><label class="chk"><input type="checkbox" id="ckp" ${CONSENT&&CONSENT.pref?'checked':''}> <b>Preferências e serviços de terceiros</b> — memoriza cores/logotipo e carrega a fonte da marca (Google Fonts).</label></div>
+  <div class="row" style="justify-content:flex-end"><button class="btn pri" id="cks">Salvar escolhas</button></div>`,{title:'Preferências de cookies'});$('#cks').onclick=()=>{consentSet($('#ckp').checked);closeModal();toast('Preferências salvas.','ok');};};
+ACT.ckPolicy=(el)=>{const k=el.dataset.arg;modal(k==='cookies'?cookiesHTML():privacidadeHTML(),{title:k==='cookies'?'Política de cookies':'Política de privacidade',wide:true});};
+ACT.ckReopen=()=>{CONSENT=null;bannerShow();};
+
+const FORN=()=>esc(BRAND.fornecedor||'[PREENCHER — razão social e CNPJ do fornecedor do software]');
+const DPO=()=>esc(BRAND.dpoNome||'[PREENCHER — nome do encarregado]')+' — '+esc(BRAND.dpoEmail||'[PREENCHER — e-mail do encarregado]');
+function cookiesHTML(){return `<div class="legal"><p><b>Versão ${CONSENT_VER}.</b> O sistema <b>não grava cookies HTTP</b>. Para funcionar, usa o <i>armazenamento local</i> do navegador (localStorage), que tratamos, por transparência (LGPD, art. 9º), como equivalente a cookies.</p>
+<div class="tw"><table class="t"><thead><tr><th scope="col">Item</th><th scope="col">Categoria</th><th scope="col">Finalidade</th><th scope="col">Duração</th></tr></thead><tbody>
+<tr><td class="mono">folhaPro.vault.v1</td><td>Estritamente necessário</td><td>Guarda os dados cadastrais e da folha, criptografados (AES-GCM-256) com chave derivada da sua senha.</td><td>Até a eliminação pelo usuário</td></tr>
+<tr><td class="mono">folhaPro.fail.v1</td><td>Estritamente necessário (segurança)</td><td>Conta tentativas de acesso malsucedidas para retardar ataques de adivinhação de senha.</td><td>Até o acesso bem-sucedido</td></tr>
+<tr><td class="mono">folhaPro.consent.v1</td><td>Estritamente necessário (conformidade)</td><td>Registra a sua escolha sobre cookies, com data e versão desta política.</td><td>Até a revogação ou nova versão da política</td></tr>
+<tr><td class="mono">folhaPro.brand.v1</td><td>Preferência (requer consentimento)</td><td>Memoriza nome, cores e logotipo configurados.</td><td>Até a revogação</td></tr>
+<tr><td class="mono">fonts.googleapis.com / fonts.gstatic.com</td><td>Terceiro (requer consentimento)</td><td>Entrega a fonte da marca. O Google recebe o endereço IP e dados técnicos do navegador, conforme a política do próprio Google.</td><td>Sessão de navegação</td></tr></tbody></table></div>
+<p>Não utilizamos cookies de publicidade, de perfilamento ou de análise de comportamento. A hospedagem do sistema (provedor de infraestrutura) pode registrar o endereço IP e a data de acesso em logs técnicos de servidor, para segurança e disponibilidade.</p>
+<p><b>Como gerir.</b> A qualquer momento você pode alterar a escolha em <i>Sistema → Privacidade e cookies</i> ou pelo botão abaixo. Rejeitar os itens opcionais não reduz as funções do sistema; apenas a fonte da marca é substituída pela fonte padrão do dispositivo e as preferências de aparência valem somente até fechar a página. Também é possível limpar o armazenamento local nas configurações do navegador (isso apaga os dados do sistema; faça backup antes).</p></div>`;}
+function privacidadeHTML(){const E=DB&&DB.empresa;return `<div class="legal"><p><b>Versão ${CONSENT_VER}.</b> Esta política descreve o tratamento de dados pessoais no sistema, nos termos da Lei nº 13.709/2018 (LGPD). Os trechos entre colchetes devem ser preenchidos pela empresa licenciada antes da entrada em produção.</p>
+<h3>1. Quem é quem</h3><p><b>Controlador:</b> ${E?esc(E.razao)+' (CNPJ '+esc(fmtCNPJ(E.cnpj))+')':'a empresa que utiliza o sistema (identificada no cadastro da empresa)'}, que decide sobre os dados de seus empregados e dependentes. <b>Fornecedor do software:</b> ${FORN()}. <b>Encarregado (art. 41):</b> ${DPO()}.</p>
+<h3>2. Dados tratados e finalidades</h3><p>Dados cadastrais de empregados (nome, CPF, nascimento, filiação, endereço, dados contratuais e salariais), de dependentes (inclusive menores, hipótese em que se observa o melhor interesse da criança e do adolescente, art. 14) e do responsável pelo envio ao eSocial. Finalidades: cálculo da folha, recolhimentos e declaração ao eSocial. Movimentações de afastamento por motivo de saúde podem revelar <b>dado pessoal sensível</b> (art. 5º, II), tratado apenas para cumprimento de obrigação legal (art. 11, II, “a”) e com o mínimo necessário.</p>
+<h3>3. Bases legais</h3><p>Cumprimento de obrigação legal ou regulatória pelo controlador (art. 7º, II), execução de contrato de trabalho (art. 7º, V) e exercício regular de direitos (art. 7º, VI). Não há tratamento fundado em consentimento para os dados da folha. O consentimento (art. 8º) é usado apenas para os cookies opcionais descritos na política de cookies.</p>
+<h3>4. Onde ficam os dados e quem os acessa</h3><p>Os dados ficam <b>apenas no navegador deste dispositivo</b>, criptografados com a senha do usuário; o fornecedor não tem acesso a eles. Ao transmitir ao eSocial por gateway próprio, os dados seguem ao gateway configurado pela empresa e ao ambiente nacional do eSocial. Não há venda nem compartilhamento para publicidade.</p>
+<h3>5. Direitos do titular (art. 18)</h3><p>Confirmação, acesso, correção, anonimização, portabilidade, eliminação, informação sobre compartilhamento e revogação de consentimento. O sistema permite <b>exportar os dados de um titular</b> (tela <i>Privacidade e cookies</i>) e corrigir cadastros. A <b>eliminação</b> não se aplica aos dados que a empresa deve conservar por obrigação legal (art. 16, I); os prazos de guarda trabalhista, previdenciária, fiscal e do FGTS devem ser confirmados pelo controlador [VERIFICAR FONTE OFICIAL]. Requisições: ${DPO()}.</p>
+<h3>6. Segurança (art. 46)</h3><p>Criptografia em repouso (AES-GCM-256, chave derivada por PBKDF2-SHA-256 com 600.000 iterações), senha com no mínimo 12 caracteres, bloqueio por inatividade, atraso progressivo após tentativas malsucedidas, política de segurança de conteúdo (CSP) restritiva e trilha de auditoria das operações (art. 37). <b>Limites:</b> o sistema não substitui controles do dispositivo (antivírus, bloqueio de tela, atualizações) e a senha esquecida não pode ser recuperada; mantenha backups.</p>
+<h3>7. Incidentes (art. 48)</h3><p>Em caso de incidente com risco ou dano relevante aos titulares, o controlador deve comunicar a ANPD e os titulares em prazo razoável, conforme regulamentação da ANPD [VERIFICAR FONTE OFICIAL: prazo vigente]. Registre o fato com o encarregado.</p>
+<h3>8. Cookies</h3><p>Veja a política de cookies. As escolhas ficam registradas com data e versão.</p></div>`;}
+
+SC.cookies={view(){const c=CONSENT;return `<h1>Política de cookies</h1><p class="sub">Transparência sobre o armazenamento local e serviços de terceiros.</p>
+ <div class="card"><h2>Sua escolha atual</h2><p>${c?`Registrada em <b>${esc(new Date(c.ts).toLocaleString('pt-BR'))}</b> (política ${esc(c.ver)}): necessários${c.pref?' + preferências e fonte de terceiros':' somente'}.`:'Nenhuma escolha registrada.'}</p>
+ <div class="row"><button class="btn" data-act="ckNec">Somente necessários</button><button class="btn" data-act="ckCustom">Personalizar</button><button class="btn pri" data-act="ckAll">Aceitar todos</button></div></div>
+ <div class="card">${cookiesHTML()}</div>`;},actions:()=>[]};
+SC.privacidade={view(){return `<h1>Privacidade e LGPD</h1><p class="sub">Política de privacidade, direitos do titular e eliminação segura.</p>
+ <div class="card">${privacidadeHTML()}</div>
+ <div class="card"><h2>Exportar dados de um titular (art. 18, II e V)</h2><div class="row"><div class="f"><label for="ttcpf">CPF do titular</label><input id="ttcpf" data-mask="cpf" inputmode="numeric" autocomplete="off"></div><button class="btn pri" data-act="titularExport" style="align-self:flex-end">Gerar arquivo</button></div><p class="sub">Gera um arquivo JSON com o cadastro, dependentes, férias, movimentações e lançamentos do empregado.</p></div>
+ <div class="card"><h2>Cookies</h2><p><a href="#" data-act="go" data-to="cookies">Gerenciar preferências de cookies</a></p></div>`;},actions:()=>[]};
+function pickById(o,id,d){d=d||0;if(d>6||o==null||typeof o!=='object')return undefined;if(Array.isArray(o)){const r=o.map(x=>pickById(x,id,d+1)).filter(x=>x!==undefined);return r.length?r:undefined;}
+  const out={};let hit=false;for(const k of Object.keys(o)){if(k===id){out[k]=o[k];hit=true;continue;}if(o[k]&&typeof o[k]==='object'){const r=pickById(o[k],id,d+1);if(r!==undefined){out[k]=r;hit=true;}}else if(o[k]===id&&(k==='empId'||k==='id')){out[k]=o[k];hit=true;}}return hit?out:undefined;}
+function dl(name,text,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime||'application/json'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+ACT.titularExport=()=>{const cpf=onlyD($('#ttcpf').value);if(!cpfValido(cpf)){toast('Informe um CPF válido.','err');return;}const e=DB.empregados.find(x=>x.cpf===cpf);if(!e){toast('Nenhum empregado com este CPF.','err');return;}
+  const out={titular:e,ferias:DB.ferias.filter(x=>x.empId===e.id),movimentacoes:DB.movs.filter(x=>x.empId===e.id),rescisao:(DB.rescisoes||{})[e.id]||null,competencias:pickById(DB.comps,e.id)||{},geradoEm:new Date().toISOString()};
+  dl('dados-titular-'+cpf.slice(0,3)+'.json',JSON.stringify(out,null,2));toast('Arquivo gerado.','ok');};
+
+/* ---------- trilha de auditoria (tela) e segurança ---------- */
+SC.auditoria={view(){const a=(DB.audit||[]).slice(-400).reverse();return `<h1>Trilha de auditoria</h1><p class="sub">Registro das operações relevantes (acessos, alterações, envios, exportações) — LGPD, art. 37. Guarda as 3.000 últimas entradas neste navegador.</p>
+ <div class="row" style="margin-bottom:10px"><button class="btn" data-act="auditCsv">Exportar CSV</button></div>
+ <div class="tw"><table class="t"><thead><tr><th scope="col">Data e hora</th><th scope="col">Operação</th><th scope="col">Detalhe</th></tr></thead><tbody>${a.map(x=>`<tr><td>${esc(new Date(x.ts).toLocaleString('pt-BR'))}</td><td>${esc(x.a)}</td><td>${esc(x.d)}</td></tr>`).join('')||'<tr><td colspan="3" class="c">Sem registros.</td></tr>'}</tbody></table></div>
+ <div class="note info">Limite: o registro fica no mesmo navegador e pode ser apagado por quem controla o dispositivo. Auditoria imutável exige servidor (ver planilha de pendências).</div>`;},actions:()=>[]};
+ACT.auditCsv=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';dl('auditoria.csv','﻿data_hora;operacao;detalhe\n'+(DB.audit||[]).map(x=>[x.ts,x.a,x.d].map(q).join(';')).join('\n'),'text/csv');};
+SC.seguranca={view(){const id=DB.cfg.idle||15;return `<h1>Segurança e acesso</h1><p class="sub">Senha do cofre, bloqueio automático e estado da proteção.</p>
+ <div class="card"><h2>Estado</h2><p>Criptografia em repouso: <b>${VAULT.on?'ativa (AES-GCM-256, PBKDF2 600.000 iterações)':'inativa (modo de teste)'}</b>. Bloqueio por inatividade: <b>${id} min</b>.</p>
+ <div class="row"><button class="btn" data-act="lock">Bloquear agora</button></div></div>
+ <div class="card"><h2>Bloqueio por inatividade</h2><div class="row"><div class="f"><label for="idle">Minutos (5 a 60)</label><input id="idle" type="number" min="5" max="60" value="${id}"></div><button class="btn" data-act="idleSave" style="align-self:flex-end">Salvar</button></div></div>
+ <div class="card"><h2>Alterar senha</h2><div class="grid"><div class="f" style="grid-column:span 4"><label for="pw0">Senha atual</label><input id="pw0" type="password" autocomplete="current-password"></div><div class="f" style="grid-column:span 4"><label for="pw1">Nova senha (mín. 12, com 3 tipos de caractere)</label><input id="pw1" type="password" autocomplete="new-password"></div><div class="f" style="grid-column:span 4"><label for="pw2">Repita a nova senha</label><input id="pw2" type="password" autocomplete="new-password"></div></div>
+ <div class="row" style="margin-top:10px"><button class="btn pri" data-act="pwdChange">Alterar senha</button></div></div>
+ <div class="note warn">A senha não é recuperável. Mantenha um backup (Sistema → Backup e dados). Um único usuário acessa o cofre; perfis, permissões por usuário e login corporativo exigem servidor (ver planilha de pendências).</div>`;},actions:()=>[]};
+ACT.idleSave=()=>{const v=Math.max(5,Math.min(60,parseInt($('#idle').value,10)||15));DB.cfg.idle=v;saveDB();vaultIdle();toast('Salvo.','ok');render();};
+ACT.pwdChange=async()=>{const a=$('#pw0').value,b=$('#pw1').value,c=$('#pw2').value;if(b!==c){toast('As novas senhas não conferem.','err');return;}if(!senhaForca(b).ok){toast('A nova senha deve ter ao menos 12 caracteres e 3 tipos (maiúscula, minúscula, número, símbolo).','err');return;}
+  try{await vaultFlush();await vTry(localStorage.getItem(VK),a);}catch(e){toast('Senha atual incorreta.','err');return;}
+  VAULT.salt=crypto.getRandomValues(new Uint8Array(16));VAULT.key=await deriveKey(b,VAULT.salt,VAULT.it);audit('senha alterada');saveDB();await vaultFlush();toast('Senha alterada.','ok');render();};
+ACT.lock=async()=>{await vaultFlush();vaultLock();};
+function vaultIdle(){clearTimeout(VAULT.idleT);if(!VAULT.on)return;VAULT.idleT=setTimeout(()=>{ACT.lock();},((DB&&DB.cfg&&DB.cfg.idle)||15)*60000);}
+function vaultLock(){VAULT.key=null;VAULT.on=false;DB=null;clearTimeout(VAULT.idleT);closeModal();$('#main').innerHTML='';$('#bar').innerHTML='';$('#side').innerHTML='';$('#topemp').textContent='Sessão bloqueada';gateUnlock('Sessão bloqueada por segurança.');}
+
+/* ---------- tela de acesso ---------- */
+function gate(html){let g=document.getElementById('gate');if(!g){g=document.createElement('div');g.id='gate';g.setAttribute('role','dialog');g.setAttribute('aria-modal','true');g.setAttribute('aria-labelledby','gt');document.body.appendChild(g);}g.innerHTML=`<div class="gbox">${html}<p class="gl"><a href="#" data-act="ckPolicy" data-arg="privacidade">Privacidade</a> · <a href="#" data-act="ckPolicy" data-arg="cookies">Cookies</a> · <a href="#" data-act="ckReopen">Preferências de cookies</a></p></div>`;const f=g.querySelector('input');f&&f.focus();return g;}
+function gateClose(){const g=document.getElementById('gate');if(g)g.remove();}
+function gateSetup(){const legacy=(()=>{try{return localStorage.getItem(LS_KEY);}catch(e){return null;}})();
+  const g=gate(`<h1 id="gt">${esc(BRAND.nome)} ${esc(BRAND.produto)}</h1><p>Primeiro acesso: crie a senha que protege os dados deste navegador.${legacy?' <b>Foram encontrados dados anteriores sem proteção; eles serão criptografados e a cópia aberta será removida.</b>':''}</p>
+  <div class="f"><label for="g1">Senha (mínimo 12 caracteres, com 3 tipos entre maiúscula, minúscula, número e símbolo)</label><input id="g1" type="password" autocomplete="new-password"></div>
+  <div class="f"><label for="g2">Repita a senha</label><input id="g2" type="password" autocomplete="new-password"></div>
+  <p class="gm" id="gmsg" role="alert"></p><div class="note warn">Esta senha <b>não pode ser recuperada</b>. Sem ela, os dados só voltam por backup.</div>
+  <button class="btn pri" id="gok" style="width:100%">Criar senha e entrar</button>`);
+  const go=async()=>{const a=$('#g1').value,b=$('#g2').value,m=$('#gmsg');if(a!==b){m.textContent='As senhas não conferem.';return;}if(!senhaForca(a).ok){m.textContent='Senha fraca: use 12 ou mais caracteres e ao menos 3 tipos.';return;}
+    $('#gok').disabled=true;m.textContent='Gerando chave…';try{VAULT.salt=crypto.getRandomValues(new Uint8Array(16));VAULT.key=await deriveKey(a,VAULT.salt,VAULT.it);
+      let txt=legacy||null;DB=loadDB(txt);VAULT.on=true;audit('cofre criado');saveDB();await vaultFlush();try{localStorage.removeItem(LS_KEY);}catch(e){}startApp();}catch(e){m.textContent='Falha ao criar o cofre: '+e.message;$('#gok').disabled=false;}};
+  $('#gok').onclick=go;g.addEventListener('keydown',e=>{if(e.key==='Enter')go();});}
+function gateUnlock(msg){const g=gate(`<h1 id="gt">${esc(BRAND.nome)} ${esc(BRAND.produto)}</h1><p>${msg?esc(msg)+' ':''}Informe a senha para abrir os dados.</p>
+  <div class="f"><label for="g1">Senha</label><input id="g1" type="password" autocomplete="current-password"></div><p class="gm" id="gmsg" role="alert"></p>
+  <button class="btn pri" id="gok" style="width:100%">Entrar</button><p style="margin-top:12px"><a href="#" id="gforg">Esqueci a senha</a></p>`);
+  const go=async()=>{const f=failGet(),now=Date.now(),m=$('#gmsg');if(f.until>now){m.textContent='Aguarde '+Math.ceil((f.until-now)/1000)+' s para tentar novamente.';return;}
+    $('#gok').disabled=true;m.textContent='Verificando…';try{const raw=localStorage.getItem(VK);const r=await vTry(raw,$('#g1').value);VAULT.key=r.key;VAULT.salt=r.salt;VAULT.it=r.it;failSet({n:0,until:0});DB=loadDB(r.text);VAULT.on=true;audit('acesso');startApp();}
+    catch(e){const n=(f.n||0)+1;const wait=n>=5?Math.min(900,30*Math.pow(2,n-5)):0;failSet({n,until:wait?Date.now()+wait*1000:0});m.textContent='Senha incorreta.'+(wait?' Nova tentativa em '+wait+' s.':'');$('#gok').disabled=false;$('#g1').select();}};
+  $('#gok').onclick=go;g.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+  $('#gforg').onclick=e=>{e.preventDefault();gate(`<h1 id="gt">Esqueci a senha</h1><p>A senha não pode ser recuperada. Se houver um <b>backup</b>, apague os dados deste navegador, crie nova senha e restaure o backup. Para confirmar a eliminação, digite <b>APAGAR</b>.</p><div class="f"><label for="g1">Confirmação</label><input id="g1" autocomplete="off"></div><div class="row"><button class="btn" id="gb">Voltar</button><button class="btn danger" id="gd">Apagar dados</button></div>`);
+    $('#gb').onclick=()=>gateUnlock();$('#gd').onclick=()=>{if($('#g1').value.trim()!=='APAGAR')return;try{localStorage.removeItem(VK);localStorage.removeItem(FAILK);}catch(x){}gateSetup();};};}
+function startApp(){gateClose();wrapAudit();['mousemove','keydown','click','scroll','touchstart'].forEach(ev=>document.addEventListener(ev,vaultIdleThrottle,{passive:true}));NAV={stack:[],cur:{name:'home',params:{}}};vaultIdle();render();}
+let _idt=0;function vaultIdleThrottle(){const n=Date.now();if(n-_idt>5000){_idt=n;vaultIdle();}}
+
+/* ---------- acessibilidade ---------- */
+(function(){const _render=render,_modal=modal,_close=closeModal;let last='',opener=null;
+  render=function(){_render();const m=$('#main');const nm=NAV.cur.name;
+    $$('#side a,.tabs a,a[data-act]:not([href])').forEach(a=>{a.tabIndex=0;a.setAttribute('role','link');});
+    $$('#side a.on').forEach(a=>a.setAttribute('aria-current','page'));$$('th').forEach(t=>{if(!t.scope)t.scope='col';});
+    const mn=document.getElementById('mnav');if(mn){mn.innerHTML=MENU.map(x=>`<option value="${x[1]}" ${x[1]===nm?'selected':''}>${esc(x[2])}</option>`).join('');}
+    if(nm!==last){last=nm;m.setAttribute('tabindex','-1');try{m.focus({preventScroll:true});}catch(e){}}};
+  modal=function(h,o){opener=document.activeElement;_modal(h,o);const d=$('#modal');d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');const f=d.querySelector('input,select,textarea,button,a');f&&f.focus();};
+  closeModal=function(){_close();if(opener&&opener.focus&&document.contains(opener))try{opener.focus();}catch(e){}opener=null;};
+  document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('[role="link"]')){e.preventDefault();e.target.click();}
+    if(e.key==='Tab'){const d=document.getElementById('gate')||($('#modal.on'));if(d){const f=$$('input,select,textarea,button,a[href],[tabindex="0"]',d).filter(x=>!x.disabled&&x.offsetParent!==null);if(f.length){const a=f[0],z=f[f.length-1];if(e.shiftKey&&document.activeElement===a){z.focus();e.preventDefault();}else if(!e.shiftKey&&document.activeElement===z){a.focus();e.preventDefault();}}}}});
+  document.addEventListener('change',e=>{if(e.target.id==='mnav')go(e.target.value);});
+  window.addEventListener('beforeunload',e=>{if(typeof DIRTY!=='undefined'&&DIRTY){e.preventDefault();e.returnValue='';}});
+})();
+
+/* ---------- inicialização ---------- */
+function boot(){brandLoad();consentLoad();applyBrand();if(!CONSENT)bannerShow();
+  if(window.__FP_NOGATE){DB=loadDB();render();return;}
+  if(!(window.crypto&&crypto.subtle)){document.body.innerHTML='<div style="padding:30px;font:16px system-ui"><h1>Navegador sem suporte à criptografia</h1><p>O sistema exige HTTPS e um navegador atual (WebCrypto). Acesse por https:// ou atualize o navegador.</p></div>';return;}
+  let has=null;try{has=localStorage.getItem(VK);}catch(e){}
+  if(has)gateUnlock();else gateSetup();
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}}
+ACT.skipMain=()=>{const m=document.getElementById('main');m.setAttribute('tabindex','-1');m.focus();};
+
 /* ===================== INTEGRAÇÃO ===================== */
 SC.integr={view(){const C=DB.cfg;
   return `<h1>Webservice do eSocial / Integração</h1><p class="sub">Configuração do ambiente e do serviço de transmissão.</p>
@@ -1320,7 +1512,7 @@ function seedDemo(regime){regime=typeof regime==='string'?regime:'lp';DB=emptyDB
   DB.comps[comp]={status:'aberta',lanc:{[j]:{he50:'10'},[m]:{faltas:'1'}},res:{},diasUteis:'25',domFer:'5',dtPgto:proxMes(comp,5)};
   saveDB();}
 SC.backup={view(){return `<h1>Backup e dados</h1><p class="sub">Os dados ficam salvos no navegador deste dispositivo. Faça backup periódico.</p>
-  <div class="card"><h2>Exportar / importar</h2><div class="row"><button class="btn pri" data-act="bkExport">Exportar backup (JSON)</button><button class="btn" data-act="bkImport">Importar backup</button></div></div>
+  <div class="card"><h2>Exportar / importar</h2><div class="row"><button class="btn pri" data-act="bkExport">Exportar backup (JSON)</button><button class="btn" data-act="bkImport">Importar backup</button><button class="btn pri" data-act="bkFile">Baixar arquivo com verificação (SHA-256)</button><button class="btn" data-act="bkLoad">Restaurar de arquivo</button><input id="bkf" type="file" accept="application/json,.json" hidden></div></div>
   <div class="card"><h2>Dados de demonstração</h2><p class="sub">Carrega uma empresa fictícia (matriz e filial), 3 empregados e lançamentos para percorrer todo o fluxo. Escolha o regime a simular (substitui os dados atuais).</p><div class="row"><button class="btn" data-act="bkDemo" data-arg="sn">Simples Nacional (Anexo III/V)</button><button class="btn" data-act="bkDemo" data-arg="sn4">Simples Nacional (Anexo IV)</button><button class="btn" data-act="bkDemo" data-arg="lp">Lucro Presumido</button><button class="btn" data-act="bkDemo" data-arg="lr">Lucro Real</button><button class="btn" data-act="bkDemo" data-arg="lpcprb">Presumido com CPRB</button></div></div>
   <div class="card"><h2>Apagar tudo</h2><p class="sub">Remove todos os cadastros, folhas e eventos deste navegador.</p><button class="btn danger" data-act="bkReset">Apagar todos os dados</button></div>
   <div class="note info">Armazenamento local: ${(JSON.stringify(DB).length/1024).toFixed(0)} KB. Em páginas publicadas como artefato, o armazenamento pode ser limpo pelo navegador — mantenha sempre um backup.</div>`;},actions:()=>[]};
@@ -1328,6 +1520,9 @@ ACT.bkExport=()=>{const s=JSON.stringify(DB);modal(`<textarea id="bkt" style="wi
   $('#bkc').onclick=async()=>{try{await navigator.clipboard.writeText(s);toast('Copiado.','ok');}catch(e){$('#bkt').select();toast('Selecione e copie manualmente (Ctrl+C).');}};$('#bkd').onclick=()=>baixar('folhapro_backup_'+hoje()+'.json',s,'application/json');};
 ACT.bkImport=()=>{modal(`<p class="sub">Cole o conteúdo do backup (JSON). Os dados atuais serão substituídos.</p><textarea id="bki" style="width:100%;height:260px" class="mono"></textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="bkok">Importar</button></div>`,{title:'Importar backup',wide:true});
   $('#bkok').onclick=()=>{try{const d=JSON.parse($('#bki').value);if(!d||typeof d!=='object'||!Array.isArray(d.empregados))throw new Error('formato inválido');const e=emptyDB();DB=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});migrar(DB);saveDB();closeModal();toast('Backup importado.','ok');refresh();}catch(x){toast('Backup inválido: '+x.message,'err');}};};
+ACT.bkFile=async()=>{const data=JSON.stringify(DB);const h=await sha256(data);dl('backup-folha-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({app:'FolhaPro',formato:1,geradoEm:new Date().toISOString(),sha256:h,dados:data}));audit('backup exportado');saveDB();toast('Backup gerado. Guarde-o em local seguro: ele NÃO é criptografado.','ok');};
+ACT.bkLoad=()=>{const f=$('#bkf');f.value='';f.onchange=async()=>{const fl=f.files[0];if(!fl)return;try{const o=JSON.parse(await fl.text());if(o.app!=='FolhaPro'||typeof o.dados!=='string')throw new Error('arquivo não reconhecido');if(await sha256(o.dados)!==o.sha256)throw new Error('verificação SHA-256 falhou: arquivo alterado ou corrompido');const d=JSON.parse(o.dados);if(!Array.isArray(d.empregados))throw new Error('estrutura inválida');
+  modalConfirm('Substituir todos os dados atuais pelo conteúdo do backup?',()=>{const e=emptyDB();DB=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});DB=loadDB(JSON.stringify(DB));audit('backup restaurado');saveDB();toast('Backup restaurado.','ok');home();},{yes:'Restaurar'});}catch(e){toast('Backup recusado: '+e.message,'err');}};f.click();};
 ACT.bkDemo=el=>modalConfirm('Substituir todos os dados atuais pelos dados de demonstração?',()=>{seedDemo(el&&el.dataset&&el.dataset.arg||'lp');toast('Dados de demonstração carregados.','ok');home();render();},{yes:'Carregar'});
 ACT.bkReset=()=>modalConfirm('<b>Apagar todos os dados?</b> Esta ação não pode ser desfeita.',()=>{DB=emptyDB();saveDB();toast('Dados apagados.');home();render();},{yes:'Apagar tudo'});
 
@@ -1362,15 +1557,16 @@ SC.marca={view(){const b=BRAND;const F=(l,id,v,sp,t)=>`<div class="f" style="gri
  return `<h1>Identidade visual</h1><p class="sub">Adapta o sistema à marca do cliente: nome, cores, fonte e logotipo. A configuração fica guardada neste navegador, separada dos dados da folha, e não é apagada por "Apagar todos os dados".</p>
  <div class="card"><h2>Marca</h2><div class="grid">${F('Nome da empresa','nome',b.nome)}${F('Nome do produto (curto)','produto',b.produto)}${F('Título completo','titulo',b.titulo)}
  ${F('Cor primária (botões, links)','pri',b.pri,3,'color')}${F('Cor da barra superior','pri2',b.pri2,3,'color')}${F('Cor de destaque (logotipo)','acc',b.acc,3,'color')}${F('Fonte (nome no Google Fonts)','fonte',b.fonte,3)}
- <div class="f" style="grid-column:span 6"><label>Logotipo (PNG/SVG/JPG, até 150 KB)</label><input id="mb_logo" type="file" accept="image/*"></div>
+ ${F('Fornecedor do software (razão social e CNPJ) — política de privacidade','fornecedor',b.fornecedor,6)}${F('Encarregado de dados (DPO)','dpoNome',b.dpoNome,3)}${F('E-mail do encarregado','dpoEmail',b.dpoEmail,3)}<div class="f" style="grid-column:span 6"><label>Logotipo (PNG/SVG/JPG, até 150 KB)</label><input id="mb_logo" type="file" accept="image/*"></div>
  <div class="f" style="grid-column:span 6"><label>Logotipo atual</label><div id="mb_prev" style="min-height:34px">${b.logo?`<img src="${b.logo}" style="height:34px;background:${esc(b.pri2)};padding:4px;border-radius:4px">`:'<span class="sub">Sem logotipo (usa o nome em texto)</span>'}</div></div></div>
  <div class="row" style="margin-top:10px"><button class="btn pri" data-act="marcaSave">Aplicar e salvar</button><button class="btn" data-act="marcaReset">Restaurar padrão</button></div></div>
  <div class="note warn">Valores padrão para o cliente Mallora: apenas a cor <b>#0B0B0B</b> foi identificada no site; o destaque e a fonte são provisórios [CONFIRMAR COM O MANUAL DE MARCA]. A fonte só é carregada se o navegador tiver acesso ao Google Fonts; sem acesso, usa a fonte do sistema.</div>`;},
- mount(){const rd=()=>{const g=i=>($('#mb_'+i)||{}).value;return Object.assign({},BRAND,{nome:g('nome')||BRAND.nome,produto:g('produto')||'',titulo:g('titulo')||BRAND.titulo,pri:g('pri'),pri2:g('pri2'),acc:g('acc'),fonte:(g('fonte')||'').trim()});};
+ mount(){const rd=()=>{const g=i=>($('#mb_'+i)||{}).value;return Object.assign({},BRAND,{nome:g('nome')||BRAND.nome,produto:g('produto')||'',titulo:g('titulo')||BRAND.titulo,pri:g('pri'),pri2:g('pri2'),acc:g('acc'),fonte:(g('fonte')||'').trim(),fornecedor:(g('fornecedor')||'').trim(),dpoNome:(g('dpoNome')||'').trim(),dpoEmail:(g('dpoEmail')||'').trim()});};
   ['nome','produto','titulo','pri','pri2','acc'].forEach(i=>{const e=$('#mb_'+i);if(e)e.addEventListener('input',()=>applyBrand(rd()));});
   const lf=$('#mb_logo');if(lf)lf.addEventListener('change',()=>{const f=lf.files[0];if(!f)return;if(f.size>150*1024){toast('Arquivo acima de 150 KB.','err');lf.value='';return;}const r=new FileReader();r.onload=()=>{BRAND.logo=r.result;applyBrand(rd());$('#mb_prev').innerHTML=`<img src="${r.result}" style="height:34px;background:${esc(rd().pri2)};padding:4px;border-radius:4px">`;};r.readAsDataURL(f);});
   SC.marca._rd=rd;},actions:()=>[]};
 ACT.marcaSave=()=>{BRAND=SC.marca._rd();brandSave();applyBrand();toast('Identidade visual aplicada.','ok');};
 ACT.marcaReset=()=>{BRAND=Object.assign({},BRAND_DEF);try{localStorage.removeItem(BRAND_KEY);}catch(e){}applyBrand();render();toast('Padrão restaurado.','ok');};
-brandLoad();applyBrand();DB=loadDB();render();
+boot();
+
 </script></body></html>

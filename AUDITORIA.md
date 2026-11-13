@@ -35,7 +35,7 @@ Antes das correções, **nenhum** dos 239 XML passava no XSD. Depois, **os 243 p
 
 ## 6. Pendências e limitações conhecidas
 
-1. **CNPJ alfanumérico.** O XSD já aceita CNPJ alfanumérico (padrão `[A-Z0-9]{12}\d{2}`; produção desde 01/07/2026), mas o sistema trata o CNPJ apenas como numérico (validação, máscara e geração de XML). Empresas com CNPJ alfanumérico não poderão ser cadastradas. **Pendente de desenvolvimento.**
+1. **CNPJ alfanumérico — corrigido na 3ª rodada** (validação, máscara, XML; `tools/cnpj_test.js`).
 2. **Incidências de férias.** O sistema classifica as rubricas de férias com `codIncIRRF` 11 (remuneração mensal); a Tabela 21 prevê código próprio para férias (13) e retenção específica (33). Como o IRRF é calculado em conjunto com a folha do mês, a forma correta de consolidação deve ser confirmada no leiaute. [VERIFICAR FONTE OFICIAL]
 3. **Natureza das rubricas:** os códigos da Tabela 3 foram conferidos em reprodução da tabela por fonte secundária; confirmar no Anexo I do leiaute vigente.
 4. **Versão dos esquemas:** os pacotes fornecidos estão em `v_S_01_03_00`, mas não indicam a Nota Técnica de origem; a NT S-1.3 nº 07/2026 tem etapas até 14/12/2026 (por exemplo, nova validação de CPF no S-1000 e no S-2200). Conferir se o pacote corresponde à versão em produção.
@@ -46,3 +46,7 @@ Antes das correções, **nenhum** dos 239 XML passava no XSD. Depois, **os 243 p
 ## 7. Como repetir a validação
 
 Gerar os XML com `tools/dump.js` (usa jsdom e o `index.html`), colocar os XSD em uma pasta própria e executar `python3 tools/xsdval.py <pasta_dos_xsd>` e `python3 tools/xmlcheck.py`. Os caminhos nos scripts apontam para `/home/claude/xsd`; ajustar conforme o ambiente.
+
+## 8. 3ª rodada (13/11/2026)
+
+Correções: CNPJ alfanumérico; cofre criptografado, bloqueio por inatividade, trilha de auditoria; banner, política de cookies e de privacidade; CSP com hash; acessibilidade e menu móvel; eventos S-2205, S-1298 e S-3000 (306 XML válidos nos dois pacotes XSD). Pendências e notas estimadas: `docs/FolhaPro_pendencias_e_correcoes.xlsx`. Testes: `tools/cnpj_test.js`, `tools/vault_test.py` (requer servidor local na porta 8765).

@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-%%CSPHASH%%'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
 :root{--bg:#f3f5f7;--card:#fff;--ink:#17212b;--mut:#5d6b79;--line:#dbe2e9;--pri:#0f5c63;--pri2:#0a4146;--pri3:#e3f1f2;--acc:#b7791f;--ok:#1a7f4b;--okb:#e2f4ea;--warn:#9a6700;--warnb:#fff4d6;--err:#b42318;--errb:#fde8e6;--blue:#1f5fbf;--blueb:#e4edfb}
@@ -83,16 +85,29 @@ code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
 .cmpg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}@media(max-width:900px){.cmpg{grid-template-columns:1fr}}
 .cmpc{margin:0}.cmpc.best{border:2px solid var(--ok)}.cmpc.off{opacity:.8}.cmpc .big{font-size:24px;font-weight:700;margin:6px 0 2px}
 details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);font-size:13px}
+
+.skip{position:absolute;left:-999px;top:0;background:#fff;color:#000;padding:8px 12px;z-index:200}.skip:focus{left:8px;top:8px}
+:focus-visible{outline:3px solid #2563eb;outline-offset:2px}#main:focus{outline:none}
+#mnav{display:none;max-width:48vw;padding:6px;border-radius:6px}
+#gate{position:fixed;inset:0;background:var(--pri2);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.gbox{background:#fff;border-radius:12px;max-width:460px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4)}.gbox h1{margin-bottom:8px}.gm{color:var(--err);min-height:18px;margin:6px 0}.gl{font-size:12px;color:var(--mut);margin-top:14px}
+#ckb{position:fixed;left:12px;right:12px;bottom:12px;z-index:120;background:#fff;border:2px solid var(--pri);border-radius:12px;padding:14px 16px;max-width:860px;margin:0 auto;box-shadow:0 12px 40px rgba(0,0,0,.35)}#ckb h2{margin:0 0 4px}#ckb p{margin:0 0 10px;font-size:13px}#ckb .row{justify-content:flex-end}
+.legal h3{margin:14px 0 4px}.legal p{margin:0 0 8px}
+@media (max-width:900px){#mnav{display:block;flex:1 1 100%;max-width:none;order:9}#top{flex-wrap:wrap;gap:8px;padding:8px 10px}#top .emp{display:none}#top button{padding:5px 9px;white-space:nowrap}#bar .hint{display:none}#bar{overflow-x:auto;padding:8px 10px}#bar .btn{white-space:nowrap;padding:7px 10px}#main{padding:14px 12px 30px}#ckb{left:6px;right:6px;bottom:6px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media print{#gate,#ckb{display:none!important}}
 </style>
 </head>
 <body>
+<a class="skip" href="#main" data-act="skipMain">Ir para o conteúdo</a>
 <header id="top">
   <div class="logo" id="logo"></div>
   <button data-act="home" title="Alt+I">⌂ Tela inicial</button>
   <button data-act="back" title="Alt+V">◀ Voltar</button>
+  <select id="mnav" aria-label="Menu de navegação"></select>
   <div class="emp" id="topemp"></div>
 </header>
-<div id="app"><nav id="side"></nav><main id="main"></main></div>
-<footer id="bar"></footer>
-<div id="modal"></div><div id="tip"></div><div id="toast"></div><div id="printarea"></div>
+<div id="app"><nav id="side" aria-label="Menu principal"></nav><main id="main"></main></div>
+<footer id="bar" role="contentinfo"></footer>
+<div id="modal"></div><div id="tip"></div><div id="toast" role="status" aria-live="polite"></div><div id="printarea"></div>
 <script>

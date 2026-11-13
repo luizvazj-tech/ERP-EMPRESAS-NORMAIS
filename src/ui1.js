@@ -18,7 +18,7 @@ const MENU=[['','home','⌂ Início'],['Cadastros','empresa','Empresa e regime (
  ['Departamento Pessoal','empregados','Empregados (S-2200)'],['','movs','Movimentações (S-2206/2230/2299)'],
  ['Folha de pagamento','lanc','Lançamentos do mês'],['','folha','Cálculo da folha'],['','ferias','Férias'],['','d13','13º salário'],['','resc','Rescisão (S-2299)'],['','holerite','Contracheques'],['','relat','Relatórios e guias'],
  ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','integr','Webservice / Integração'],
- ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados'],['','marca','Identidade visual']];
+ ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados'],['','seguranca','Segurança e acesso'],['','auditoria','Trilha de auditoria'],['','privacidade','Privacidade e cookies'],['','marca','Identidade visual']];
 function renderSide(){const cur=NAV.cur.name==='empForm'?'empregados':NAV.cur.name;let h='';MENU.forEach(([g,k,l])=>{if(g)h+=`<h6>${g}</h6>`;h+=`<a data-act="nav" data-to="${k}" class="${k===cur?'on':''}">${l}</a>`;});$('#side').innerHTML=h;
   $('#topemp').innerHTML=DB.empresa?`<b>${esc(DB.empresa.razao)}</b><br>CNPJ ${fmtCNPJ(DB.empresa.cnpj)} · eSocial: ${DB.cfg.ambiente==1?'Produção':'Produção restrita'} · ${DB.cfg.modo==='sim'?'modo simulação':'webservice'}`:'Empresa não cadastrada';}
 function renderBar(sc){const acts=(sc.actions?sc.actions(NAV.cur.params):[])||[];
@@ -27,6 +27,7 @@ function renderBar(sc){const acts=(sc.actions?sc.actions(NAV.cur.params):[])||[]
 function render(){const sc=SC[NAV.cur.name];DIRTY=false;$('#main').innerHTML=sc.view(NAV.cur.params);renderBar(sc);renderSide();sc.mount&&sc.mount(NAV.cur.params);}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;if(ACT[a]){e.preventDefault();ACT[a](el,e);}});
 document.addEventListener('input',e=>{if(e.target.closest('[data-form]'))DIRTY=true;});
+document.addEventListener('input',e=>{const el=e.target;if(el.dataset&&el.dataset.mask==='cnpj'){const p=el.selectionStart;el.value=el.value.toUpperCase();try{el.setSelectionRange(p,p)}catch(_){}}});
 document.addEventListener('focusout',e=>{const el=e.target;if(!el.dataset)return;const m=el.dataset.mask;if(m==='cpf')el.value=fmtCPF(el.value);else if(m==='cnpj')el.value=fmtCNPJ(el.value);else if(m==='cep')el.value=fmtCEP(el.value);if(el.dataset.t==='money'&&el.value!=='')el.value=brIn(num(el.value));});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();if(!e.altKey)return;const k=e.key.toLowerCase();
   if(k==='v'||e.key==='ArrowLeft'){back();e.preventDefault();}else if(k==='i'||e.key==='Home'){home();e.preventDefault();}
@@ -35,15 +36,16 @@ ACT.back=()=>back();ACT.home=()=>home();ACT.closeModal=()=>closeModal();ACT.nav=
 ACT.go=el=>go(el.dataset.to,el.dataset.p?JSON.parse(el.dataset.p):{});
 
 /* ---------- helpers de formulário ---------- */
-function F(label,name,val,o){o=o||{};const t=o.t||'text',span=o.w?` style="grid-column:span ${o.w}"`:'';const v=val==null?'':val;
-  const c=`name="${name}" ${o.req?'required':''} ${o.ro?'readonly':''} ${o.ph?`placeholder="${esc(o.ph)}"`:''} ${o.mask?`data-mask="${o.mask}"`:''} ${o.max?`maxlength="${o.max}"`:''}`;
+let _fid=0;
+function F(label,name,val,o){o=o||{};const fid='f'+(++_fid);const t=o.t||'text',span=o.w?` style="grid-column:span ${o.w}"`:'';const v=val==null?'':val;
+  const c=`id="${fid}" name="${name}" ${o.req?'required':''} ${o.ro?'readonly':''} ${o.ph?`placeholder="${esc(o.ph)}"`:''} ${o.mask?`data-mask="${o.mask}"`:''} ${o.max?`maxlength="${o.max}"`:''}`;
   let inp;
   if(t==='select')inp=`<select ${c}>${(o.opts||[]).map(x=>{const [k,l]=Array.isArray(x)?x:[x,x];return `<option value="${esc(k)}" ${String(k)===String(v)?'selected':''}>${esc(l)}</option>`;}).join('')}</select>`;
   else if(t==='money')inp=`<input type="text" inputmode="decimal" data-t="money" ${c} value="${v===''?'':brIn(num(v))}">`;
   else if(t==='check')inp=`<label class="chk"><input type="checkbox" name="${name}" ${v?'checked':''}> ${esc(o.cl||'Sim')}</label>`;
   else if(t==='textarea')inp=`<textarea ${c} rows="${o.rows||3}">${esc(v)}</textarea>`;
   else inp=`<input type="${t}" ${c} ${o.list?`list="${o.list}"`:''} value="${esc(v)}">`;
-  return `<div class="f"${span}><label>${esc(label)}${o.req?' <b class="rq">*</b>':''}</label>${inp}${o.hint?`<small>${o.hint}</small>`:''}</div>`;}
+  return `<div class="f"${span}><label for="${fid}">${esc(label)}${o.req?' <b class="rq">*</b>':''}</label>${inp}${o.hint?`<small>${o.hint}</small>`:''}</div>`;}
 function readForm(root){const o={};$$('[name]',root).forEach(el=>{const n=el.name;if(el.type==='checkbox')o[n]=el.checked;else if(el.dataset.t==='money')o[n]=num(el.value);else o[n]=el.value.trim();});return o;}
 function faltando(root){const m=[];$$('[required]',root).forEach(el=>{if(!el.value.trim()){const l=el.closest('.f');m.push(l?l.querySelector('label').textContent.replace('*','').trim():el.name);}});return m;}
 const badge=(t,c)=>`<span class="badge b-${c||'gray'}">${esc(t)}</span>`;
@@ -112,15 +114,15 @@ crud('estabs',{title:'Estabelecimentos (S-1005)',sub:'Matriz, filiais e obras (C
   novo:()=>({tipoEstab:DB.estabs.some(x=>x.tipoEstab==='matriz')?'filial':'matriz',tpInsc:'1',rat:2,fap:1,iniValid:DB.empresa?DB.empresa.iniValid:compAtual()}),
   fields:r=>F('Nome / identificação','nome',r.nome,{req:1,w:3})+F('Natureza','tipoEstab',r.tipoEstab||'matriz',{t:'select',opts:Object.entries(TPEST),w:2})+F('Tipo de inscrição','tpInsc',r.tpInsc,{t:'select',opts:[['1','1 – CNPJ'],['4','4 – CNO']],w:2})+F('Nº de inscrição','nrInsc',r.nrInsc,{req:1,w:3})+F('CNAE preponderante (7 dígitos)','cnae',r.cnae,{req:1,w:3})+F('Grau de risco / RAT (%)','rat',r.rat,{w:2,hint:'1, 2 ou 3'})+F('FAP','fap',r.fap,{w:2,hint:'0,5 a 2,0'})+F('Início de validade (AAAA-MM)','iniValid',r.iniValid,{t:'month',req:1,w:3})+`<div class="note info" style="grid-column:span 12">${infoRatEstab()}</div>`,
   validate:o=>{const E=DB.empresa;if(!E)return 'Cadastre a empresa antes.';const ed=NAV.cur.params.edit;
-    o.nrInsc=onlyD(o.nrInsc);
+    o.nrInsc=onlyC(o.nrInsc);
     if(o.tpInsc==='1'){if(!cnpjValido(o.nrInsc))return 'CNPJ do estabelecimento inválido.';
-      if(o.nrInsc.slice(0,8)!==onlyD(E.cnpj).slice(0,8))return 'O CNPJ do estabelecimento deve ter a mesma raiz (8 primeiros dígitos) do CNPJ do empregador.';
-      if(o.tipoEstab==='matriz'&&o.nrInsc!==onlyD(E.cnpj))return 'A matriz deve ter o mesmo CNPJ do empregador ('+fmtCNPJ(E.cnpj)+').';
-      if(o.tipoEstab==='filial'&&o.nrInsc===onlyD(E.cnpj))return 'Filial não pode ter o CNPJ da matriz.';
+      if(o.nrInsc.slice(0,8)!==onlyC(E.cnpj).slice(0,8))return 'O CNPJ do estabelecimento deve ter a mesma raiz (8 primeiros dígitos) do CNPJ do empregador.';
+      if(o.tipoEstab==='matriz'&&o.nrInsc!==onlyC(E.cnpj))return 'A matriz deve ter o mesmo CNPJ do empregador ('+fmtCNPJ(E.cnpj)+').';
+      if(o.tipoEstab==='filial'&&o.nrInsc===onlyC(E.cnpj))return 'Filial não pode ter o CNPJ da matriz.';
       if(o.tipoEstab==='obra')return 'Obra deve ser cadastrada com inscrição tipo 4 (CNO).';}
-    else{if(o.tipoEstab!=='obra')return 'Inscrição CNO (tipo 4) só se aplica a obras.';if(o.nrInsc.length!==12)return 'O CNO deve ter 12 dígitos.';}
+    else{if(o.tipoEstab!=='obra')return 'Inscrição CNO (tipo 4) só se aplica a obras.';if(!/^\d{12}$/.test(o.nrInsc))return 'O CNO deve ter 12 dígitos numéricos.';}
     if(onlyD(o.cnae).length!==7)return 'O CNAE deve ter 7 dígitos.';
-    if(DB.estabs.some(x=>x.id!==ed&&x.tpInsc===o.tpInsc&&onlyD(x.nrInsc)===o.nrInsc))return 'Já existe estabelecimento com esta inscrição.';
+    if(DB.estabs.some(x=>x.id!==ed&&x.tpInsc===o.tpInsc&&onlyC(x.nrInsc)===o.nrInsc))return 'Já existe estabelecimento com esta inscrição.';
     if(o.tipoEstab==='matriz'&&DB.estabs.some(x=>x.id!==ed&&x.tipoEstab==='matriz'))return 'Já existe uma matriz cadastrada.';
     if(ratIncide(E)){if(![1,2,3].includes(Number(o.rat)))return 'Informe o grau de risco (RAT) 1, 2 ou 3.';const f=num(o.fap);if(!(f>=0.5&&f<=2))return 'FAP deve estar entre 0,5 e 2,0.';}
     return null;}});
@@ -181,7 +183,7 @@ SC.empresa.mount=()=>{const f=$('#f');if(!f)return;const upd=()=>{const o=readFo
   ['regime','anexo','cprb'].forEach(n=>f.querySelector('[name='+n+']').addEventListener('change',upd));upd();DIRTY=false;};
 function empSalvar(){const f=$('#f'),mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return false;}const o=readForm(f);
   if(!cnpjValido(o.cnpj)){toast('CNPJ inválido.','err');return false;}if(!cpfValido(o.ctCpf)){toast('CPF do contato inválido.','err');return false;}
-  o.cnpj=onlyD(o.cnpj);o.ctCpf=onlyD(o.ctCpf);delete o.classTribV;if(o.regime==='sn')o.cprb=false;else o.anexo='std';o.classTrib=classTribDe(o);DB.empresa=Object.assign(DB.empresa||{},o);
+  o.cnpj=onlyC(o.cnpj);o.ctCpf=onlyD(o.ctCpf);delete o.classTribV;if(o.regime==='sn')o.cprb=false;else o.anexo='std';o.classTrib=classTribDe(o);DB.empresa=Object.assign(DB.empresa||{},o);
   if(!DB.estabs.length)DB.estabs.push({id:uid('e'),nome:'Matriz',tipoEstab:'matriz',tpInsc:'1',nrInsc:o.cnpj,cnae:o.cnae||'',rat:o.rat,fap:o.fap,iniValid:o.iniValid});
   saveDB();DIRTY=false;toast('Empresa salva.','ok');return true;}
 ACT.empSave=()=>{if(empSalvar())refresh();};
