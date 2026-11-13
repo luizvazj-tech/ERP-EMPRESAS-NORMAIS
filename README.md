@@ -13,6 +13,10 @@ contracheque e geração/biblioteca de eventos eSocial (leiaute S-1.3).
 - Relatórios por estabelecimento e lotação, e resumo de recolhimentos.
 - **Painel gerencial** (dashboards de folha, encargos, estrutura e eSocial) e **Comparativo de regimes** (Simples × Presumido × Real, com fator R, LC 224/2025 e sensibilidade por faixa de receita).
 
+## Documentos jurídicos
+
+Em `docs/juridico/` (Markdown e Word): minuta de licença e suporte, contrato de operador, RIPD e plano de resposta a incidentes. Os campos [●] devem ser preenchidos e a peça revisada por advogado antes do uso.
+
 ## Limites importantes
 
 - O envio ao eSocial é **simulação** por padrão. A transmissão real exige certificado digital A1, mTLS e assinatura XML num gateway próprio (contrato descrito na tela Integração).

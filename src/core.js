@@ -39,6 +39,8 @@ function defaultParams(){return{
   inss:[[1621.00,7.5],[2902.84,9],[4354.27,12],[8475.55,14]],
   irrf:[[2428.80,0,0],[2826.65,7.5,182.16],[3751.05,15,394.16],[4664.68,22.5,675.49],[999999999,27.5,908.73]],
   depIr:189.59, simpl:607.20,
+  plrTab:[[8214.40,0,0],[9922.28,7.5,616.08],[13167.00,15,1360.35],[16380.38,22.5,2347.85],[999999999,27.5,3166.58]], /* [VERIFICAR FONTE OFICIAL] tabela exclusiva da PLR: valores de fonte secundária */
+  consig:{emp:35,cartao:5}, /* Lei 10.820/2003, art. 2º, §2º [VERIFICAR FONTE OFICIAL] */
   redutor:{isento:5000.00,teto:7350.00,a:978.62,b:0.133145},
   salFam:{cota:67.54,limite:1980.38,idade:14},
   fgts:8, fgtsAprendiz:2, vtPerc:6,
@@ -83,29 +85,34 @@ function defaultRubricas(){
     R('COMIS','008','COMISSÕES',1,'','11','11','11'),
     R('GRAT','009','GRATIFICAÇÕES',1,'','11','11','11'),
     R('OUTP','010','OUTROS PROVENTOS TRIBUTÁVEIS',1,'','11','11','11'),
-    R('SALFAM','011','SALÁRIO-FAMÍLIA',1,'1409','00','00','00'),
+    R('SALFAM','011','SALÁRIO-FAMÍLIA',1,'1409','00','79','00'),
     R('FALTAS','101','FALTAS INJUSTIFICADAS',2,'','11','11','11',true),
     R('ATRASOS','102','ATRASOS / SAÍDAS ANTECIPADAS',2,'','11','11','11',true),
     R('INSS','103','INSS',2,'9201','31','41','00'),
     R('IRRF','104','IRRF',2,'9203','00','31','00'),
-    R('VT','105','VALE-TRANSPORTE (6%)',2,'','00','00','00'),
-    R('ADIANT','106','ADIANTAMENTO SALARIAL',2,'9200','00','00','00'),
-    R('PENSAO','107','PENSÃO ALIMENTÍCIA',2,'','00','00','00'),
-    R('OUTD','108','OUTROS DESCONTOS',2,'','00','00','00'),
-    R('FERIAS','012','FÉRIAS',1,'','11','11','11'),
-    R('FERTERCO','013','1/3 CONSTITUCIONAL DE FÉRIAS',1,'','11','11','11'),
-    R('ABONO','014','ABONO PECUNIÁRIO DE FÉRIAS',1,'','00','00','00'),
-    R('ABONOTERCO','015','1/3 S/ ABONO PECUNIÁRIO',1,'','00','00','00'),
+    R('VT','105','VALE-TRANSPORTE (6%)',2,'','00','9','00'),
+    R('ADIANT','106','ADIANTAMENTO SALARIAL',2,'9200','00','9','00'),
+    R('PENSAO','107','PENSÃO ALIMENTÍCIA',2,'','00','51','00'),
+    R('OUTD','108','OUTROS DESCONTOS',2,'','00','9','00'),
+    R('FERIAS','012','FÉRIAS',1,'','11','13','11'),
+    R('FERTERCO','013','1/3 CONSTITUCIONAL DE FÉRIAS',1,'','11','13','11'),
+    R('ABONO','014','ABONO PECUNIÁRIO DE FÉRIAS',1,'','00','75','00'),
+    R('ABONOTERCO','015','1/3 S/ ABONO PECUNIÁRIO',1,'','00','75','00'),
     R('D13','016','13º SALÁRIO',1,'','12','12','12'),
-    R('D13P1','109','ADIANTAMENTO 13º (1ª PARCELA)',2,'','00','00','00'),
+    R('D13P1','109','ADIANTAMENTO 13º (1ª PARCELA)',2,'','00','9','00'),
     R('D13INSS','110','INSS S/ 13º SALÁRIO',2,'9201','32','42','00'),
     R('D13IRRF','111','IRRF S/ 13º SALÁRIO',2,'9203','00','32','00'),
-    R('AVISO','017','AVISO PRÉVIO INDENIZADO',1,'','00','00','11'),
-    R('FERVENC','018','FÉRIAS VENCIDAS INDENIZADAS',1,'','00','00','00'),
-    R('FERPROP','019','FÉRIAS PROPORCIONAIS',1,'','00','00','00'),
-    R('FERPTERCO','020','1/3 S/ FÉRIAS NA RESCISÃO',1,'','00','00','00'),
+    R('AVISO','017','AVISO PRÉVIO INDENIZADO',1,'','00','74','11'),
+    R('FERVENC','018','FÉRIAS VENCIDAS INDENIZADAS',1,'','00','74','00'),
+    R('FERPROP','019','FÉRIAS PROPORCIONAIS',1,'','00','74','00'),
+    R('FERPTERCO','020','1/3 S/ FÉRIAS NA RESCISÃO',1,'','00','74','00'),
     R('D13PROP','021','13º SALÁRIO PROPORCIONAL',1,'','12','12','12'),
-    R('AVISOD','112','DESCONTO AVISO PRÉVIO NÃO CUMPRIDO',2,'','00','00','00')
+    R('AVISOD','112','DESCONTO AVISO PRÉVIO NÃO CUMPRIDO',2,'','00','9','00'),
+    Object.assign(R('PLR','022','PARTICIPAÇÃO NOS LUCROS OU RESULTADOS',1,'1300','00','14','00'),{opt:1}),
+    Object.assign(R('PLRIRRF','113','IRRF S/ PLR',2,'9203','00','34','00'),{opt:1}),
+    Object.assign(R('CONSIG','114','EMPRÉSTIMO CONSIGNADO — DESCONTO',2,'9254','00','9','00'),{opt:1}),
+    Object.assign(R('PLANO','115','PLANO DE SAÚDE — PARTE DO EMPREGADO',2,'','00','9','00'),{opt:1}),
+    Object.assign(R('COPART','116','COPARTICIPAÇÃO DO PLANO DE SAÚDE',2,'','00','9','00'),{opt:1})
   ].map(r=>{if(!r.nat&&NATMAP[r.sys])r.nat=NATMAP[r.sys];return r;});
 }
 
@@ -113,8 +120,13 @@ function defaultRubricas(){
 const LS_KEY='folhaPro.v1';
 let DB=null,_mem=null;
 function emptyDB(){return{ver:1,empresa:null,estabs:[],lotacoes:[],cargos:[],rubricas:defaultRubricas(),empregados:[],comps:{},eventos:[],seq:0,entregues:{},movs:[],ferias:[],decimo:{},rescisoes:{},
-  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams()};}
-function loadDB(src){let r=src||null;if(!r){try{r=localStorage.getItem(LS_KEY);}catch(e){}}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{const x=o.rubricas.find(y=>y.sys===r.sys);if(!x)o.rubricas.push(r);else if(!x.nat&&r.nat)x.nat=r.nat;});const FIX={INSS:[['00','31'],['31','41']],IRRF:[['00','00'],['00','31']],D13INSS:[['00','32'],['32','42']],D13IRRF:[['00','00'],['00','32']]};o.rubricas.forEach(x=>{const f=FIX[x.sys];if(f&&x.incCP===f[0][0]&&x.incIRRF===f[0][1]){x.incCP=f[1][0];x.incIRRF=f[1][1];}});migrar(o);return o;}catch(e){}}return emptyDB();}
+  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams(),cct:[],bh:[],sstCat:[],sstAso:[],sstRisco:[],ret:[]};}
+function loadDB(src){let r=src||null;if(!r){try{r=localStorage.getItem(LS_KEY);}catch(e){}}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{const x=o.rubricas.find(y=>y.sys===r.sys);if(!x)o.rubricas.push(r);else if(!x.nat&&r.nat)x.nat=r.nat;});const FIX={INSS:[['00','31'],['31','41']],IRRF:[['00','00'],['00','31']],D13INSS:[['00','32'],['32','42']],D13IRRF:[['00','00'],['00','32']]};o.rubricas.forEach(x=>{const f=FIX[x.sys];if(f&&x.incCP===f[0][0]&&x.incIRRF===f[0][1]){x.incCP=f[1][0];x.incIRRF=f[1][1];}});const IRFIX={SALFAM:'79',VT:'9',ADIANT:'9',PENSAO:'51',OUTD:'9',FERIAS:'13',FERTERCO:'13',ABONO:'75',ABONOTERCO:'75',D13P1:'9',AVISO:'74',FERVENC:'74',FERPROP:'74',FERPTERCO:'74',AVISOD:'9'};
+  o.rubricas.forEach(x=>{if(!o.migIR&&IRFIX[x.sys]&&(x.incIRRF==='00'||x.incIRRF==='11'&&['FERIAS','FERTERCO'].includes(x.sys)))x.incIRRF=IRFIX[x.sys];});o.migIR=1;
+  if(Array.isArray(o.rubricas)){o.rubricas.forEach(r=>{if(r.sys==='CONSIG'){r.nat='9254';r.incFGTS='00';r.desc='EMPRÉSTIMO CONSIGNADO — DESCONTO';}});defaultRubricas().forEach(d=>{if(!o.rubricas.some(r=>r.sys===d.sys))o.rubricas.push(d);});}
+  ['cct','bh','sstCat','sstAso','sstRisco','ret'].forEach(k=>{if(!Array.isArray(o[k]))o[k]=[];});
+  if(!o.migJorn){const M={'2':'4','3':'5','4':'3','5':'7','9':'9'};(o.empregados||[]).forEach(x=>{if(x.tpJornada)x.tpJornada=M[x.tpJornada]||x.tpJornada;});o.migJorn=1;}
+  migrar(o);return o;}catch(e){}}return emptyDB();}
 function migrar(o){const E=o.empresa;if(E&&!E.regime){const ct=E.classTrib;E.regime=['01','02','03'].includes(ct)?'sn':'lp';E.anexo=ct==='03'?'iv':ct==='02'?'misto':'std';E.cprb=false;}
   if(E&&E.regime)E.classTrib=classTribDe(E);
   (o.lotacoes||[]).forEach(l=>{if(l.terceiros==null)l.terceiros='';});}
@@ -125,6 +137,8 @@ const byId=(arr,id)=>(arr||[]).find(x=>x.id===id);
 /* ---------------- Motor de cálculo ---------------- */
 function calcInss(base,P){base=Math.min(Math.max(base,0),P.tetoInss);let prev=0,t=0;for(const [lim,al] of P.inss){if(base>prev)t+=(Math.min(base,lim)-prev)*al/100;prev=lim;}return r2(t);}
 function impostoTabela(base,P){for(const [lim,al,ded] of P.irrf){if(base<=lim)return Math.max(0,r2(base*al/100-ded));}return 0;}
+function impostoPlr(v,P){for(const [lim,al,ded] of P.plrTab){if(v<=lim)return Math.max(0,r2(v*al/100-ded));}return 0;}
+const saldoBH=(id)=>r2((DB.bh||[]).filter(x=>x.empId===id).reduce((a,x)=>a+num(x.h),0));
 function calcIrrf(rendTrib,inss,nDep,pensao,P,semRed){
   const dedLegal=inss+nDep*P.depIr+pensao;
   const baseL=Math.max(0,r2(rendTrib-dedLegal)),baseS=Math.max(0,r2(rendTrib-P.simpl));
@@ -134,6 +148,8 @@ function calcIrrf(rendTrib,inss,nDep,pensao,P,semRed){
   if(semRed){}else if(rendTrib<=R.isento)red=imp;else if(rendTrib<R.teto)red=Math.min(imp,Math.max(0,r2(R.a-R.b*rendTrib)));
   return{base,imposto:imp,reducao:r2(red),irrf:Math.max(0,r2(imp-red)),simplificado:simp};
 }
+const rubricaUsada=sys=>Object.values(DB.comps||{}).some(c=>Object.values(c.res||{}).some(r=>(r.itens||[]).some(i=>i.sys===sys)));
+const IR_BASE=c=>['11','12','13'].includes(String(c));
 const rubBy=(sys)=>DB.rubricas.find(r=>r.sys===sys);
 function empAtivoNaComp(e,comp){
   if(e.situacao==='afastado'&&e.afastAteComp&&e.afastAteComp>=comp)return false;
@@ -141,7 +157,7 @@ function empAtivoNaComp(e,comp){
   if(e.desligamento&&e.desligamento.slice(0,7)<comp)return false;
   return true;
 }
-const LANC_CAMPOS=[['he50','HE 50% (h)'],['he100','HE 100% (h)'],['adnot','Ad. noturno (h)'],['faltas','Faltas (dias)'],['atrasos','Atrasos (h)'],['comis','Comissões R$'],['grat','Gratificações R$'],['outp','Outros prov. R$'],['adiant','Adiantamento R$'],['outd','Outros desc. R$']];
+const LANC_CAMPOS=[['he50','HE 50% (h)'],['he100','HE 100% (h)'],['adnot','Ad. noturno (h)'],['faltas','Faltas (dias)'],['atrasos','Atrasos (h)'],['comis','Comissões R$'],['grat','Gratificações R$'],['outp','Outros prov. R$'],['plr','PLR R$'],['adiant','Adiantamento R$'],['outd','Outros desc. R$']];
 function calcEmpregado(e,comp,L,P,emp){
   L=L||{};const it=[];const ctx=DB.comps[comp]||{};
   const add=(sys,ref,val,info,sep)=>{if(val>0||info){const r=rubBy(sys);it.push({sys,cod:r.cod,desc:r.desc,tp:r.tp,ref:ref||'',valor:r2(val),sep:!!sep,r});}};
@@ -166,7 +182,7 @@ function calcEmpregado(e,comp,L,P,emp){
   if(h50>0)add('HE50',h50+' h',vHE50);
   if(h100>0)add('HE100',h100+' h',vHE100);
   const du=num(ctx.diasUteis),df=num(ctx.domFer);
-  if((vHE50+vHE100)>0&&du>0&&df>0)add('DSRHE',df+' d',r2((vHE50+vHE100)/du*df));
+  if(!e.j1236&&(vHE50+vHE100)>0&&du>0&&df>0)add('DSRHE',df+' d',r2((vHE50+vHE100)/du*df));
   add('COMIS','',num(L.comis));add('GRAT','',num(L.grat));add('OUTP','',num(L.outp));
   // 13º salário e verbas rescisórias (tributação exclusiva/separada)
   let base13=0,sep13=0,inss13=0,irrf13=0,multaFgts=0,notasRes=[];
@@ -181,14 +197,15 @@ function calcEmpregado(e,comp,L,P,emp){
     if(v.ferVenc>0){add('FERVENC',rs.ferVencPer+' per',v.ferVenc);add('FERPTERCO','venc.',v.ferVencTerco);}
     if(v.ferProp>0){add('FERPROP',v.avosFer+'/12',v.ferProp);add('FERPTERCO','prop.',v.ferPropTerco);}
     if(v.d13>0){add('D13PROP',v.avos13+'/12',v.d13,0,1);const dd=(DB.decimo||{})[e.desligamento.slice(0,4)+'|'+e.id];if(dd&&dd.p1&&dd.p1.comp<comp&&dd.p1.valor>0)add('D13P1','',dd.p1.valor,0,1);add('D13INSS','',v.inss13,0,1);add('D13IRRF','',v.irrf13,0,1);base13+=v.d13;inss13+=v.inss13;irrf13+=v.irrf13;}
-    if(v.avisoDesc>0)add('AVISOD','',v.avisoDesc);}
+    if(v.avisoDesc>0)add('AVISOD','',v.avisoDesc);
+    const sbh=saldoBH(e.id);if(sbh>0)add('HE50',sbh+' h (banco)',r2(sbh*vh*(1+P.he50/100)));}
   // faltas e atrasos
   const fal=num(L.faltas);if(fal>0)add('FALTAS',fal+' d',r2(sal/30*fal));
   const atr=num(L.atrasos);if(atr>0)add('ATRASOS',atr+' h',r2(vhSal*atr));
   // bases
   let bCP=0,bIR=0,bFG=0,prov=0,desc=0;
   for(const x of it){const r=x.r;if(x.sep)continue;
-    if(r.tp===1){prov+=x.valor;if(r.incCP!=='00')bCP+=x.valor;if(r.incIRRF!=='00')bIR+=x.valor;if(r.incFGTS!=='00')bFG+=x.valor;}
+    if(r.tp===1){prov+=x.valor;if(r.incCP!=='00')bCP+=x.valor;if(IR_BASE(r.incIRRF))bIR+=x.valor;if(r.incFGTS!=='00')bFG+=x.valor;}
     else if(r.tp===2&&r.reduz){desc+=x.valor;bCP-=x.valor;bIR-=x.valor;bFG-=x.valor;}
   }
   bCP=r2(Math.max(0,bCP));bIR=r2(Math.max(0,bIR));bFG=r2(Math.max(0,bFG));
@@ -200,20 +217,35 @@ function calcEmpregado(e,comp,L,P,emp){
   // descontos legais
   const inss=calcInss(bCP,P);
   const nDepIR=(e.deps||[]).filter(d=>d.irrf).length;
-  const pensao=num(e.pensao);
+  const bruto=r2(prov-desc);let pensao=num(e.pensao);const pModo=e.pensaoModo||'fixo',pPct=num(e.pensaoPct);
+  if(pModo!=='fixo'&&pPct>0){
+    if(pModo==='pctBruto')pensao=r2(pPct/100*bruto);
+    else if(pModo==='pctLiqINSS')pensao=r2(pPct/100*Math.max(0,bruto-inss));
+    else if(pModo==='pctSM')pensao=r2(pPct/100*P.salMin);
+    else if(pModo==='pctLiq'){let p=0;for(let i=0;i<40;i++){const irr=calcIrrf(bIR,inss,nDepIR,p,P).irrf;const np=r2(pPct/100*Math.max(0,bruto-inss-irr));if(Math.abs(np-p)<0.005){p=np;break;}p=np;}pensao=p;}}
   const ir=calcIrrf(bIR,inss,nDepIR,pensao,P);
   if(inss>0)add('INSS',r2(inss/Math.max(bCP,1)*100).toFixed(2)+'%',inss);
   if(ir.irrf>0)add('IRRF','',ir.irrf);
   let vt=0;if(e.optaVT&&num(e.vtValor)>0){vt=r2(Math.min(salMes*P.vtPerc/100,num(e.vtValor)));add('VT',P.vtPerc+'%',vt);}
   add('ADIANT','',num(L.adiant));
-  if(pensao>0)add('PENSAO','',pensao);
+  if(pensao>0)add('PENSAO',pModo==='fixo'?'':pPct+'%',pensao);
+  // consignado (Lei 10.820/2003): margem sobre a remuneração disponível = bruto − INSS − IRRF − pensão
+  const disp=Math.max(0,r2(bruto-inss-ir.irrf-pensao));let usoEmp=0,usoCar=0;
+  (e.consig||[]).forEach(c=>{const v=num(c.parcela);if(v<=0)return;if(c.ini&&c.ini>comp)return;if(c.fim&&c.fim<comp)return;add('CONSIG',(c.tipo==='cartao'?'cartão ':'')+(c.desc||''),v);if(c.tipo==='cartao')usoCar+=v;else usoEmp+=v;});
+  const margem={disp,limEmp:r2(disp*P.consig.emp/100),limCar:r2(disp*P.consig.cartao/100),usoEmp:r2(usoEmp),usoCar:r2(usoCar)};
+  if(num(e.planoMens)>0)add('PLANO','',num(e.planoMens));if(num(e.planoCopart)>0)add('COPART','',num(e.planoCopart));
+  // PLR: tributação exclusiva na fonte, tabela própria, acumulada no ano (Lei 10.101/2000, art. 3º; Lei 9.250/1995)
+  let plrIR=0;const plr=num(L.plr);
+  if(plr>0){add('PLR','',plr);let ant=0,antIR=0;const ano=comp.slice(0,4);
+    Object.keys(DB.comps||{}).forEach(k=>{if(k.slice(0,4)!==ano||k>=comp)return;const rr=(DB.comps[k].res||{})[e.id];if(rr)rr.itens.forEach(i=>{if(i.sys==='PLR')ant+=i.valor;if(i.sys==='PLRIRRF')antIR+=i.valor;});});
+    const imp=impostoPlr(r2(ant+plr),P);plrIR=Math.max(0,r2(imp-antIR));if(plrIR>0)add('PLRIRRF','',plrIR);}
   add('OUTD','',num(L.outd));
   let totProv=0,totDesc=0;
   for(const x of it){if(x.tp===1)totProv+=x.valor;else if(x.tp===2)totDesc+=x.valor;}
   totProv=r2(totProv);totDesc=r2(totDesc);
   const aliqFg=e.categoria==='103'?P.fgtsAprendiz:P.fgts;
   return{itens:it.map(({r,...o})=>o),totProv,totDesc,liquido:r2(totProv-totDesc),baseCP:bCP,baseIR:bIR,baseFGTS:bFG,
-    inss:r2(inss+inss13),irrf:r2(ir.irrf+irrf13),irrfInfo:ir,fgts:r2((bFG+base13)*aliqFg/100),aliqFgts:aliqFg,baseCP13:r2(base13),inss13,irrf13,multaFgts,notasRes,sf:sfOk?r2(nSF*P.salFam.cota):0,dias,calculadoEm:agoraISO()};
+    inss:r2(inss+inss13),irrf:r2(ir.irrf+irrf13),irrfPlr:plrIR,margem,pensaoCalc:pensao,irrfInfo:ir,fgts:r2((bFG+base13)*aliqFg/100),aliqFgts:aliqFg,baseCP13:r2(base13),inss13,irrf13,multaFgts,notasRes,sf:sfOk?r2(nSF*P.salFam.cota):0,dias,calculadoEm:agoraISO()};
 }
 /* ---------------- Regimes tributários, estabelecimentos e lotações ---------------- */
 const REGIMES={sn:'Simples Nacional',lp:'Lucro Presumido',lr:'Lucro Real'};
@@ -255,9 +287,9 @@ function calcFolha(comp){
   c.status='calculada';c.calcEm=agoraISO();saveDB();return c;
 }
 function totaisComp(comp){
-  const c=DB.comps[comp];const t={n:0,prov:0,desc:0,liq:0,inss:0,irrf:0,fgts:0,pat:0,rat:0,terc:0,sf:0};
+  const c=DB.comps[comp];const t={n:0,prov:0,desc:0,liq:0,inss:0,irrf:0,irrfPlr:0,fgts:0,pat:0,rat:0,terc:0,sf:0};
   if(!c)return t;
-  for(const id in c.res){const r=c.res[id];t.n++;t.prov+=r.totProv;t.desc+=r.totDesc;t.liq+=r.liquido;t.inss+=r.inss;t.irrf+=r.irrf;t.fgts+=r.fgts;t.sf+=r.sf;
+  for(const id in c.res){const r=c.res[id];t.n++;t.prov+=r.totProv;t.desc+=r.totDesc;t.liq+=r.liquido;t.inss+=r.inss;t.irrf+=r.irrf;t.irrfPlr+=r.irrfPlr||0;t.fgts+=r.fgts;t.sf+=r.sf;
     const en=encargosEmpresa(r,DB.params,DB.empresa,byId(DB.empregados,id),comp);t.pat+=en.patronal;t.rat+=en.rat;t.terc+=en.terc;}
   for(const k in t)t[k]=k==='n'?t[k]:r2(t[k]);return t;
 }
@@ -326,6 +358,7 @@ function resumoEstrutura(comp){const c=DB.comps[comp];const out={estab:{},lot:{}
 
 /* ---------------- eSocial: IDs, XML e eventos ---------------- */
 const XV='v_S_01_03_00';
+const LEIAUTE_REF='Leiaute S-1.3 consolidado até a NT 07/2026 (rev. 20/10/2026); XSD de produção publicados para 26/10/2026, 23/11/2026, 14/12/2026 e 18/01/2027';
 const xe=esc;
 const tag=(t,v)=>(v===''||v==null)?'':`<${t}>${xe(v)}</${t}>`;
 function ts14(){const d=new Date();const p=n=>String(n).padStart(2,'0');return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());}
@@ -372,10 +405,10 @@ GEN['S-1020']=(a)=>{const l=byId(DB.lotacoes,a.id),id=novoId();
 GEN['S-2200']=(a,o)=>{const e=byId(DB.empregados,a.id),id=novoId(),car=byId(DB.cargos,e.cargo)||{},lot=byId(DB.lotacoes,e.lotacao)||{},est=byId(DB.estabs,e.estab)||{};
   const deps=(e.deps||[]).map(d=>`<dependente><tpDep>${d.tp}</tpDep><nmDep>${xe(d.nome)}</nmDep><dtNascto>${d.nasc}</dtNascto>${tag('cpfDep',onlyD(d.cpf))}<depIRRF>${d.irrf?'S':'N'}</depIRRF><depSF>${d.sf?'S':'N'}</depSF><incTrab>N</incTrab></dependente>`).join('');
   const corpo=`${ideEvt(o)}${ideEmp()}<trabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab><nmTrab>${xe(e.nome)}</nmTrab><sexo>${e.sexo}</sexo><racaCor>${e.racaCor}</racaCor><estCiv>${e.estCiv}</estCiv><grauInstr>${e.grauInstr}</grauInstr><nascimento><dtNascto>${e.nasc}</dtNascto><paisNascto>105</paisNascto><paisNac>105</paisNac></nascimento>${ENDERECO(e)}${deps}${(e.fone||e.email)?`<contato>${tag('fonePrinc',onlyD(e.fone))}${tag('emailPrinc',e.email)}</contato>`:''}</trabalhador>`+
-  `<vinculo><matricula>${xe(e.mat)}</matricula><tpRegTrab>1</tpRegTrab><tpRegPrev>1</tpRegPrev><cadIni>N</cadIni><infoRegimeTrab><infoCeletista><dtAdm>${e.admissao}</dtAdm><tpAdmissao>1</tpAdmissao><indAdmissao>1</indAdmissao><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}${tag('cnpjSindCategProf',onlyC(e.sindCnpj))}</infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(e.salario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr>${e.tpContr==2?tag('dtTerm',e.dtTerm):''}</duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyC(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc>${e.horNoturno?`<horNoturno>${e.horNoturno}</horNoturno>`:''}${tag('dscJorn',e.dscJorn)}</horContratual></infoContrato></vinculo>`;
+  `<vinculo><matricula>${xe(e.mat)}</matricula><tpRegTrab>1</tpRegTrab><tpRegPrev>1</tpRegPrev><cadIni>N</cadIni><infoRegimeTrab><infoCeletista><dtAdm>${e.admissao}</dtAdm><tpAdmissao>1</tpAdmissao><indAdmissao>1</indAdmissao><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}${tag('cnpjSindCategProf',onlyC(e.sindCnpj))}</infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(e.salario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr>${e.tpContr==2?tag('dtTerm',e.dtTerm):''}</duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyC(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.j1236?2:(e.tpJornada||5)}</tpJornada><tmpParc>0</tmpParc>${e.horNoturno?`<horNoturno>${e.horNoturno}</horNoturno>`:''}${tag('dscJorn',e.dscJorn)}</horContratual></infoContrato></vinculo>`;
   return{id,evt:'evtAdmissao',titulo:'Admissão — '+e.nome,ref:e.mat,xml:envelope('evtAdmissao',id,corpo)};};
 GEN['S-2206']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId(),car=byId(DB.cargos,e.cargo)||{},est=byId(DB.estabs,e.estab)||{};
-  const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><altContratual><dtAlteracao>${m.data}</dtAlteracao><vinculo><tpRegPrev>1</tpRegPrev><infoRegimeTrab><infoCeletista><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}${tag('cnpjSindCategProf',onlyC(e.sindCnpj))}</infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(m.novoSalario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr></duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyC(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.tpJornada||2}</tpJornada><tmpParc>0</tmpParc>${tag('dscJorn',e.dscJorn)}</horContratual></infoContrato></vinculo></altContratual>`;
+  const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><altContratual><dtAlteracao>${m.data}</dtAlteracao><vinculo><tpRegPrev>1</tpRegPrev><infoRegimeTrab><infoCeletista><tpRegJor>${e.tpRegJor||1}</tpRegJor><natAtividade>${e.natAtividade||1}</natAtividade>${tag('dtBase',e.dtBase)}${tag('cnpjSindCategProf',onlyC(e.sindCnpj))}</infoCeletista></infoRegimeTrab><infoContrato>${tag('nmCargo',car.nome)}${tag('CBOCargo',onlyD(car.cbo||e.cbo))}<codCateg>${e.categoria}</codCateg><remuneracao><vrSalFx>${fx(num(m.novoSalario))}</vrSalFx><undSalFixo>${e.undSalFixo||5}</undSalFixo></remuneracao><duracao><tpContr>${e.tpContr||1}</tpContr></duracao><localTrabalho><localTrabGeral><tpInsc>${est.tpInsc||1}</tpInsc><nrInsc>${onlyC(est.nrInsc||(DB.empresa&&DB.empresa.cnpj))}</nrInsc></localTrabGeral></localTrabalho><horContratual><qtdHrsSem>${e.hrsSem||44}</qtdHrsSem><tpJornada>${e.j1236?2:(e.tpJornada||5)}</tpJornada><tmpParc>0</tmpParc>${tag('dscJorn',e.dscJorn)}</horContratual></infoContrato></vinculo></altContratual>`;
   return{id,evt:'evtAltContratual',titulo:'Alteração contratual — '+e.nome,ref:e.mat,xml:envelope('evtAltContratual',id,corpo)};};
 GEN['S-2230']=(a)=>{const e=byId(DB.empregados,a.id),m=a.mov,id=novoId();
   const corpo=`${ideEvt()}${ideEmp()}<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo><infoAfastamento>${m.fim?`<fimAfastamento><dtTermAfast>${m.fim}</dtTermAfast></fimAfastamento>`:`<iniAfastamento><dtIniAfast>${m.data}</dtIniAfast><codMotAfast>${m.motivo}</codMotAfast>${m.perAqIni?`<perAquis><dtInicio>${m.perAqIni}</dtInicio><dtFim>${m.perAqFim}</dtFim></perAquis>`:''}</iniAfastamento>`}</infoAfastamento>`;
@@ -414,9 +447,31 @@ GEN['S-3000']=(a)=>{const alvo=byId(DB.eventos,a.evId),id=novoId();const t=alvo.
   const e=alvo.empId?byId(DB.empregados,alvo.empId):null;
   const corpo=`${ideEvtTab()}<ideEmpregador><tpInsc>1</tpInsc><nrInsc>${rz()}</nrInsc></ideEmpregador><infoExclusao><tpEvento>${t}</tpEvento><nrRecEvt>${recXml(alvo.recibo)}</nrRecEvt>${ehTrab&&e?`<ideTrabalhador><cpfTrab>${onlyD(e.cpf)}</cpfTrab></ideTrabalhador>`:''}${ehPer?`<ideFolhaPagto><indApuracao>1</indApuracao><perApur>${alvo.comp}</perApur></ideFolhaPagto>`:''}</infoExclusao>`;
   return{id,evt:'evtExclusao',titulo:'Exclusão do '+t+' — recibo '+alvo.recibo,ref:alvo.comp||null,xml:envelope('evtExclusao',id,corpo)};};
-const TIPOS={'S-1000':'Informações do empregador','S-1005':'Estabelecimentos','S-1010':'Rubricas','S-1020':'Lotações tributárias','S-2200':'Admissão','S-2206':'Alteração contratual','S-2230':'Afastamento temporário','S-2299':'Desligamento','S-1200':'Remuneração','S-1210':'Pagamentos','S-1299':'Fechamento periódico','S-2205':'Alteração cadastral','S-1298':'Reabertura de eventos periódicos','S-3000':'Exclusão de evento'};
+
+/* ===== SST: S-2210 (CAT), S-2220 (monitoramento da saúde), S-2240 (condições ambientais) ===== */
+const sstEmp=r=>byId(DB.empregados,r.empId)||{};
+const sstVinc=e=>`<ideVinculo><cpfTrab>${onlyD(e.cpf)}</cpfTrab><matricula>${xe(e.mat)}</matricula></ideVinculo>`;
+const hhmm=h=>String(h||'').replace(/\D/g,'').padStart(4,'0').slice(0,4);
+GEN['S-2210']=(a)=>{const r=byId(DB.sstCat,a.id),e=sstEmp(r),id=novoId();
+  const corpo=`${ideEvt()}${ideEmp()}${sstVinc(e)}<cat><dtAcid>${r.dtAcid}</dtAcid><tpAcid>${r.tpAcid}</tpAcid>${r.hrAcid?`<hrAcid>${hhmm(r.hrAcid)}</hrAcid>`:''}${r.hrsTrab?`<hrsTrabAntesAcid>${hhmm(r.hrsTrab)}</hrsTrabAntesAcid>`:''}<tpCat>${r.tpCat}</tpCat><indCatObito>${r.obito==='S'?'S':'N'}</indCatObito>${r.obito==='S'&&r.dtObito?`<dtObito>${r.dtObito}</dtObito>`:''}<indComunPolicia>${r.policia==='S'?'S':'N'}</indComunPolicia><codSitGeradora>${onlyD(r.sitGeradora)}</codSitGeradora><iniciatCAT>${r.iniciat||1}</iniciatCAT>${tag('obsCAT',r.obs)}${r.houveAfast?`<houveAfast>${r.houveAfast}</houveAfast>`:''}`
+   +`<localAcidente><tpLocal>${r.tpLocal}</tpLocal>${tag('dscLocal',r.dscLocal)}${tag('tpLograd',r.tpLograd)}<dscLograd>${xe(r.dscLograd)}</dscLograd><nrLograd>${xe(r.nrLograd||'S/N')}</nrLograd>${tag('bairro',r.bairro)}${tag('cep',onlyD(r.cep))}${tag('codMunic',onlyD(r.codMunic))}${tag('uf',r.uf)}</localAcidente>`
+   +`<parteAtingida><codParteAting>${onlyD(r.parte)}</codParteAting><lateralidade>${r.lateral||0}</lateralidade></parteAtingida><agenteCausador><codAgntCausador>${onlyD(r.agente)}</codAgntCausador></agenteCausador>`
+   +`<atestado><dtAtendimento>${r.dtAtend}</dtAtendimento><hrAtendimento>${hhmm(r.hrAtend)}</hrAtendimento><indInternacao>${r.intern==='S'?'S':'N'}</indInternacao><durTrat>${parseInt(r.durTrat||0,10)}</durTrat><indAfast>${r.afast==='S'?'S':'N'}</indAfast><dscLesao>${onlyD(r.lesao)}</dscLesao>${tag('diagProvavel',r.diag)}<codCID>${xe(String(r.cid||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase())}</codCID><emitente><nmEmit>${xe(r.nmEmit)}</nmEmit><ideOC>${r.ideOC||1}</ideOC><nrOC>${xe(r.nrOC)}</nrOC>${tag('ufOC',r.ufOC)}</emitente></atestado>`
+   +`${r.tpCat!=='1'&&r.recOrig?`<catOrigem><nrRecCatOrig>${recXml(r.recOrig)}</nrRecCatOrig></catOrigem>`:''}</cat>`;
+  return{id,evt:'evtCAT',titulo:'CAT — '+(e.nome||'')+' ('+fmtData(r.dtAcid)+')',ref:e.mat,xml:envelope('evtCAT',id,corpo)};};
+GEN['S-2220']=(a)=>{const r=byId(DB.sstAso,a.id),e=sstEmp(r),id=novoId();
+  const ex=(r.exames||[]).map(x=>`<exame><dtExm>${x.dt||r.dtAso}</dtExm><procRealizado>${onlyD(x.proc)}</procRealizado>${tag('obsProc',x.obs)}${x.ord?`<ordExame>${x.ord}</ordExame>`:''}${x.res?`<indResult>${x.res}</indResult>`:''}</exame>`).join('');
+  const corpo=`${ideEvt()}${ideEmp()}${sstVinc(e)}<exMedOcup><tpExameOcup>${r.tpExame}</tpExameOcup><aso><dtAso>${r.dtAso}</dtAso>${r.resAso?`<resAso>${r.resAso}</resAso>`:''}${ex}<medico><nmMed>${xe(r.medNome)}</nmMed>${tag('nrCRM',r.medCRM)}${tag('ufCRM',r.medUF)}</medico></aso>${r.respNome?`<respMonit>${tag('cpfResp',onlyD(r.respCpf))}<nmResp>${xe(r.respNome)}</nmResp><nrCRM>${xe(r.respCRM)}</nrCRM><ufCRM>${r.respUF}</ufCRM></respMonit>`:''}</exMedOcup>`;
+  return{id,evt:'evtMonit',titulo:'ASO — '+(e.nome||'')+' ('+fmtData(r.dtAso)+')',ref:e.mat,xml:envelope('evtMonit',id,corpo)};};
+GEN['S-2240']=(a)=>{const r=byId(DB.sstRisco,a.id),e=sstEmp(r),id=novoId();
+  const ausente=r.codAg==='09.01.001';
+  const ag=`<agNoc><codAgNoc>${xe(r.codAg)}</codAgNoc>${tag('dscAgNoc',r.dscAg)}${!ausente&&r.tpAval?`<tpAval>${r.tpAval}</tpAval>${r.tpAval==='1'?`${tag('intConc',r.intConc?fx(num(r.intConc)).replace(/\.?0+$/,'')||'0':'')}${tag('limTol',r.limTol?fx(num(r.limTol)).replace(/\.?0+$/,'')||'0':'')}${tag('unMed',r.unMed)}${tag('tecMedicao',r.tec)}`:`${tag('tecMedicao',r.tec)}`}`:''}`
+    +(!ausente?`<epcEpi><utilizEPC>${r.epc||0}</utilizEPC>${r.epc==='2'?`<eficEpc>${r.eficEpc||'S'}</eficEpc>`:''}<utilizEPI>${r.epi||0}</utilizEPI>${r.epi==='2'?`<eficEpi>${r.eficEpi||'S'}</eficEpi><epi><docAval>${xe(r.docAval||'CA')}</docAval></epi><epiCompl><medProtecao>S</medProtecao><condFuncto>S</condFuncto><usoInint>S</usoInint><przValid>S</przValid><periodicTroca>S</periodicTroca><higienizacao>S</higienizacao></epiCompl>`:''}</epcEpi>`:'')+`</agNoc>`;
+  const corpo=`${ideEvt()}${ideEmp()}${sstVinc(e)}<infoExpRisco><dtIniCondicao>${r.ini}</dtIniCondicao>${r.fim?`<dtFimCondicao>${r.fim}</dtFimCondicao>`:''}<infoAmb><localAmb>${r.localAmb||1}</localAmb><dscSetor>${xe(r.setor)}</dscSetor><tpInsc>${r.tpInsc||1}</tpInsc><nrInsc>${onlyC(r.nrInsc)}</nrInsc></infoAmb><infoAtiv><dscAtivDes>${xe(r.ativ)}</dscAtivDes></infoAtiv>${ag}<respReg><cpfResp>${onlyD(r.respCpf)}</cpfResp>${r.ideOC?`<ideOC>${r.ideOC}</ideOC>`:''}${tag('nrOC',r.nrOC)}${tag('ufOC',r.ufOC)}</respReg>${r.obs?`<obs><obsCompl>${xe(r.obs)}</obsCompl></obs>`:''}</infoExpRisco>`;
+  return{id,evt:'evtExpRisco',titulo:'Condições ambientais — '+(e.nome||'')+' ('+fmtData(r.ini)+')',ref:e.mat,xml:envelope('evtExpRisco',id,corpo)};};
+const TIPOS={'S-1000':'Informações do empregador','S-1005':'Estabelecimentos','S-1010':'Rubricas','S-1020':'Lotações tributárias','S-2200':'Admissão','S-2206':'Alteração contratual','S-2230':'Afastamento temporário','S-2299':'Desligamento','S-1200':'Remuneração','S-1210':'Pagamentos','S-1299':'Fechamento periódico','S-2205':'Alteração cadastral','S-1298':'Reabertura de eventos periódicos','S-3000':'Exclusão de evento','S-2210':'Comunicação de acidente de trabalho (CAT)','S-2220':'Monitoramento da saúde do trabalhador (ASO)','S-2240':'Condições ambientais do trabalho'};
 const ratIncide=E=>!E||E.regime!=='sn'||E.anexo==='iv'||E.anexo==='misto';
-const ORDEM=['S-1000','S-1005','S-1020','S-1010','S-2200','S-2205','S-2206','S-2230','S-2299','S-1298','S-1200','S-1210','S-3000','S-1299'];
+const ORDEM=['S-1000','S-1005','S-1020','S-1010','S-2200','S-2205','S-2206','S-2230','S-2299','S-1298','S-1200','S-1210','S-2210','S-2220','S-2240','S-3000','S-1299'];
 
 function criarEvento(tipo,args,opts){
   const g=GEN[tipo](args,opts);
@@ -437,7 +492,7 @@ function validarBase(ev){
     if(!cpfValido(e.cpf))o.push('CPF do empregado inválido.');
     if(tipo==='S-2200'){['nome','nasc','admissao','salario','mae','logr','cep','codMunic','uf'].forEach(k=>{if(!e[k]||(k==='salario'&&!num(e[k])))o.push('Campo obrigatório ausente no empregado: '+k);});if(!e.lotacao)o.push('Informe a lotação.');if(!e.estab)o.push('Informe o estabelecimento.');if(onlyC(e.sindCnpj).length!==14)o.push('Informe o CNPJ do sindicato da categoria profissional (S-2200: cnpjSindCategProf é obrigatório no leiaute S-1.3).');if(!String(e.dscJorn||'').trim())o.push('Informe a descrição da jornada contratual (S-2200: dscJorn é obrigatório no leiaute S-1.3).');}
   }
-  if(['S-1010','S-1200','S-2299'].includes(tipo)){const rb=DB.rubricas.filter(r=>!r.nat||!/^\d{4}$/.test(r.nat));if(tipo==='S-1010'&&args.id){const r1=DB.rubricas.find(x=>x.sys===args.id);if(r1&&(!r1.nat||!/^\d{4}$/.test(r1.nat)))o.push('Rubrica '+r1.cod+' sem natureza válida (Tabela 3 do eSocial; XSD: natRubr obrigatório, 4 dígitos).');}else if(tipo!=='S-1010'&&rb.length)o.push('Rubricas sem natureza (Tabela 3 do eSocial): '+rb.map(r=>r.cod).join(', '));}
+  if(['S-1010','S-1200','S-2299'].includes(tipo)){const rb=DB.rubricas.filter(r=>(!r.opt||rubricaUsada(r.sys))&&(!r.nat||!/^\d{4}$/.test(r.nat)));if(tipo==='S-1010'&&args.id){const r1=DB.rubricas.find(x=>x.sys===args.id);if(r1&&(!r1.nat||!/^\d{4}$/.test(r1.nat)))o.push('Rubrica '+r1.cod+' sem natureza válida (Tabela 3 do eSocial; XSD: natRubr obrigatório, 4 dígitos).');}else if(tipo!=='S-1010'&&rb.length)o.push('Rubricas sem natureza (Tabela 3 do eSocial): '+rb.map(r=>r.cod).join(', '));}
   /* dependências */
   const simOK=(t,f)=>DB.eventos.some(x=>x.tipo===t&&x.status==='processado'&&(!f||f(x)));
   if(tipo!=='S-1000'&&!simOK('S-1000'))o.push('Dependência: o S-1000 (empregador) ainda não foi processado com sucesso.');

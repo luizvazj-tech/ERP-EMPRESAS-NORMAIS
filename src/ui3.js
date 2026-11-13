@@ -107,7 +107,7 @@ function plano(comp){const c=DB.comps[comp],ids=c?Object.keys(c.res||{}):[],P=[]
   add('S-1000',{},'Informações do empregador',()=>true);
   DB.estabs.forEach(s=>add('S-1005',{id:s.id},'Estabelecimento '+s.nome,e=>e.gen.args.id===s.id));
   DB.lotacoes.forEach(l=>add('S-1020',{id:l.id},'Lotação '+l.cod+' '+l.desc,e=>e.gen.args.id===l.id));
-  DB.rubricas.filter(r=>r.tp!==3).forEach(r=>add('S-1010',{id:r.sys},'Rubrica '+r.cod+' '+r.desc,e=>e.gen.args.id===r.sys));
+  DB.rubricas.filter(r=>r.tp!==3&&(!r.opt||rubricaUsada(r.sys))).forEach(r=>add('S-1010',{id:r.sys},'Rubrica '+r.cod+' '+r.desc,e=>e.gen.args.id===r.sys));
   DB.empregados.forEach(e=>add('S-2200',{id:e.id},'Admissão '+e.nome,x=>x.gen.args.id===e.id));
   ids.filter(id=>!rescNoMes(id,comp)).forEach(id=>add('S-1200',{id,comp},'Remuneração '+byId(DB.empregados,id).nome,x=>x.gen.args.id===id&&x.comp===comp));
   ids.forEach(id=>add('S-1210',{id,comp},'Pagamento '+byId(DB.empregados,id).nome,x=>x.gen.args.id===id&&x.comp===comp));

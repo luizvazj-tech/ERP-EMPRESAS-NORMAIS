@@ -15,9 +15,9 @@ function back(){guard(()=>{const p=NAV.stack.pop();NAV.cur=p||{name:'home',param
 function home(){guard(()=>{NAV.stack=[];NAV.cur={name:'home',params:{}};render();});}
 function refresh(p){if(p)NAV.cur.params=Object.assign({},NAV.cur.params,p);const y=window.scrollY;render();window.scrollTo(0,y);}
 const MENU=[['','home','⌂ Início'],['Cadastros','empresa','Empresa e regime (S-1000)'],['','estabs','Estabelecimentos (S-1005)'],['','lotacoes','Lotações tributárias (S-1020)'],['','estrutura','Mapa da estrutura e regras'],['','cargos','Cargos e CBO'],['','rubricas','Rubricas (S-1010)'],
- ['Departamento Pessoal','empregados','Empregados (S-2200)'],['','movs','Movimentações (S-2206/2230/2299)'],
+ ['Departamento Pessoal','empregados','Empregados (S-2200)'],['','movs','Movimentações (S-2206/2230/2299)'],['','cct','Convenções coletivas e pisos'],['','bh','Banco de horas'],['','regras','Conferência de regras'],['','sstCat','CAT (S-2210)'],['','sstAso','ASO (S-2220)'],['','sstRisco','Condições ambientais (S-2240)'],
  ['Folha de pagamento','lanc','Lançamentos do mês'],['','folha','Cálculo da folha'],['','ferias','Férias'],['','d13','13º salário'],['','resc','Rescisão (S-2299)'],['','holerite','Contracheques'],['','relat','Relatórios e guias'],
- ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','integr','Webservice / Integração'],
+ ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','retornos','Retornos e conciliação (S-5001/5002/5011)'],['','guias','Guias e vencimentos'],['','integr','Webservice / Integração'],
  ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados'],['','seguranca','Segurança e acesso'],['','auditoria','Trilha de auditoria'],['','privacidade','Privacidade e cookies'],['','marca','Identidade visual']];
 function renderSide(){const cur=NAV.cur.name==='empForm'?'empregados':NAV.cur.name;let h='';MENU.forEach(([g,k,l])=>{if(g)h+=`<h6>${g}</h6>`;h+=`<a data-act="nav" data-to="${k}" class="${k===cur?'on':''}">${l}</a>`;});$('#side').innerHTML=h;
   $('#topemp').innerHTML=DB.empresa?`<b>${esc(DB.empresa.razao)}</b><br>CNPJ ${fmtCNPJ(DB.empresa.cnpj)} · eSocial: ${DB.cfg.ambiente==1?'Produção':'Produção restrita'} · ${DB.cfg.modo==='sim'?'modo simulação':'webservice'}`:'Empresa não cadastrada';}
@@ -63,7 +63,7 @@ const O={
  instr:[['01','Analfabeto'],['02','Até o 5º ano incompleto'],['03','5º ano completo'],['04','6º ao 9º ano'],['05','Fundamental completo'],['06','Médio incompleto'],['07','Médio completo'],['08','Superior incompleto'],['09','Superior completo'],['10','Pós-graduação'],['11','Mestrado'],['12','Doutorado']],
  categ:[['101','101 – Empregado geral (CLT)'],['103','103 – Aprendiz'],['105','105 – Contrato a termo (Lei 9.601/98)'],['106','106 – Trabalhador temporário']],
  classTrib:[['99','99 – Pessoas jurídicas em geral'],['01','01 – Simples Nacional, tributação previdenciária substituída'],['02','02 – Simples Nacional, tributação previdenciária substituída e não substituída'],['03','03 – Simples Nacional, tributação previdenciária não substituída'],],
- jornada:[['2','2 – Horário diário fixo, folga fixa (domingo)'],['3','3 – Horário diário fixo, folga fixa (exceto domingo)'],['4','4 – Horário diário fixo, folga variável'],['5','5 – Turno ininterrupto de revezamento'],['9','9 – Demais tipos de jornada']],
+ jornada:[['2','2 – Jornada 12 x 36'],['3','3 – Horário diário fixo e folga variável'],['4','4 – Horário diário fixo e folga fixa (domingo)'],['5','5 – Horário diário fixo e folga fixa (exceto domingo)'],['6','6 – Horário diário fixo, folga fixa em outro dia e folga adicional periódica no domingo'],['7','7 – Turno ininterrupto de revezamento'],['9','9 – Demais tipos de jornada']],
  tpDep:[['01','01 – Cônjuge'],['02','02 – Companheiro(a)'],['03','03 – Filho(a) ou enteado(a)'],['04','04 – Filho(a)/enteado(a) até 24 anos (universitário/técnico)']],
  uf:['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
 };

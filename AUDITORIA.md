@@ -50,3 +50,21 @@ Gerar os XML com `tools/dump.js` (usa jsdom e o `index.html`), colocar os XSD em
 ## 8. 3ª rodada (13/11/2026)
 
 Correções: CNPJ alfanumérico; cofre criptografado, bloqueio por inatividade, trilha de auditoria; banner, política de cookies e de privacidade; CSP com hash; acessibilidade e menu móvel; eventos S-2205, S-1298 e S-3000 (306 XML válidos nos dois pacotes XSD). Pendências e notas estimadas: `docs/FolhaPro_pendencias_e_correcoes.xlsx`. Testes: `tools/cnpj_test.js`, `tools/vault_test.py` (requer servidor local na porta 8765).
+
+## 9. 4ª rodada (13/11/2026)
+
+**Regras de negócio:** convenção coletiva e pisos com reajuste da data-base (gera S-2206); jornada 12x36 (sem DSR sobre horas extras; `tpJornada` = 2, código corrigido conforme o XSD); banco de horas (saldo positivo pago como HE 50% na rescisão); estabilidade provisória (bloqueio de dispensa sem justa causa); laudo obrigatório para insalubridade e periculosidade; pensão alimentícia por base variável; consignado com margem de 35% e 5% (Lei 10.820/2003, art. 2º, §2º); plano de saúde e coparticipação; PLR com tabela exclusiva acumulada no ano (Lei 10.101/2000, art. 3º, §5º). Rubricas recodificadas pela Tabela 21 (o código 00 de incidência de IRRF expirou em 30/06/2021). Tela “Conferência de regras”.
+
+**Leiaute:** S-2210, S-2220 e S-2240 (XSD válidos nos dois pacotes; 316 XML sem erro); leitura e conciliação de S-5001, S-5002 e S-5011 por importação manual; espelho de guias com vencimento (INSS/DCTFWeb, IRRF 0561 e 3562, FGTS Digital).
+
+**Segurança:** backup em arquivo cifrado com senha própria (AES-GCM 256; PBKDF2-SHA-256, 600.000 iterações); a exportação em JSON aberto permanece com aviso.
+
+**Jurídico:** `docs/juridico/` traz minuta de licença e suporte com SLA, contrato de operador, RIPD e plano de resposta a incidentes (campos [●] a preencher).
+
+**Normativo:** referência ao leiaute S-1.3 até a NT 07/2026 (rev. 20/10/2026), cujos XSD de produção estão previstos para 26/10, 23/11, 14/12/2026 e 18/01/2027 (Portal eSocial). Natureza de rubrica 9254 (consignado) e 1300 (PLR) vêm de fonte secundária; `PLANO` e `COPART` seguem sem natureza e com envio bloqueado.
+
+**Testes (todos reexecutados):** `smoke2.js` sem erros; `audit1.js` 14 de 14; `xmlcheck.py` sem divergência; `cnpj_test.js` ok; `vault_test.py` sem erros; `ui8_test.js`, `regras_test.js`, `bk_test.js` e `nat_test.js` novos. A validação XSD aponta apenas as duas rubricas sem natureza (bloqueadas no envio por desenho).
+
+**Defeitos encontrados e corrigidos na rodada:** rubricas novas ausentes do cadastro padrão (a folha falhava ao usar consignado); backup em texto aberto.
+
+**Limite:** as regras novas foram conferidas por cálculo independente do próprio autor, sem folhas reais, revisão independente ou transmissão real ao eSocial.

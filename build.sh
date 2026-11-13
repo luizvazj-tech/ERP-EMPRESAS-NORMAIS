@@ -1,7 +1,7 @@
 #!/bin/sh
 # Monta o index.html a partir dos módulos em src/, calcula o hash da CSP e valida a sintaxe.
 cd "$(dirname "$0")" || exit 1
-cat src/core.js src/core2.js src/ui1.js src/ui2.js src/ui3.js src/ui5.js src/ui6.js src/ui7.js src/ui4.js > _t.js
+cat src/core.js src/core2.js src/ui1.js src/ui2.js src/ui3.js src/ui5.js src/ui6.js src/ui7.js src/ui8.js src/ui4.js > _t.js
 node --check _t.js || exit 1
 cat src/head.html _t.js > index.html && printf '\n</script></body></html>\n' >> index.html && rm -f _t.js
 node -e "

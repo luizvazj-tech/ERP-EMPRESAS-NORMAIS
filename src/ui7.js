@@ -13,6 +13,8 @@ async function deriveKey(pw,salt,it){const m=await crypto.subtle.importKey('raw'
 async function vEnc(str){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},VAULT.key,new TextEncoder().encode(str));
   return JSON.stringify({v:1,it:VAULT.it,salt:b64(VAULT.salt),iv:b64(iv),ct:b64(ct)});}
 async function vTry(raw,pw){const o=JSON.parse(raw);const k=await deriveKey(pw,unb64(o.salt),o.it);const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},k,unb64(o.ct));return{key:k,salt:unb64(o.salt),it:o.it,text:new TextDecoder().decode(pt)};}
+async function bkCifrar(txt,pw){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),it=600000;const k=await deriveKey(pw,salt,it);const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(txt));return{kdf:'PBKDF2-SHA-256',it,salt:b64(salt),iv:b64(iv),ct:b64(ct)};}
+async function bkDecifrar(o,pw){const k=await deriveKey(pw,unb64(o.salt),o.it);return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},k,unb64(o.ct)));}
 /* persistência assíncrona com fila (último estado vence) */
 function vaultPersist(s){VAULT.pend=s;if(VAULT.busy)return;VAULT.busy=true;VAULT.flushing=(async()=>{try{while(VAULT.pend!=null){const x=VAULT.pend;VAULT.pend=null;const out=await vEnc(x);try{localStorage.setItem(VK,out);}catch(e){toast('Não foi possível gravar os dados (armazenamento cheio ou bloqueado). Exporte um backup agora.','err');}}}finally{VAULT.busy=false;}})();}
 const vaultFlush=async()=>{while(VAULT.busy||VAULT.pend!=null){await VAULT.flushing;}};

@@ -9,6 +9,7 @@ function novo(){const d=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisu
   const w=novo(),ev=s=>w.eval(s);ev(`seedDemo('${reg==='alfa'?'lp':reg}')`);
   if(reg==='alfa')ev(`(()=>{const m=cnpjGerar('12ABC34501DE');DB.empresa.cnpj=m;DB.estabs.forEach(s=>{if(s.tpInsc==='1')s.nrInsc=s.tipoEstab==='matriz'?m:cnpjGerar('12ABC3450002');});DB.empregados.forEach(e=>{e.sindCnpj=cnpjGerar('A1B2C3D4E5F6');});})()`);const comp=ev('DB.cfg.comp');
   ev(`calcFolha('${comp}')`);
+  if(reg==='alfa'){const i0=ev('DB.empregados[2].id');ev(`(()=>{const e=DB.empregados[2];e.pensaoModo='pctLiq';e.pensaoPct='15';e.planoMens='100';e.planoCopart='20';e.consig=[{tipo:'emprestimo',desc:'Banco X',parcela:'200',ini:'2026-01'}];DB.comps['${comp}'].lanc['${i0}']=Object.assign({},DB.comps['${comp}'].lanc['${i0}'],{plr:'12000'});calcFolha('${comp}');})()`);}
   if(reg==='lp'||reg==='alfa'){
    const mid=ev('DB.empregados[1].id');
    ev(`DB.ferias.push({id:'f1',empId:'${mid}',perAqIni:'2024-08-15',perAqFim:'2025-08-14',faltas:0,diasGozo:20,diasAbono:10,ini:'${comp}-20',fim:'${comp}-30',compPgto:'${comp}',media:0})`);
@@ -28,6 +29,13 @@ function novo(){const d=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisu
   if(reg==='lp')console.log('lp apos envio:',ev(`JSON.stringify(DB.eventos.reduce((a,e)=>{const k=e.tipo+':'+e.status;a[k]=(a[k]||0)+1;return a},{}))`),'resc:',ev('JSON.stringify(Object.keys(DB.rescisoes||{}))'),'S2299 comp plan:',ev(`plano('${comp}').filter(p=>p.tipo==='S-2299').length`));
   if(reg==='alfa'||reg==='lp'){const e0=ev('DB.empregados[0].id');ev(`criarEvento('S-2205',{id:'${e0}'})`);ev(`criarEvento('S-1298',{comp:'${comp}'})`);
    ['S-1200','S-2200','S-1000','S-1210'].forEach(t=>{const id=ev(`(DB.eventos.find(e=>e.tipo==='${t}'&&e.status==='processado')||{}).id`);if(id)ev(`criarEvento('S-3000',{evId:'${id}'})`);else console.log('sem processado p/',t);});}
+  if(reg==='alfa'||reg==='lp'){const e0=ev('DB.empregados[0].id');
+   ev(`DB.sstCat.push({id:'c1',empId:'${e0}',dtAcid:'${comp}-05',hrAcid:'0930',tpAcid:'1',tpCat:'1',obito:'N',policia:'N',sitGeradora:'200004300',iniciat:'1',houveAfast:'S',tpLocal:'1',tpLograd:'R',dscLograd:'Rua Teste',nrLograd:'100',uf:'PR',parte:'753030000',lateral:'2',agente:'302010500',dtAtend:'${comp}-05',hrAtend:'1100',intern:'N',durTrat:'3',afast:'S',lesao:'702005000',cid:'S610',nmEmit:'Dr. Teste',ideOC:'1',nrOC:'12345',ufOC:'PR'});criarEvento('S-2210',{id:'c1'})`);
+   ev(`DB.sstCat.push({id:'c2',empId:'${e0}',dtAcid:'${comp}-05',tpAcid:'1',tpCat:'2',obito:'N',policia:'N',sitGeradora:'200004300',iniciat:'1',tpLocal:'1',dscLograd:'Rua Teste',nrLograd:'S/N',parte:'753030000',agente:'302010500',dtAtend:'${comp}-06',hrAtend:'0800',durTrat:'0',lesao:'702005000',cid:'S61',nmEmit:'Dr. Teste',ideOC:'1',nrOC:'12345',recOrig:'1.2.2026111300000000001'});criarEvento('S-2210',{id:'c2'})`);
+   ev(`DB.sstAso.push({id:'a1',empId:'${e0}',tpExame:'1',dtAso:'${comp}-02',resAso:'1',exames:[{dt:'${comp}-02',proc:'0295'}],medNome:'Dr. Teste',medCRM:'12345',medUF:'PR',respNome:'Dra. Resp',respCpf:'12345678909',respCRM:'54321',respUF:'PR'});criarEvento('S-2220',{id:'a1'})`);
+   ev(`DB.sstRisco.push({id:'r1',empId:'${e0}',ini:'${comp}-01',localAmb:'1',setor:'Producao',tpInsc:'1',nrInsc:DB.empresa.cnpj,ativ:'Operacao de maquinas',codAg:'09.01.001',respCpf:'12345678909',ideOC:'1',nrOC:'12345',ufOC:'PR'});criarEvento('S-2240',{id:'r1'})`);
+   ev(`DB.sstRisco.push({id:'r2',empId:'${e0}',ini:'${comp}-01',localAmb:'1',setor:'Fabrica',tpInsc:'1',nrInsc:DB.empresa.cnpj,ativ:'Operacao de prensa',codAg:'01.01.001',tpAval:'1',intConc:'92,5',limTol:'85',unMed:'1',tec:'Dosimetria',epc:'1',epi:'2',eficEpi:'S',docAval:'CA 12345',respCpf:'12345678909',ideOC:'1',nrOC:'12345',ufOC:'PR'});criarEvento('S-2240',{id:'r2'})`);
+  }
   dump(reg,w);
  }
  console.log('xml gerados',n);process.exit(0);

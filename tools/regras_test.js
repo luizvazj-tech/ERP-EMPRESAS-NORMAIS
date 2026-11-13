@@ -1,0 +1,18 @@
+const {JSDOM}=require('jsdom');const fs=require('fs');
+const html=fs.readFileSync(__dirname+'/../index.html','utf8');const errs=[];
+const d=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'https://x.test/',beforeParse(w){w.addEventListener('error',e=>errs.push('ERR '+e.message));w.print=()=>{};w.__FP_NOGATE=true;}});
+const w=d.window,ev=s=>w.eval(s);
+ev(`seedDemo('lp')`);const comp=ev('DB.cfg.comp');const id=ev('DB.empregados[0].id');
+const show=(t)=>{const r=ev(`DB.comps['${comp}'].res['${id}']`);console.log(t.padEnd(30),'prov',r.totProv,'desc',r.totDesc,'liq',r.liquido,'inss',r.inss,'irrf',r.irrf,'irrfPlr',r.irrfPlr,'fgts',r.fgts,'| itens',r.itens.map(i=>i.sys+':'+i.valor).join(' '));return r;};
+ev(`calcFolha('${comp}')`);const b=show('base');
+ev(`DB.comps['${comp}'].lanc['${id}']={plr:'5000'};calcFolha('${comp}')`);const p=show('PLR 5000');
+console.log('  PLR sem INSS/FGTS?', p.inss===b.inss, p.fgts===b.fgts,' irrfPlr esperado (5000<=8214,40 → isento):',p.irrfPlr);
+ev(`DB.comps['${comp}'].lanc['${id}']={plr:'12000'};calcFolha('${comp}')`);const p2=show('PLR 12000');
+console.log('  esperado imposto PLR 12000 = 12000*0,15-1360,35 =',(12000*0.15-1360.35).toFixed(2));
+ev(`DB.comps['${comp}'].lanc['${id}']={};DB.empregados[0].pensaoModo='pctLiq';DB.empregados[0].pensaoPct='20';calcFolha('${comp}')`);const q=show('pensão 20% líquido');
+const pen=q.itens.find(i=>i.sys==='PENSAO');console.log('  pensão',pen&&pen.valor,'esperado',((b.totProv-b.inss-b.irrf)*0.2).toFixed(2));
+ev(`DB.empregados[0].pensaoModo='fixo';DB.empregados[0].planoMens='150';DB.empregados[0].planoCopart='40';calcFolha('${comp}')`);show('plano 150+40');
+ev(`DB.empregados[0].planoMens='';DB.empregados[0].planoCopart='';DB.empregados[0].j1236=true;DB.comps['${comp}'].lanc['${id}']={he50:'10'};calcFolha('${comp}')`);const j=show('12x36 + 10h HE');
+console.log('  DSR sobre HE em 12x36 deve ser ausente:',!j.itens.some(i=>i.sys==='DSRHE'),'tpJornada gerado:',ev(`(()=>{const x=GEN['S-2200']({id:'${id}'});return /<tpJornada>(\\d)/.exec(x.xml)[1]})()`));
+ev(`DB.empregados[0].j1236=false;DB.comps['${comp}'].lanc['${id}']={he50:'10'};calcFolha('${comp}')`);const k=show('sem 12x36 + 10h HE');console.log('  DSR presente:',k.itens.some(i=>i.sys==='DSRHE'));
+console.log('ERROS',errs.length?errs:'nenhum');process.exit(0);

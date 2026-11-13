@@ -101,6 +101,7 @@ SC.resc={view(p){const sel=p.empId||'';const e=byId(DB.empregados,sel);const rs=
 ACT.rescPrev=()=>{const f=$('#f'),mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return;}const o=readForm(f);o.prev=true;DIRTY=false;refresh(o);};
 ACT.rescSave=async el=>{const f=$('#f'),mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return;}const o=readForm(f),e=byId(DB.empregados,o.empId);
   if(!MOTIVOS_RESC[o.motivo]){toast('Motivo não suportado no cálculo automático.','err');return;}
+  if(e.estabTipo&&e.estabFim&&e.estabFim>=o.data&&(o.motivo==='02'||o.motivo==='06')){toast('Empregado com estabilidade provisória até '+fmtData(e.estabFim)+': a dispensa sem justa causa (ADCT, art. 10, II; Lei 8.213/1991, art. 118; CLT, art. 543, §3º) está bloqueada. Registre outro motivo ou remova a estabilidade.','err');return;}
   if(e.admissao&&o.data<e.admissao){toast('Data do desligamento anterior à admissão.','err');return;}
   const comp=o.data.slice(0,7),c=DB.comps[comp];if(c&&c.status==='fechada'){toast('A competência '+compLabel(comp)+' está fechada. Reabra-a para registrar a rescisão.','err');return;}
   if(DB.rescisoes[e.id]){toast('Já existe rescisão registrada para este empregado. Desfaça-a antes.','err');return;}
