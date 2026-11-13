@@ -18,7 +18,7 @@ const MENU=[['','home','⌂ Início'],['Cadastros','empresa','Empresa e regime (
  ['Departamento Pessoal','empregados','Empregados (S-2200)'],['','movs','Movimentações (S-2206/2230/2299)'],
  ['Folha de pagamento','lanc','Lançamentos do mês'],['','folha','Cálculo da folha'],['','ferias','Férias'],['','d13','13º salário'],['','resc','Rescisão (S-2299)'],['','holerite','Contracheques'],['','relat','Relatórios e guias'],
  ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','integr','Webservice / Integração'],
- ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados']];
+ ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados'],['','marca','Identidade visual']];
 function renderSide(){const cur=NAV.cur.name==='empForm'?'empregados':NAV.cur.name;let h='';MENU.forEach(([g,k,l])=>{if(g)h+=`<h6>${g}</h6>`;h+=`<a data-act="nav" data-to="${k}" class="${k===cur?'on':''}">${l}</a>`;});$('#side').innerHTML=h;
   $('#topemp').innerHTML=DB.empresa?`<b>${esc(DB.empresa.razao)}</b><br>CNPJ ${fmtCNPJ(DB.empresa.cnpj)} · eSocial: ${DB.cfg.ambiente==1?'Produção':'Produção restrita'} · ${DB.cfg.modo==='sim'?'modo simulação':'webservice'}`:'Empresa não cadastrada';}
 function renderBar(sc){const acts=(sc.actions?sc.actions(NAV.cur.params):[])||[];

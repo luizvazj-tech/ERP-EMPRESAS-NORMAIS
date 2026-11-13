@@ -37,6 +37,25 @@ function defaultParams(){return{
   patronal:20, rat:2, fap:1, terceiros:5.8, adNoturno:20, peric:30, he50:50, he100:100, divisor:220, cprbFrac:{2025:25,2026:50,2027:75}, venc:{inss:20,fgts:20}
 };}
 
+
+/* ---------------- Identidade visual (white-label) ---------------- */
+// Padrão: cliente Mallora Tecnologia. Única cor confirmada no site: #0B0B0B (meta theme-color); demais valores provisórios [CONFIRMAR COM O MANUAL DE MARCA].
+const BRAND_KEY='folhaPro.brand.v1';
+const BRAND_DEF={nome:'Mallora',produto:'Folha',titulo:'Folha de Pagamento e eSocial',slogan:'Onde soluções se conectam.',pri:'#0B0B0B',pri2:'#0B0B0B',acc:'#F2B544',fonte:'Inter',logo:''};
+let BRAND=Object.assign({},BRAND_DEF);
+function brandLoad(){try{const r=localStorage.getItem(BRAND_KEY);if(r)BRAND=Object.assign({},BRAND_DEF,JSON.parse(r));}catch(e){}}
+function brandSave(){try{localStorage.setItem(BRAND_KEY,JSON.stringify(BRAND));}catch(e){}}
+function mixHex(a,b,t){const p=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');return[0,2,4].map(i=>parseInt(h.substr(i,2),16));};const A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v*(1-t)+B[i]*t).toString(16).padStart(2,'0')).join('');}
+function applyBrand(b){b=b||BRAND;const s=document.documentElement.style;
+  s.setProperty('--pri',b.pri);s.setProperty('--pri2',b.pri2);s.setProperty('--pri3',mixHex(b.pri,'#ffffff',.9));s.setProperty('--acc2',b.acc);s.setProperty('--acc',mixHex(b.acc,'#000000',.3));
+  const fam=b.fonte?`"${b.fonte}",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`:'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+  document.body.style.fontFamily=fam;
+  let l=document.getElementById('brandfont');if(!l){l=document.createElement('link');l.id='brandfont';l.rel='stylesheet';document.head.appendChild(l);}
+  l.href=b.fonte?'https://fonts.googleapis.com/css2?family='+encodeURIComponent(b.fonte).replace(/%20/g,'+')+':wght@400;600;700&display=swap':'';
+  document.title=b.nome+' — '+b.titulo;
+  const lg=document.getElementById('logo');if(lg)lg.innerHTML=(b.logo?`<img alt="" src="${b.logo}">`:'')+esc(b.nome)+' <span>'+esc(b.produto)+'</span>';
+}
+
 /* ---------------- Rubricas padrão ---------------- */
 // natureza (Tabela 3) preenchida apenas onde confirmada em fonte oficial: 1000, 1409, 9200, 9201, 9203.
 function defaultRubricas(){

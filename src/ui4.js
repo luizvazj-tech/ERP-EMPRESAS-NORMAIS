@@ -76,7 +76,7 @@ SC.home={view(){const comp=DB.cfg.comp,c=DB.comps[comp],t=totaisComp(comp);const
   const pend=DB.eventos.filter(e=>e.status==='gerado').length,rej=DB.eventos.filter(e=>e.status==='rejeitado').length;
   const S=(n,t,d,done,to,lab)=>`<div class="step ${done?'done':''}"><div><span class="n">${done?'✓':n}</span><b>${t}</b></div><p>${d}</p><div><button class="btn sm ${done?'':'pri'}" data-act="nav" data-to="${to}">${lab}</button></div></div>`;
   const eAtivos=DB.empregados.filter(e=>e.situacao==='ativo').length;
-  return `<h1>FolhaPro</h1><p class="sub">Departamento pessoal, folha de pagamento, contracheque e eSocial — da abertura da empresa à entrega do recibo e ao envio dos eventos.</p>
+  return `<h1>${esc(BRAND.nome)} ${esc(BRAND.titulo)}</h1><p class="sub">Departamento pessoal, folha de pagamento, contracheque e eSocial — da abertura da empresa à entrega do recibo e ao envio dos eventos.</p>
   ${!DB.empresa?`<div class="note"><b>Comece por aqui:</b> cadastre a empresa ou carregue dados de demonstração para percorrer o fluxo completo. <button class="btn sm" data-act="bkDemo" style="margin-left:8px">Carregar demonstração</button> <button class="btn sm pri" data-act="nav" data-to="empresa">Cadastrar empresa</button></div>`:''}
   <div class="kpis"><div class="kpi"><span>Empregados ativos</span><b>${eAtivos}</b></div><div class="kpi"><span>Competência</span><b>${compLabel(comp)}</b></div><div class="kpi"><span>Líquido da folha</span><b>R$ ${brl(t.liq)}</b></div><div class="kpi"><span>Eventos processados</span><b style="color:var(--ok)">${DB.eventos.filter(e=>e.status==='processado').length}</b></div><div class="kpi"><span>Pendentes / rejeitados</span><b>${pend} / <span style="color:${rej?'var(--err)':'inherit'}">${rej}</span></b></div></div>
   <h2>Fluxo de trabalho</h2><div class="steps">
@@ -97,4 +97,19 @@ SC.home.actions=()=>[{label:'Biblioteca de eventos',act:'goBib'},{label:'Cálcul
 ACT.goBib=()=>go('biblioteca');ACT.goFolha=()=>go('folha',{comp:DB.cfg.comp});ACT.goEnvio=()=>go('envio',{comp:DB.cfg.comp});
 
 /* ===================== INIT ===================== */
-DB=loadDB();render();
+
+SC.marca={view(){const b=BRAND;const F=(l,id,v,sp,t)=>`<div class="f" style="grid-column:span ${sp||4}"><label>${l}</label><input id="mb_${id}" type="${t||'text'}" value="${esc(v)}"${t==='color'?' style="height:36px;padding:2px"':''}></div>`;
+ return `<h1>Identidade visual</h1><p class="sub">Adapta o sistema à marca do cliente: nome, cores, fonte e logotipo. A configuração fica guardada neste navegador, separada dos dados da folha, e não é apagada por "Apagar todos os dados".</p>
+ <div class="card"><h2>Marca</h2><div class="grid">${F('Nome da empresa','nome',b.nome)}${F('Nome do produto (curto)','produto',b.produto)}${F('Título completo','titulo',b.titulo)}
+ ${F('Cor primária (botões, links)','pri',b.pri,3,'color')}${F('Cor da barra superior','pri2',b.pri2,3,'color')}${F('Cor de destaque (logotipo)','acc',b.acc,3,'color')}${F('Fonte (nome no Google Fonts)','fonte',b.fonte,3)}
+ <div class="f" style="grid-column:span 6"><label>Logotipo (PNG/SVG/JPG, até 150 KB)</label><input id="mb_logo" type="file" accept="image/*"></div>
+ <div class="f" style="grid-column:span 6"><label>Logotipo atual</label><div id="mb_prev" style="min-height:34px">${b.logo?`<img src="${b.logo}" style="height:34px;background:${esc(b.pri2)};padding:4px;border-radius:4px">`:'<span class="sub">Sem logotipo (usa o nome em texto)</span>'}</div></div></div>
+ <div class="row" style="margin-top:10px"><button class="btn pri" data-act="marcaSave">Aplicar e salvar</button><button class="btn" data-act="marcaReset">Restaurar padrão</button></div></div>
+ <div class="note warn">Valores padrão para o cliente Mallora: apenas a cor <b>#0B0B0B</b> foi identificada no site; o destaque e a fonte são provisórios [CONFIRMAR COM O MANUAL DE MARCA]. A fonte só é carregada se o navegador tiver acesso ao Google Fonts; sem acesso, usa a fonte do sistema.</div>`;},
+ mount(){const rd=()=>{const g=i=>($('#mb_'+i)||{}).value;return Object.assign({},BRAND,{nome:g('nome')||BRAND.nome,produto:g('produto')||'',titulo:g('titulo')||BRAND.titulo,pri:g('pri'),pri2:g('pri2'),acc:g('acc'),fonte:(g('fonte')||'').trim()});};
+  ['nome','produto','titulo','pri','pri2','acc'].forEach(i=>{const e=$('#mb_'+i);if(e)e.addEventListener('input',()=>applyBrand(rd()));});
+  const lf=$('#mb_logo');if(lf)lf.addEventListener('change',()=>{const f=lf.files[0];if(!f)return;if(f.size>150*1024){toast('Arquivo acima de 150 KB.','err');lf.value='';return;}const r=new FileReader();r.onload=()=>{BRAND.logo=r.result;applyBrand(rd());$('#mb_prev').innerHTML=`<img src="${r.result}" style="height:34px;background:${esc(rd().pri2)};padding:4px;border-radius:4px">`;};r.readAsDataURL(f);});
+  SC.marca._rd=rd;},actions:()=>[]};
+ACT.marcaSave=()=>{BRAND=SC.marca._rd();brandSave();applyBrand();toast('Identidade visual aplicada.','ok');};
+ACT.marcaReset=()=>{BRAND=Object.assign({},BRAND_DEF);try{localStorage.removeItem(BRAND_KEY);}catch(e){}applyBrand();render();toast('Padrão restaurado.','ok');};
+brandLoad();applyBrand();DB=loadDB();render();

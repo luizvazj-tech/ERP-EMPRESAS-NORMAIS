@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FolhaPro — Departamento Pessoal, Folha de Pagamento e eSocial</title>
+<title>Folha de Pagamento e eSocial</title>
 <style>
 :root{--bg:#f3f5f7;--card:#fff;--ink:#17212b;--mut:#5d6b79;--line:#dbe2e9;--pri:#0f5c63;--pri2:#0a4146;--pri3:#e3f1f2;--acc:#b7791f;--ok:#1a7f4b;--okb:#e2f4ea;--warn:#9a6700;--warnb:#fff4d6;--err:#b42318;--errb:#fde8e6;--blue:#1f5fbf;--blueb:#e4edfb}
 *{box-sizing:border-box}html,body{margin:0}
 body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:76px}
 #top{background:var(--pri2);color:#fff;display:flex;align-items:center;gap:14px;padding:10px 18px;position:sticky;top:0;z-index:20}
-#top .logo{font-weight:700;font-size:17px;letter-spacing:.2px}#top .logo span{color:#e8c37a}
+#top .logo{font-weight:700;font-size:17px;letter-spacing:.2px}#top .logo span{color:var(--acc2,#e8c37a)}#top .logo img{height:28px;vertical-align:middle;margin-right:8px;border-radius:4px}
 #top .emp{margin-left:auto;font-size:12.5px;opacity:.9;text-align:right}
 #top button{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px}
 #top button:hover{background:rgba(255,255,255,.22)}
@@ -87,7 +87,7 @@ details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);fon
 </head>
 <body>
 <header id="top">
-  <div class="logo">Folha<span>Pro</span></div>
+  <div class="logo" id="logo"></div>
   <button data-act="home" title="Alt+I">⌂ Tela inicial</button>
   <button data-act="back" title="Alt+V">◀ Voltar</button>
   <div class="emp" id="topemp"></div>
@@ -134,6 +134,25 @@ function defaultParams(){return{
   fgts:8, fgtsAprendiz:2, vtPerc:6,
   patronal:20, rat:2, fap:1, terceiros:5.8, adNoturno:20, peric:30, he50:50, he100:100, divisor:220, cprbFrac:{2025:25,2026:50,2027:75}, venc:{inss:20,fgts:20}
 };}
+
+
+/* ---------------- Identidade visual (white-label) ---------------- */
+// Padrão: cliente Mallora Tecnologia. Única cor confirmada no site: #0B0B0B (meta theme-color); demais valores provisórios [CONFIRMAR COM O MANUAL DE MARCA].
+const BRAND_KEY='folhaPro.brand.v1';
+const BRAND_DEF={nome:'Mallora',produto:'Folha',titulo:'Folha de Pagamento e eSocial',slogan:'Onde soluções se conectam.',pri:'#0B0B0B',pri2:'#0B0B0B',acc:'#F2B544',fonte:'Inter',logo:''};
+let BRAND=Object.assign({},BRAND_DEF);
+function brandLoad(){try{const r=localStorage.getItem(BRAND_KEY);if(r)BRAND=Object.assign({},BRAND_DEF,JSON.parse(r));}catch(e){}}
+function brandSave(){try{localStorage.setItem(BRAND_KEY,JSON.stringify(BRAND));}catch(e){}}
+function mixHex(a,b,t){const p=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');return[0,2,4].map(i=>parseInt(h.substr(i,2),16));};const A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v*(1-t)+B[i]*t).toString(16).padStart(2,'0')).join('');}
+function applyBrand(b){b=b||BRAND;const s=document.documentElement.style;
+  s.setProperty('--pri',b.pri);s.setProperty('--pri2',b.pri2);s.setProperty('--pri3',mixHex(b.pri,'#ffffff',.9));s.setProperty('--acc2',b.acc);s.setProperty('--acc',mixHex(b.acc,'#000000',.3));
+  const fam=b.fonte?`"${b.fonte}",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`:'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+  document.body.style.fontFamily=fam;
+  let l=document.getElementById('brandfont');if(!l){l=document.createElement('link');l.id='brandfont';l.rel='stylesheet';document.head.appendChild(l);}
+  l.href=b.fonte?'https://fonts.googleapis.com/css2?family='+encodeURIComponent(b.fonte).replace(/%20/g,'+')+':wght@400;600;700&display=swap':'';
+  document.title=b.nome+' — '+b.titulo;
+  const lg=document.getElementById('logo');if(lg)lg.innerHTML=(b.logo?`<img alt="" src="${b.logo}">`:'')+esc(b.nome)+' <span>'+esc(b.produto)+'</span>';
+}
 
 /* ---------------- Rubricas padrão ---------------- */
 // natureza (Tabela 3) preenchida apenas onde confirmada em fonte oficial: 1000, 1409, 9200, 9201, 9203.
@@ -598,7 +617,7 @@ const MENU=[['','home','⌂ Início'],['Cadastros','empresa','Empresa e regime (
  ['Departamento Pessoal','empregados','Empregados (S-2200)'],['','movs','Movimentações (S-2206/2230/2299)'],
  ['Folha de pagamento','lanc','Lançamentos do mês'],['','folha','Cálculo da folha'],['','ferias','Férias'],['','d13','13º salário'],['','resc','Rescisão (S-2299)'],['','holerite','Contracheques'],['','relat','Relatórios e guias'],
  ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','integr','Webservice / Integração'],
- ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados']];
+ ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados'],['','marca','Identidade visual']];
 function renderSide(){const cur=NAV.cur.name==='empForm'?'empregados':NAV.cur.name;let h='';MENU.forEach(([g,k,l])=>{if(g)h+=`<h6>${g}</h6>`;h+=`<a data-act="nav" data-to="${k}" class="${k===cur?'on':''}">${l}</a>`;});$('#side').innerHTML=h;
   $('#topemp').innerHTML=DB.empresa?`<b>${esc(DB.empresa.razao)}</b><br>CNPJ ${fmtCNPJ(DB.empresa.cnpj)} · eSocial: ${DB.cfg.ambiente==1?'Produção':'Produção restrita'} · ${DB.cfg.modo==='sim'?'modo simulação':'webservice'}`:'Empresa não cadastrada';}
 function renderBar(sc){const acts=(sc.actions?sc.actions(NAV.cur.params):[])||[];
@@ -1311,7 +1330,7 @@ SC.home={view(){const comp=DB.cfg.comp,c=DB.comps[comp],t=totaisComp(comp);const
   const pend=DB.eventos.filter(e=>e.status==='gerado').length,rej=DB.eventos.filter(e=>e.status==='rejeitado').length;
   const S=(n,t,d,done,to,lab)=>`<div class="step ${done?'done':''}"><div><span class="n">${done?'✓':n}</span><b>${t}</b></div><p>${d}</p><div><button class="btn sm ${done?'':'pri'}" data-act="nav" data-to="${to}">${lab}</button></div></div>`;
   const eAtivos=DB.empregados.filter(e=>e.situacao==='ativo').length;
-  return `<h1>FolhaPro</h1><p class="sub">Departamento pessoal, folha de pagamento, contracheque e eSocial — da abertura da empresa à entrega do recibo e ao envio dos eventos.</p>
+  return `<h1>${esc(BRAND.nome)} ${esc(BRAND.titulo)}</h1><p class="sub">Departamento pessoal, folha de pagamento, contracheque e eSocial — da abertura da empresa à entrega do recibo e ao envio dos eventos.</p>
   ${!DB.empresa?`<div class="note"><b>Comece por aqui:</b> cadastre a empresa ou carregue dados de demonstração para percorrer o fluxo completo. <button class="btn sm" data-act="bkDemo" style="margin-left:8px">Carregar demonstração</button> <button class="btn sm pri" data-act="nav" data-to="empresa">Cadastrar empresa</button></div>`:''}
   <div class="kpis"><div class="kpi"><span>Empregados ativos</span><b>${eAtivos}</b></div><div class="kpi"><span>Competência</span><b>${compLabel(comp)}</b></div><div class="kpi"><span>Líquido da folha</span><b>R$ ${brl(t.liq)}</b></div><div class="kpi"><span>Eventos processados</span><b style="color:var(--ok)">${DB.eventos.filter(e=>e.status==='processado').length}</b></div><div class="kpi"><span>Pendentes / rejeitados</span><b>${pend} / <span style="color:${rej?'var(--err)':'inherit'}">${rej}</span></b></div></div>
   <h2>Fluxo de trabalho</h2><div class="steps">
@@ -1332,5 +1351,20 @@ SC.home.actions=()=>[{label:'Biblioteca de eventos',act:'goBib'},{label:'Cálcul
 ACT.goBib=()=>go('biblioteca');ACT.goFolha=()=>go('folha',{comp:DB.cfg.comp});ACT.goEnvio=()=>go('envio',{comp:DB.cfg.comp});
 
 /* ===================== INIT ===================== */
-DB=loadDB();render();
+
+SC.marca={view(){const b=BRAND;const F=(l,id,v,sp,t)=>`<div class="f" style="grid-column:span ${sp||4}"><label>${l}</label><input id="mb_${id}" type="${t||'text'}" value="${esc(v)}"${t==='color'?' style="height:36px;padding:2px"':''}></div>`;
+ return `<h1>Identidade visual</h1><p class="sub">Adapta o sistema à marca do cliente: nome, cores, fonte e logotipo. A configuração fica guardada neste navegador, separada dos dados da folha, e não é apagada por "Apagar todos os dados".</p>
+ <div class="card"><h2>Marca</h2><div class="grid">${F('Nome da empresa','nome',b.nome)}${F('Nome do produto (curto)','produto',b.produto)}${F('Título completo','titulo',b.titulo)}
+ ${F('Cor primária (botões, links)','pri',b.pri,3,'color')}${F('Cor da barra superior','pri2',b.pri2,3,'color')}${F('Cor de destaque (logotipo)','acc',b.acc,3,'color')}${F('Fonte (nome no Google Fonts)','fonte',b.fonte,3)}
+ <div class="f" style="grid-column:span 6"><label>Logotipo (PNG/SVG/JPG, até 150 KB)</label><input id="mb_logo" type="file" accept="image/*"></div>
+ <div class="f" style="grid-column:span 6"><label>Logotipo atual</label><div id="mb_prev" style="min-height:34px">${b.logo?`<img src="${b.logo}" style="height:34px;background:${esc(b.pri2)};padding:4px;border-radius:4px">`:'<span class="sub">Sem logotipo (usa o nome em texto)</span>'}</div></div></div>
+ <div class="row" style="margin-top:10px"><button class="btn pri" data-act="marcaSave">Aplicar e salvar</button><button class="btn" data-act="marcaReset">Restaurar padrão</button></div></div>
+ <div class="note warn">Valores padrão para o cliente Mallora: apenas a cor <b>#0B0B0B</b> foi identificada no site; o destaque e a fonte são provisórios [CONFIRMAR COM O MANUAL DE MARCA]. A fonte só é carregada se o navegador tiver acesso ao Google Fonts; sem acesso, usa a fonte do sistema.</div>`;},
+ mount(){const rd=()=>{const g=i=>($('#mb_'+i)||{}).value;return Object.assign({},BRAND,{nome:g('nome')||BRAND.nome,produto:g('produto')||'',titulo:g('titulo')||BRAND.titulo,pri:g('pri'),pri2:g('pri2'),acc:g('acc'),fonte:(g('fonte')||'').trim()});};
+  ['nome','produto','titulo','pri','pri2','acc'].forEach(i=>{const e=$('#mb_'+i);if(e)e.addEventListener('input',()=>applyBrand(rd()));});
+  const lf=$('#mb_logo');if(lf)lf.addEventListener('change',()=>{const f=lf.files[0];if(!f)return;if(f.size>150*1024){toast('Arquivo acima de 150 KB.','err');lf.value='';return;}const r=new FileReader();r.onload=()=>{BRAND.logo=r.result;applyBrand(rd());$('#mb_prev').innerHTML=`<img src="${r.result}" style="height:34px;background:${esc(rd().pri2)};padding:4px;border-radius:4px">`;};r.readAsDataURL(f);});
+  SC.marca._rd=rd;},actions:()=>[]};
+ACT.marcaSave=()=>{BRAND=SC.marca._rd();brandSave();applyBrand();toast('Identidade visual aplicada.','ok');};
+ACT.marcaReset=()=>{BRAND=Object.assign({},BRAND_DEF);try{localStorage.removeItem(BRAND_KEY);}catch(e){}applyBrand();render();toast('Padrão restaurado.','ok');};
+brandLoad();applyBrand();DB=loadDB();render();
 </script></body></html>
