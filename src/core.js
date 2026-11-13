@@ -254,7 +254,7 @@ function validarFerias(e,f,P){const m=[];const dir=diasDireitoFerias(f.faltas);
 function avos13(e,ano,fimProj){let n=0;const adm=e.admissao?new Date(e.admissao+'T12:00:00'):null;let des=e.desligamento?new Date(e.desligamento+'T12:00:00'):null;if(des&&fimProj)des=fimProj;
   for(let m=1;m<=12;m++){let a=new Date(ano,m-1,1,12),b=new Date(ano,m,0,12);if(adm&&adm>a)a=adm;if(des&&des<b)b=des;if(b<a)continue;if(Math.round((b-a)/864e5)+1>=15)n++;}return n;}
 function calc13(e,ano,P,media,fimProj){const avos=avos13(e,ano,fimProj),base=remunBase(e,P,media),bruto=r2(base/12*avos),p1v=r2(bruto/2);
-  const nDep=(e.deps||[]).filter(d=>d.irrf).length;const inss13=calcInss(bruto,P);const ir=calcIrrf(bruto,inss13,nDep,0,P,true);
+  const nDep=(e.deps||[]).filter(d=>d.irrf).length;const inss13=calcInss(bruto,P);const ir=calcIrrf(bruto,inss13,nDep,0,P);
   return{avos,base,bruto,p1:p1v,inss13,irrf13:ir.irrf,fgts13:r2(bruto*(e.categoria==='103'?P.fgtsAprendiz:P.fgts)/100),liq2:r2(bruto-p1v-inss13-ir.irrf)};}
 const MOTIVOS_RESC={'01':'Justa causa (iniciativa do empregador)','02':'Sem justa causa (iniciativa do empregador)','06':'Término de contrato a termo','07':'Pedido de demissão (iniciativa do empregado)','17':'Rescisão indireta','33':'Acordo entre as partes (CLT, art. 484-A)'};
 const AVISOS={indenizado:'Indenizado (empregador dispensa o cumprimento)',trabalhado:'Trabalhado',nao_cumprido:'Não cumprido pelo empregado (desconto)',dispensado:'Dispensado / não aplicável'};
@@ -271,7 +271,7 @@ function calcRescisaoVerbas(e,r,P){const notas=[],mt=r.motivo;const anos=anosCom
   if(proj)notas.push('Aviso indenizado projeta o tempo de serviço para 13º e férias proporcionais (CLT, art. 487, §1º; Súmula 371 do TST) [VERIFICAR FONTE OFICIAL].');
   let avos13c=0,d13=0,inss13=0,irrf13=0;
   if(mt!=='01'){avos13c=avos13(e,Number(e.desligamento.slice(0,4)),fimProj);d13=r2(rem/12*avos13c);
-    const nDep=(e.deps||[]).filter(x=>x.irrf).length;inss13=calcInss(d13,P);irrf13=calcIrrf(d13,inss13,nDep,0,P,true).irrf;}
+    const nDep=(e.deps||[]).filter(x=>x.irrf).length;inss13=calcInss(d13,P);irrf13=calcIrrf(d13,inss13,nDep,0,P).irrf;}
   else notas.push('Justa causa: sem 13º proporcional nem férias proporcionais (Lei 4.090/62, art. 3º; CLT, art. 146, parágrafo único) [VERIFICAR FONTE OFICIAL].');
   const ferVencPer=num(r.ferVencPer),ferVenc=r2(rem*ferVencPer),ferVencTerco=r2(ferVenc/3);
   let avosFer=0,ferProp=0,ferPropTerco=0;

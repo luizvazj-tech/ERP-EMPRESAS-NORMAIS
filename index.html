@@ -352,7 +352,7 @@ function validarFerias(e,f,P){const m=[];const dir=diasDireitoFerias(f.faltas);
 function avos13(e,ano,fimProj){let n=0;const adm=e.admissao?new Date(e.admissao+'T12:00:00'):null;let des=e.desligamento?new Date(e.desligamento+'T12:00:00'):null;if(des&&fimProj)des=fimProj;
   for(let m=1;m<=12;m++){let a=new Date(ano,m-1,1,12),b=new Date(ano,m,0,12);if(adm&&adm>a)a=adm;if(des&&des<b)b=des;if(b<a)continue;if(Math.round((b-a)/864e5)+1>=15)n++;}return n;}
 function calc13(e,ano,P,media,fimProj){const avos=avos13(e,ano,fimProj),base=remunBase(e,P,media),bruto=r2(base/12*avos),p1v=r2(bruto/2);
-  const nDep=(e.deps||[]).filter(d=>d.irrf).length;const inss13=calcInss(bruto,P);const ir=calcIrrf(bruto,inss13,nDep,0,P,true);
+  const nDep=(e.deps||[]).filter(d=>d.irrf).length;const inss13=calcInss(bruto,P);const ir=calcIrrf(bruto,inss13,nDep,0,P);
   return{avos,base,bruto,p1:p1v,inss13,irrf13:ir.irrf,fgts13:r2(bruto*(e.categoria==='103'?P.fgtsAprendiz:P.fgts)/100),liq2:r2(bruto-p1v-inss13-ir.irrf)};}
 const MOTIVOS_RESC={'01':'Justa causa (iniciativa do empregador)','02':'Sem justa causa (iniciativa do empregador)','06':'Término de contrato a termo','07':'Pedido de demissão (iniciativa do empregado)','17':'Rescisão indireta','33':'Acordo entre as partes (CLT, art. 484-A)'};
 const AVISOS={indenizado:'Indenizado (empregador dispensa o cumprimento)',trabalhado:'Trabalhado',nao_cumprido:'Não cumprido pelo empregado (desconto)',dispensado:'Dispensado / não aplicável'};
@@ -369,7 +369,7 @@ function calcRescisaoVerbas(e,r,P){const notas=[],mt=r.motivo;const anos=anosCom
   if(proj)notas.push('Aviso indenizado projeta o tempo de serviço para 13º e férias proporcionais (CLT, art. 487, §1º; Súmula 371 do TST) [VERIFICAR FONTE OFICIAL].');
   let avos13c=0,d13=0,inss13=0,irrf13=0;
   if(mt!=='01'){avos13c=avos13(e,Number(e.desligamento.slice(0,4)),fimProj);d13=r2(rem/12*avos13c);
-    const nDep=(e.deps||[]).filter(x=>x.irrf).length;inss13=calcInss(d13,P);irrf13=calcIrrf(d13,inss13,nDep,0,P,true).irrf;}
+    const nDep=(e.deps||[]).filter(x=>x.irrf).length;inss13=calcInss(d13,P);irrf13=calcIrrf(d13,inss13,nDep,0,P).irrf;}
   else notas.push('Justa causa: sem 13º proporcional nem férias proporcionais (Lei 4.090/62, art. 3º; CLT, art. 146, parágrafo único) [VERIFICAR FONTE OFICIAL].');
   const ferVencPer=num(r.ferVencPer),ferVenc=r2(rem*ferVencPer),ferVencTerco=r2(ferVenc/3);
   let avosFer=0,ferProp=0,ferPropTerco=0;
@@ -1082,7 +1082,7 @@ SC.d13={view(p){const ano=p.ano||String(new Date().getFullYear()),p1=p.p1||ano+'
   <div class="card" data-form id="f"><div class="grid">${F('Ano-base','ano',ano,{w:2})+F('Competência da 1ª parcela','p1',p1,{t:'month',w:3,hint:'Entre fevereiro e novembro (Lei 4.749/65, art. 2º)'})+F('Competência da 2ª parcela','p2',p2,{t:'month',w:3,hint:'Até 20 de dezembro (art. 1º)'})}</div></div>
   <div class="card"><h2>Empregados (${elig.length})</h2><div class="tw"><table class="t"><thead><tr><th>Empregado</th><th class="c">Avos</th><th class="r">Média variáveis R$</th><th class="r">13º bruto</th><th class="r">1ª parcela</th><th class="r">INSS</th><th class="r">IRRF</th><th class="r">Líquido 2ª</th><th>Competências</th></tr></thead><tbody>
   ${elig.map(e=>{const d=(DB.decimo||{})[ano+'|'+e.id];return `<tr><td>${esc(e.nome)}</td><td class="c">${d?d.avos:'—'}</td><td class="r"><input data-m="${e.id}" value="${d?brIn(num(d.media)):''}" style="width:90px;text-align:right;padding:4px;border:1px solid #c7d0d9;border-radius:5px"></td><td class="r">${d?brl(d.bruto):'—'}</td><td class="r">${d?brl(d.p1.valor):'—'}</td><td class="r">${d?brl(d.inss13):'—'}</td><td class="r">${d?brl(d.irrf13):'—'}</td><td class="r">${d?brl(d.liq2):'—'}</td><td>${d?compLabel(d.p1.comp)+' / '+compLabel(d.p2.comp):'—'}</td></tr>`;}).join('')||'<tr><td colspan="9" class="c" style="padding:16px;color:var(--mut)">Nenhum empregado elegível no ano.</td></tr>'}</tbody></table></div>
-  <div class="note info" style="margin-top:10px">O IRRF do 13º é calculado sobre o valor total, com dedução do INSS do 13º e dependentes (ou desconto simplificado, se mais vantajoso), <b>sem o redutor da Lei 15.270/2025</b> [VERIFICAR FONTE OFICIAL — IN RFB]. A competência de pagamento deve ser recalculada na aba Cálculo da folha.</div></div>`;},
+  <div class="note info" style="margin-top:10px">O IRRF do 13º é calculado sobre o valor total, com dedução do INSS do 13º e dependentes (ou desconto simplificado, se mais vantajoso), <b>com a redução da Lei 15.270/2025</b> (Lei 9.250/1995, art. 3º-A, §3º). A competência de pagamento deve ser recalculada na aba Cálculo da folha.</div></div>`;},
   mount(){const f=$('#f');['ano','p1','p2'].forEach(n=>f.querySelector('[name='+n+']').addEventListener('change',e=>{const o=readForm(f);const np={ano:o.ano,p1:o.p1,p2:o.p2};if(n==='ano'){np.p1=o.ano+'-11';np.p2=o.ano+'-12';}DIRTY=false;refresh(np);}));},
   actions:()=>[{label:'💾 Calcular 13º do ano',act:'d13Calc',cls:'pri',key:'save'},{label:'Ir para o cálculo da folha',act:'nav',cls:'',arg:'',key:''}]};
 SC.d13.actions=()=>[{label:'💾 Calcular 13º do ano',act:'d13Calc',cls:'pri',key:'save'}];
