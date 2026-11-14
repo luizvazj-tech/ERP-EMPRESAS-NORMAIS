@@ -96,6 +96,7 @@ details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);fon
 @media (max-width:900px){#mnav{display:block;flex:1 1 100%;max-width:none;order:9}#top{flex-wrap:wrap;gap:8px;padding:8px 10px}#top .emp{display:none}#top button{padding:5px 9px;white-space:nowrap}#bar .hint{display:none}#bar{overflow-x:auto;padding:8px 10px}#bar .btn{white-space:nowrap;padding:7px 10px}#main{padding:14px 12px 30px}#ckb{left:6px;right:6px;bottom:6px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{#gate,#ckb{display:none!important}}
+.upd-has{background:var(--acc2,#F2B544)!important;color:#000!important;font-weight:700}
 </style>
 </head>
 <body>
@@ -104,6 +105,7 @@ details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);fon
   <div class="logo" id="logo"></div>
   <button data-act="home" title="Alt+I">⌂ Tela inicial</button>
   <button data-act="back" title="Alt+V">◀ Voltar</button>
+  <button data-act="atualizar" id="btnUpd" title="Verificar atualizações do sistema">⟳ Atualizar</button>
   <select id="mnav" aria-label="Menu de navegação"></select>
   <div class="emp" id="topemp"></div>
 </header>

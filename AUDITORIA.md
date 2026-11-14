@@ -68,3 +68,7 @@ Correções: CNPJ alfanumérico; cofre criptografado, bloqueio por inatividade, 
 **Defeitos encontrados e corrigidos na rodada:** rubricas novas ausentes do cadastro padrão (a folha falhava ao usar consignado); backup em texto aberto.
 
 **Limite:** as regras novas foram conferidas por cálculo independente do próprio autor, sem folhas reais, revisão independente ou transmissão real ao eSocial.
+
+## 10. Atualizações pelo botão “Atualizar” (14/11/2026)
+
+Botão “Atualizar” no cabeçalho; servidor de atualizações em `server/` (publicação assinada por painel administrativo); documentação em `server/README.md`. O cliente aceita somente avisos, parâmetros legais de lista permitida, natureza e incidência de rubricas existentes e arquivos com SHA-256 conferido, todos com assinatura ECDSA P-256 verificada no navegador; não executa código recebido. Correção de código segue pelo GitHub e pelo deploy, e o botão detecta a nova versão pelo `version.json`. Teste ponta a ponta em `tools/upd_test.js` (login, CSRF, limite de tentativas, publicação, pacote adulterado recusado, aplicação, desfazer, download com hash, revogação). Política de privacidade ganhou a seção 9 (consulta ao servidor) e a versão do consentimento passou a 2026-11-14. **Pendente:** o servidor ainda não foi implantado (exige serviço Node com disco persistente no Render); até lá o botão só informa nova versão do código.

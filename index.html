@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-560awEGksIgvVm8nfIOuVUioij+uKp9nPxDSWitSVug='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-xLqExIvl2PgdgJiS1hVUwrytMWVd6Ls0qXEUTbC6448='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -96,6 +96,7 @@ details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);fon
 @media (max-width:900px){#mnav{display:block;flex:1 1 100%;max-width:none;order:9}#top{flex-wrap:wrap;gap:8px;padding:8px 10px}#top .emp{display:none}#top button{padding:5px 9px;white-space:nowrap}#bar .hint{display:none}#bar{overflow-x:auto;padding:8px 10px}#bar .btn{white-space:nowrap;padding:7px 10px}#main{padding:14px 12px 30px}#ckb{left:6px;right:6px;bottom:6px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{#gate,#ckb{display:none!important}}
+.upd-has{background:var(--acc2,#F2B544)!important;color:#000!important;font-weight:700}
 </style>
 </head>
 <body>
@@ -104,6 +105,7 @@ details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);fon
   <div class="logo" id="logo"></div>
   <button data-act="home" title="Alt+I">⌂ Tela inicial</button>
   <button data-act="back" title="Alt+V">◀ Voltar</button>
+  <button data-act="atualizar" id="btnUpd" title="Verificar atualizações do sistema">⟳ Atualizar</button>
   <select id="mnav" aria-label="Menu de navegação"></select>
   <div class="emp" id="topemp"></div>
 </header>
@@ -1371,7 +1373,7 @@ ACT.cmpPrint=()=>{$('#printarea').innerHTML='<div style="padding:12px"><h2>Compa
 
 /* ===================== SEGURANÇA, PRIVACIDADE (LGPD), COOKIES, ACESSIBILIDADE ===================== */
 /* Cofre local: PBKDF2-SHA-256 (600.000 iterações) + AES-GCM-256. A senha nunca é gravada; sem ela os dados não são recuperáveis. */
-const VK='folhaPro.vault.v1',FAILK='folhaPro.fail.v1',CONSENT_KEY='folhaPro.consent.v1',CONSENT_VER='2026-11-13';
+const VK='folhaPro.vault.v1',FAILK='folhaPro.fail.v1',CONSENT_KEY='folhaPro.consent.v1',CONSENT_VER='2026-11-14';
 const VAULT={on:false,key:null,salt:null,it:600000,pend:null,busy:false,idleT:null,flushing:null};
 let CONSENT=null;
 const b64=u=>{u=new Uint8Array(u);let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s);};
@@ -1423,7 +1425,8 @@ function cookiesHTML(){return `<div class="legal"><p><b>Versão ${CONSENT_VER}.<
 <tr><td class="mono">folhaPro.brand.v1</td><td>Preferência (requer consentimento)</td><td>Memoriza nome, cores e logotipo configurados.</td><td>Até a revogação</td></tr>
 <tr><td class="mono">fonts.googleapis.com / fonts.gstatic.com</td><td>Terceiro (requer consentimento)</td><td>Entrega a fonte da marca. O Google recebe o endereço IP e dados técnicos do navegador, conforme a política do próprio Google.</td><td>Sessão de navegação</td></tr></tbody></table></div>
 <p>Não utilizamos cookies de publicidade, de perfilamento ou de análise de comportamento. A hospedagem do sistema (provedor de infraestrutura) pode registrar o endereço IP e a data de acesso em logs técnicos de servidor, para segurança e disponibilidade.</p>
-<p><b>Como gerir.</b> A qualquer momento você pode alterar a escolha em <i>Sistema → Privacidade e cookies</i> ou pelo botão abaixo. Rejeitar os itens opcionais não reduz as funções do sistema; apenas a fonte da marca é substituída pela fonte padrão do dispositivo e as preferências de aparência valem somente até fechar a página. Também é possível limpar o armazenamento local nas configurações do navegador (isso apaga os dados do sistema; faça backup antes).</p></div>`;}
+<p><b>Como gerir.</b> A qualquer momento você pode alterar a escolha em <i>Sistema → Privacidade e cookies</i> ou pelo botão abaixo. Rejeitar os itens opcionais não reduz as funções do sistema; apenas a fonte da marca é substituída pela fonte padrão do dispositivo e as preferências de aparência valem somente até fechar a página. Também é possível limpar o armazenamento local nas configurações do navegador (isso apaga os dados do sistema; faça backup antes).</p>
+<h3>9. Atualizações do sistema</h3><p>O botão “Atualizar” consulta o servidor do fornecedor para saber se há nova versão ou novos parâmetros legais. A consulta envia apenas o número da última atualização aplicada (sem cookies, sem identificação do usuário e sem dados de empregados, empresas ou folhas); como em qualquer conexão de rede, o servidor recebe o endereço IP e o navegador do dispositivo, tratados para segurança e para a entrega do serviço. Os pacotes são assinados digitalmente e só são aplicados se a assinatura conferir.</p></div>`;}
 function privacidadeHTML(){const E=DB&&DB.empresa;return `<div class="legal"><p><b>Versão ${CONSENT_VER}.</b> Esta política descreve o tratamento de dados pessoais no sistema, nos termos da Lei nº 13.709/2018 (LGPD). Os trechos entre colchetes devem ser preenchidos pela empresa licenciada antes da entrada em produção.</p>
 <h3>1. Quem é quem</h3><p><b>Controlador:</b> ${E?esc(E.razao)+' (CNPJ '+esc(fmtCNPJ(E.cnpj))+')':'a empresa que utiliza o sistema (identificada no cadastro da empresa)'}, que decide sobre os dados de seus empregados e dependentes. <b>Fornecedor do software:</b> ${FORN()}. <b>Encarregado (art. 41):</b> ${DPO()}.</p>
 <h3>2. Dados tratados e finalidades</h3><p>Dados cadastrais de empregados (nome, CPF, nascimento, filiação, endereço, dados contratuais e salariais), de dependentes (inclusive menores, hipótese em que se observa o melhor interesse da criança e do adolescente, art. 14) e do responsável pelo envio ao eSocial. Finalidades: cálculo da folha, recolhimentos e declaração ao eSocial. Movimentações de afastamento por motivo de saúde podem revelar <b>dado pessoal sensível</b> (art. 5º, II), tratado apenas para cumprimento de obrigação legal (art. 11, II, “a”) e com o mínimo necessário.</p>
@@ -1648,6 +1651,61 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   return `<h1>Guias e vencimentos — ${compLabel(comp)}</h1><p class="sub">Espelho de conferência dos valores a recolher. As guias oficiais são emitidas na DCTFWeb (a partir do S-1299 e dos retornos S-5011/S-5012) e no FGTS Digital; este sistema não substitui a emissão nem transmite a DCTFWeb. Vencimentos antecipados para o dia útil anterior quando recaem em fim de semana ou feriado nacional fixo (feriados móveis, estaduais e municipais não são considerados).</p>${exigeEmpresa()}
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
+/* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
+const APP_VER='2026.11.14+dea2c4d3';
+const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"bR8NkRfTSbrOLdWgFo5HiMs-dSkHeeteeF9pB6lPkJ8","y":"o79HbUYJZgnwRjlXY3_ifN9BeCnBqts_kcW8Z6ILvtM","crv":"P-256"}};
+const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
+let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
+const updUrl=()=>{const u=String((DB&&DB.cfg&&DB.cfg.updUrl)||UPD.url||'').replace(/\/+$/,'');return /^https:\/\//.test(u)||/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(u)?u:'';};
+async function updFetch(url,ms){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms||12000);try{const r=await fetch(url,{cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer',signal:c.signal});if(!r.ok)throw new Error('HTTP '+r.status);return r;}finally{clearTimeout(t);}}
+async function updVerificar(env){if(!_updKey)_updKey=await crypto.subtle.importKey('jwk',UPD.pub,{name:'ECDSA',namedCurve:'P-256'},false,['verify']);
+  const ok=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},_updKey,unb64(env.sig),new TextEncoder().encode(env.payload));if(!ok)return null;try{return JSON.parse(env.payload);}catch(e){return null;}}
+async function updChecar(silent){UPDS.erro='';UPDS.invalidos=0;
+  try{const r=await updFetch('version.json?'+Date.now(),8000);const j=await r.json();UPDS.app={remota:j.versao,novo:!!j.versao&&j.versao!==APP_VER};}catch(e){UPDS.app=null;}
+  const base=updUrl();UPDS.pacotes=[];
+  if(!base){UPDS.erro='Servidor de atualizações não configurado.';}
+  else if(DB){try{const seq=(DB.cfg&&DB.cfg.updSeq)||0;const r=await updFetch(base+'/api/atualizacoes?desde='+seq);const j=await r.json();
+    for(const env of (j.pacotes||[])){const p=await updVerificar(env);if(!p||p.seq<=seq){UPDS.invalidos++;continue;}if(p.minApp&&String(p.minApp)>APP_VER)continue;UPDS.pacotes.push(p);}
+    UPDS.pacotes.sort((a,b)=>a.seq-b.seq);}catch(e){UPDS.erro='Não foi possível consultar o servidor de atualizações ('+(e.name==='AbortError'?'tempo esgotado':e.message)+').';}}
+  UPDS.em=new Date();updBadge();if(!silent)updModal();}
+function updBadge(){const b=$('#btnUpd');if(!b)return;const n=UPDS.pacotes.length+(UPDS.app&&UPDS.app.novo?1:0);b.textContent=n?'⟳ Atualizar ('+n+')':'⟳ Atualizar';b.classList.toggle('upd-has',n>0);}
+/* validação e aplicação (espelha o servidor; o cliente nunca confia só nele) */
+const _fin=v=>typeof v==='number'&&isFinite(v);
+function updMesclar(atual,novo,caminho){if(Array.isArray(atual)){if(!Array.isArray(novo)||!novo.length)throw new Error(caminho+': lista inválida');return novo.map((x,i)=>{const mod=atual[Math.min(i,atual.length-1)];return updMesclar(mod,x,caminho+'['+i+']');});}
+  if(atual&&typeof atual==='object'){if(!novo||typeof novo!=='object'||Array.isArray(novo))throw new Error(caminho+': objeto inválido');const o=Object.assign({},atual);Object.keys(novo).forEach(k=>{if(!(k in atual))throw new Error(caminho+'.'+k+': campo desconhecido');o[k]=updMesclar(atual[k],novo[k],caminho+'.'+k);});return o;}
+  if(typeof atual==='number'){if(!_fin(novo)||novo<0)throw new Error(caminho+': número inválido');return novo;}throw new Error(caminho+': tipo não suportado');}
+function updPrever(p){if(p.tipo==='parametros'){const D=defaultParams(),out=[];Object.keys(p.conteudo||{}).forEach(k=>{if(!UPD_OK[k]||!(k in D))throw new Error('Parâmetro não permitido: '+k);const n=updMesclar(DB.params[k]!==undefined?DB.params[k]:D[k],p.conteudo[k],k);if(JSON.stringify(n)!==JSON.stringify(DB.params[k]))out.push(k+': '+JSON.stringify(DB.params[k])+' → '+JSON.stringify(n));});return out;}
+  if(p.tipo==='rubricas'){const out=[];(p.conteudo||[]).forEach(r=>{const x=DB.rubricas.find(y=>y.sys===r.sys);if(!x)throw new Error('Rubrica inexistente: '+r.sys);['nat','incCP','incIRRF','incFGTS'].forEach(k=>{if(r[k]!=null&&String(r[k])!==String(x[k]||'')){if(k==='nat'?!/^(\d{4})?$/.test(r[k]):!/^\d{1,2}$/.test(String(r[k])))throw new Error(k+' inválido em '+r.sys);out.push(r.sys+'.'+k+': '+(x[k]||'—')+' → '+r[k]);}});});return out;}
+  return [];}
+function updAplicarUm(p){const prev=updPrever(p);
+  if(p.tipo==='parametros'){const D=defaultParams();Object.keys(p.conteudo).forEach(k=>{DB.params[k]=updMesclar(DB.params[k]!==undefined?DB.params[k]:D[k],p.conteudo[k],k);});}
+  if(p.tipo==='rubricas'){p.conteudo.forEach(r=>{const x=DB.rubricas.find(y=>y.sys===r.sys);['nat','incCP','incIRRF','incFGTS'].forEach(k=>{if(r[k]!=null)x[k]=String(r[k]);});});}
+  (DB.updApl=DB.updApl||[]).push({seq:p.seq,id:p.id,tipo:p.tipo,titulo:p.titulo,versao:p.versao,em:agoraISO()});DB.cfg.updSeq=Math.max(DB.cfg.updSeq||0,p.seq);if(DB.updUndo)DB.updUndo.seqs.push(p.seq);audit('atualização aplicada','#'+p.seq+' '+p.tipo+' '+p.titulo);}
+ACT.updAplicar=()=>{const L=UPDS.pacotes.slice();if(!L.length)return;let n=0;
+  DB.updUndo=L.some(p=>p.tipo==='parametros'||p.tipo==='rubricas')?{seqs:[],ts:agoraISO(),titulo:L.length+' pacote(s)',seqAntes:DB.cfg.updSeq||0,params:JSON.parse(JSON.stringify(DB.params)),rubricas:JSON.parse(JSON.stringify(DB.rubricas))}:null;
+  try{L.forEach(p=>{updAplicarUm(p);n++;});}catch(e){saveDB();toast('Atualização interrompida no pacote nº '+L[n].seq+': '+e.message,'err');UPDS.pacotes=UPDS.pacotes.filter(p=>p.seq>(DB.cfg.updSeq||0));updBadge();updModal();return;}
+  saveDB();UPDS.pacotes=[];updBadge();toast(n+' atualização(ões) aplicada(s).','ok');updModal();};
+ACT.updDesfazer=()=>{const u=DB.updUndo;if(!u)return;modalConfirm('Restaurar parâmetros e rubricas ao estado anterior à última aplicação ('+u.seqs.length+' pacote(s), nº '+u.seqs.join(', ')+')? Dados de empregados e folhas não são alterados. Os pacotes voltarão a aparecer como pendentes.',()=>{DB.params=u.params;DB.rubricas=u.rubricas;DB.updApl=(DB.updApl||[]).filter(x=>!u.seqs.includes(x.seq));DB.cfg.updSeq=u.seqAntes;DB.updUndo=null;audit('atualização desfeita','#'+u.seqs.join(','));saveDB();toast('Atualização desfeita.','ok');updChecar(false);},{yes:'Desfazer'});};
+ACT.updRecarregar=async()=>{try{if(typeof vaultFlush==='function')await vaultFlush();}catch(e){}audit('recarga para nova versão',(UPDS.app||{}).remota||'');location.href=location.pathname+'?v='+Date.now();};
+ACT.updBaixar=async el=>{const id=el.dataset.id,nome=el.dataset.nome,h=el.dataset.sha;try{const r=await updFetch(updUrl()+'/api/arquivos/'+id,60000);const b=await r.arrayBuffer();const d=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b))).map(x=>x.toString(16).padStart(2,'0')).join('');
+  if(d!==h){toast('Arquivo recusado: o SHA-256 não confere com o assinado.','err');return;}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([b]));a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);audit('arquivo baixado',nome);}catch(e){toast('Falha no download: '+e.message,'err');}};
+ACT.updSalvarUrl=()=>{const v=String($('#updUrl').value||'').trim();if(v&&!/^https:\/\//.test(v)&&!/^http:\/\/(localhost|127\.0\.0\.1)/.test(v)){toast('Use um endereço https://.','err');return;}DB.cfg.updUrl=v;saveDB();toast('Endereço salvo.','ok');updChecar(false);};
+ACT.updVerificar=()=>{UPDS.em=null;updModal();updChecar(false);};
+function updModal(){const pend=UPDS.pacotes,apl=(DB&&DB.updApl||[]).slice(-8).reverse();let prevs={};pend.forEach(p=>{try{prevs[p.seq]=updPrever(p);}catch(e){prevs[p.seq]=['⚠ '+e.message];}});
+  const arq=p=>(p.arquivos||[]).map(a=>`<button class="btn" data-act="updBaixar" data-id="${a.id}" data-nome="${esc(a.nome)}" data-sha="${a.sha256}">⬇ ${esc(a.nome)} (${Math.round(a.tam/1024)} KB)</button>`).join(' ');
+  modal(`<h2>Atualizações do sistema</h2>
+  <p class="sub">Versão instalada: <b class="mono">${esc(APP_VER)}</b>. A verificação envia ao servidor apenas o número da última atualização aplicada, sem cookies e sem dados de empregados, empresas ou folhas. Cada pacote só é aplicado se a assinatura digital conferir.</p>
+  ${UPDS.em?'':'<p>Verificando…</p>'}
+  ${UPDS.app&&UPDS.app.novo?`<div class="note ok"><b>Há uma nova versão do sistema.</b> Ao recarregar, seus dados são mantidos (ficam neste navegador), e será preciso informar a senha de acesso novamente. <div class="row" style="margin-top:8px"><button class="btn pri" data-act="updRecarregar">Recarregar com a nova versão</button></div></div>`:(UPDS.app?'<p>O código do sistema está na versão mais recente.</p>':'')}
+  ${UPDS.erro?'<div class="note err">'+esc(UPDS.erro)+'</div>':''}${UPDS.invalidos?'<div class="note err">'+UPDS.invalidos+' pacote(s) com assinatura inválida foram ignorados.</div>':''}
+  ${pend.length?`<h3>Pendentes (${pend.length})</h3><div class="tw"><table class="t"><thead><tr><th>Nº</th><th>Tipo</th><th>Título</th><th>O que muda</th></tr></thead><tbody>${pend.map(p=>`<tr><td>${p.seq}</td><td>${esc(p.tipo)}</td><td><b>${esc(p.titulo)}</b><br><small>${esc(p.versao||'')} · ${esc(dtHora(p.publicadoEm))}</small><br><small>${esc(p.notas||'')}</small></td><td><small>${(prevs[p.seq]||[]).map(esc).join('<br>')||'—'}</small>${p.arquivos&&p.arquivos.length?'<br>'+arq(p):''}</td></tr>`).join('')}</tbody></table></div>
+  <div class="row" style="margin-top:8px"><button class="btn pri" data-act="updAplicar">Aplicar ${pend.length} atualização(ões)</button></div><p class="sub">Parâmetros e rubricas alteram os cálculos. Confira o quadro “O que muda” e, se necessário, use “Desfazer” depois.</p>`:(UPDS.em&&!UPDS.erro?'<p>Nenhuma atualização pendente.</p>':'')}
+  ${DB&&DB.updUndo?`<p>Última aplicação alterou parâmetros/rubricas (pacotes nº ${DB.updUndo.seqs.join(', ')}). <button class="btn" data-act="updDesfazer">Desfazer</button></p>`:''}
+  ${apl.length?`<h3>Aplicadas recentemente</h3><div class="tw"><table class="t"><tbody>${apl.map(a=>`<tr><td>${a.seq}</td><td>${esc(a.tipo)}</td><td>${esc(a.titulo)}</td><td>${esc(dtHora(a.em))}</td></tr>`).join('')}</tbody></table></div>`:''}
+  <details style="margin-top:10px"><summary>Servidor de atualizações</summary><div class="row"><div class="f" style="flex:1"><label for="updUrl">Endereço</label><input id="updUrl" value="${esc((DB&&DB.cfg&&DB.cfg.updUrl)||'')}" placeholder="${esc(UPD.url)}"></div><button class="btn" data-act="updSalvarUrl">Salvar</button></div></details>
+  <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-act="updVerificar">Verificar novamente</button> <button class="btn" data-act="closeModal">Fechar</button></div>`);}
+ACT.atualizar=()=>{if(!DB){toast('Entre no sistema para verificar atualizações.','err');return;}UPDS.em=null;updModal();updChecar(false);};
+if(!window.__FP_NOGATE)window.addEventListener('load',()=>{setTimeout(()=>{if(DB)updChecar(true);},4000);setInterval(()=>{if(DB)updChecar(true);},30*60e3);});
 
 /* ===================== INTEGRAÇÃO ===================== */
 SC.integr={view(){const C=DB.cfg;

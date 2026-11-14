@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Atualizações do FolhaPro — administração</title><link rel="stylesheet" href="/admin.css"></head><body>
+<header><h1>Atualizações do FolhaPro</h1><button id="sair" hidden>Sair</button></header>
+<main>
+<section id="login"><h2>Acesso restrito</h2><form id="fl"><label>Usuário<input id="u" autocomplete="username" required></label><label>Senha<input id="s" type="password" autocomplete="current-password" required></label><button class="pri">Entrar</button></form><p id="le" class="err"></p></section>
+<section id="painel" hidden>
+<div class="card"><h2>Publicar atualização</h2>
+<p class="sub">Cada pacote é assinado pelo servidor e só é aplicado nos clientes depois de verificada a assinatura. Os clientes não executam código recebido: aceitam apenas avisos, parâmetros legais, rubricas e arquivos para download. Correções de código seguem pelo GitHub e pelo deploy.</p>
+<form id="fp">
+<label>Título<input id="t" maxlength="120" required></label>
+<label>Versão / referência<input id="v" maxlength="40" placeholder="2026.11.14"></label>
+<label>Tipo<select id="tp"><option value="aviso">Aviso / nota de versão</option><option value="parametros">Parâmetros legais (tabelas e alíquotas)</option><option value="rubricas">Rubricas (natureza e códigos de incidência)</option><option value="arquivo">Arquivo para download</option></select></label>
+<label>Notas para o cliente (o que mudou e por quê)<textarea id="n" rows="4" maxlength="5000"></textarea></label>
+<label id="lc">Conteúdo (JSON)<textarea id="c" rows="8" class="mono" placeholder='{"salMin":1621.00}'></textarea></label>
+<label>Arquivos anexos (até 10; total de 25 MB)<input id="a" type="file" multiple></label>
+<div class="ex" id="ex"></div>
+<button class="pri">Assinar e publicar</button> <span id="pe" class="err"></span><span id="po" class="ok"></span>
+</form></div>
+<div class="card"><h2>Pacotes publicados</h2><table><thead><tr><th>#</th><th>Data</th><th>Título</th><th>Versão</th><th>Tipo</th><th>Arquivos</th><th></th></tr></thead><tbody id="lista"></tbody></table></div>
+<div class="card"><h2>Registro de operações</h2><table><thead><tr><th>Quando</th><th>Usuário</th><th>Ação</th><th>Detalhe</th></tr></thead><tbody id="aud"></tbody></table></div>
+</section></main><script src="/admin.js"></script></body></html>
