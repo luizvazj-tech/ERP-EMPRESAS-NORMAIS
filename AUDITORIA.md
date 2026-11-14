@@ -36,7 +36,7 @@ Antes das correções, **nenhum** dos 239 XML passava no XSD. Depois, **os 243 p
 ## 6. Pendências e limitações conhecidas
 
 1. **CNPJ alfanumérico — corrigido na 3ª rodada** (validação, máscara, XML; `tools/cnpj_test.js`).
-2. **Incidências de férias.** O sistema classifica as rubricas de férias com `codIncIRRF` 11 (remuneração mensal); a Tabela 21 prevê código próprio para férias (13) e retenção específica (33). Como o IRRF é calculado em conjunto com a folha do mês, a forma correta de consolidação deve ser confirmada no leiaute. [VERIFICAR FONTE OFICIAL]
+2. **Incidências de férias.** O sistema classifica FÉRIAS e 1/3 com `codIncIRRF` 13 (rendimento de férias, Tabela 21) e `codIncCP` 11; abono pecuniário com 75 e férias indenizadas com 74. A retenção do IRRF sobre férias sai na rubrica única de IRRF (31), e a Tabela 21 prevê retenção própria para férias (33). Confirmar a consolidação no leiaute. [VERIFICAR FONTE OFICIAL] Ver `docs/Roteiro_conferencia_calculos.md`.
 3. **Natureza das rubricas:** os códigos da Tabela 3 foram conferidos em reprodução da tabela por fonte secundária; confirmar no Anexo I do leiaute vigente.
 4. **Versão dos esquemas:** os pacotes fornecidos estão em `v_S_01_03_00`, mas não indicam a Nota Técnica de origem; a NT S-1.3 nº 07/2026 tem etapas até 14/12/2026 (por exemplo, nova validação de CPF no S-1000 e no S-2200). Conferir se o pacote corresponde à versão em produção.
 5. **Eventos não cobertos:** S-1298, S-2300 e S-2399 (trabalhador sem vínculo), S-3000 (exclusão) e demais eventos não emitidos pelo sistema.
