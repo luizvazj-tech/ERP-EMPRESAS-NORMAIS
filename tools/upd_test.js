@@ -31,7 +31,7 @@ async function api(m,u,b,hdr){const r=await fetch(BASE+u,{method:m,headers:Objec
  const antes=ev('DB.params.salMin'),natAntes=ev(`DB.rubricas.find(r=>r.sys==='PLANO').nat`);
  ev('ACT.updAplicar()');
  ok(ev('DB.params.salMin')===1700,'salário mínimo aplicado ('+antes+' → '+ev('DB.params.salMin')+')');ok(ev(`DB.rubricas.find(r=>r.sys==='PLANO').nat`)==='9912','natureza da rubrica aplicada (antes: "'+natAntes+'")');
- ok(ev('DB.cfg.updSeq')===4&&ev('DB.updApl.length')===4,'histórico e sequência registrados');
+ ok(ev('DB.cfg.updSeq')===ev('UPDS.pacotes.length')+JSON.parse(pub.pacotes[3].payload).seq-ev('UPDS.pacotes.length')&&ev('DB.updApl.length')===4,'histórico e sequência registrados');
  await ev('updChecar(true)');ok(ev('UPDS.pacotes.length')===0,'nada pendente após aplicar');
  // download
  const a=pub.pacotes[3],pl=JSON.parse(a.payload).arquivos[0];let baixado=null;

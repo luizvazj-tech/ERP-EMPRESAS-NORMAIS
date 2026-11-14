@@ -73,7 +73,7 @@ async function rota(req,res){
       const d=load();if(d.pacotes.length>=MAX_PKG)return json(res,400,{erro:'Limite de pacotes atingido; revogue os antigos.'});
       const arqs=[];for(const a of (Array.isArray(o.arquivos)?o.arquivos:[]).slice(0,10)){const b=Buffer.from(String(a.base64||''),'base64');if(!b.length)continue;const id=crypto.randomBytes(16).toString('hex');fs.writeFileSync(path.join(DATA,'files',id),b);arqs.push({id,nome:String(a.nome||'arquivo').replace(/[\\/\r\n"]/g,'_').slice(0,120),tam:b.length,sha256:sha(b)});}
       if(o.tipo==='arquivo'&&!arqs.length)return json(res,400,{erro:'Anexe ao menos um arquivo.'});
-      d.seq++;const pl={seq:d.seq,id:crypto.randomBytes(8).toString('hex'),titulo:tit,versao:ver,tipo:o.tipo,notas,minApp:String(o.minApp||''),conteudo:o.tipo==='aviso'||o.tipo==='arquivo'?null:cont,arquivos:arqs,publicadoEm:new Date().toISOString()};
+      d.seq=Math.max(d.seq+1,Math.floor(Date.now()/1000));const pl={seq:d.seq,id:crypto.randomBytes(8).toString('hex'),titulo:tit,versao:ver,tipo:o.tipo,notas,minApp:String(o.minApp||''),conteudo:o.tipo==='aviso'||o.tipo==='arquivo'?null:cont,arquivos:arqs,publicadoEm:new Date().toISOString()};
       const payload=JSON.stringify(pl);d.pacotes.push({seq:d.seq,id:pl.id,payload,sig:sign(payload),arquivos:arqs});save(d);aud(s.u,'publicou',pl.id+' '+tit);return json(res,200,{ok:true,id:pl.id,seq:pl.seq});}
     mm=p.match(/^\/admin\/api\/pacotes\/([a-f0-9]{16})\/revogar$/);
     if(mm&&m==='POST'){const d=load(),x=d.pacotes.find(y=>y.id===mm[1]);if(!x)return json(res,404,{erro:'Pacote não encontrado'});x.revogado=true;save(d);aud(s.u,'revogou',x.id);return json(res,200,{ok:true});}

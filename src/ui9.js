@@ -1,6 +1,6 @@
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
 const APP_VER='%%APPVER%%';
-const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"bR8NkRfTSbrOLdWgFo5HiMs-dSkHeeteeF9pB6lPkJ8","y":"o79HbUYJZgnwRjlXY3_ifN9BeCnBqts_kcW8Z6ILvtM","crv":"P-256"}};
+const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
 const updUrl=()=>{const u=String((DB&&DB.cfg&&DB.cfg.updUrl)||UPD.url||'').replace(/\/+$/,'');return /^https:\/\//.test(u)||/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(u)?u:'';};
