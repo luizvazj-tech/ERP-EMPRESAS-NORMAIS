@@ -1,0 +1,61 @@
+
+/* ===================== FICHA FINANCEIRA (consolidada, individualizada, rascunho) ===================== */
+const FICH_MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const FICH_SEL=new Set();
+let FICH_BUSCA='';
+const fichAno=p=>String(p.ano||(DB.cfg.comp||'').slice(0,4)||new Date().getFullYear());
+const fichMeses=(ano,rasc)=>FICH_MES.map((_,i)=>{const k=ano+'-'+String(i+1).padStart(2,'0'),c=DB.comps[k];const ok=c&&c.res&&Object.keys(c.res).length&&(rasc||c.status==='fechada');return ok?{k,c}:null;});
+/* Monta as linhas (rubricas x 12 meses) para um conjunto de resultados por mês: getRes(mes)->res|null */
+function fichLinhas(meses,getRes){const rub=new Map(),tot={prov:Array(12).fill(0),desc:Array(12).fill(0),liq:Array(12).fill(0),cp:Array(12).fill(0),fgtsB:Array(12).fill(0),fgts:Array(12).fill(0),irB:Array(12).fill(0),inss:Array(12).fill(0),irrf:Array(12).fill(0)};
+  meses.forEach((m,i)=>{if(!m)return;const rs=getRes(m);rs.forEach(r=>{if(!r)return;(r.itens||[]).filter(x=>x.tp!==3).forEach(x=>{const key=x.cod+'|'+x.desc;let o=rub.get(key);if(!o){o={cod:x.cod,desc:x.desc,tp:x.tp,v:Array(12).fill(0)};rub.set(key,o);}o.v[i]=r2(o.v[i]+x.valor);});
+    tot.prov[i]+=r.totProv;tot.desc[i]+=r.totDesc;tot.liq[i]+=r.liquido;tot.cp[i]+=r.baseCP||0;tot.fgtsB[i]+=r.baseFGTS||0;tot.fgts[i]+=r.fgts||0;tot.irB[i]+=(r.irrfInfo&&r.irrfInfo.base)||0;tot.inss[i]+=r.inss||0;tot.irrf[i]+=r.irrf||0;});});
+  for(const k in tot)tot[k]=tot[k].map(r2);
+  const lista=[...rub.values()].sort((a,b)=>a.tp-b.tp||String(a.cod).localeCompare(String(b.cod),'pt',{numeric:true}));return{lista,tot};}
+const fichSoma=a=>r2(a.reduce((s,x)=>s+x,0));
+function fichTabela(meses,L,rasc){const cel=v=>`<td style="text-align:right;white-space:nowrap">${v?brl(v):'<span style="color:#9aa5b1">–</span>'}</td>`;
+  const lin=(o,neg)=>`<tr><td>${esc(o.cod||'')}</td><td>${esc(o.desc)}</td>${o.v.map(cel).join('')}<td style="text-align:right;font-weight:700">${brl(fichSoma(o.v))}</td></tr>`;
+  const sec=(t,tp)=>{const ls=L.lista.filter(o=>o.tp===tp);return ls.length?`<tr><th colspan="15" style="text-align:left;background:#eef2f6">${t}</th></tr>${ls.map(lin).join('')}`:'';};
+  const tl=(t,a,cls)=>`<tr style="font-weight:700;${cls||''}"><td colspan="2">${t}</td>${a.map(cel).join('')}<td style="text-align:right">${brl(fichSoma(a))}</td></tr>`;
+  const st=m=>m?(m.c.status==='fechada'?'F':'<b title="Competência não fechada">R</b>'):'–';
+  return `<table class="fich"><thead><tr><th style="width:46px">Cód.</th><th>Rubrica</th>${FICH_MES.map(x=>`<th>${x}</th>`).join('')}<th>Total</th></tr><tr><td colspan="2"><small>Situação (F = fechada${rasc?'; R = rascunho':''})</small></td>${meses.map(m=>`<td style="text-align:center"><small>${st(m)}</small></td>`).join('')}<td></td></tr></thead>
+  <tbody>${sec('PROVENTOS',1)}${tl('Total de proventos',L.tot.prov)}${sec('DESCONTOS',2)}${tl('Total de descontos',L.tot.desc)}${tl('LÍQUIDO',L.tot.liq,'background:#e8f3ec')}
+  <tr><th colspan="15" style="text-align:left;background:#eef2f6">BASES E ENCARGOS (informativo)</th></tr>${tl('Base INSS',L.tot.cp)}${tl('INSS retido',L.tot.inss)}${tl('Base FGTS',L.tot.fgtsB)}${tl('FGTS do mês',L.tot.fgts)}${tl('Base IRRF',L.tot.irB)}${tl('IRRF retido',L.tot.irrf)}</tbody></table>`;}
+function fichCab(titulo,ano,rasc,extra){const E=DB.empresa;return `<div class="fch-hd"><div><h4 style="text-align:left;margin:0">${esc(E.razao||'')}</h4>CNPJ ${fmtCNPJ(E.cnpj||'')}</div><div style="text-align:right"><h4 style="margin:0">${titulo}</h4>Exercício: <b>${ano}</b>${rasc?'<br><b style="color:#b42318">RASCUNHO — sem valor oficial</b>':''}</div></div>${extra||''}`;}
+function fichaConsolHTML(ano,rasc){const meses=fichMeses(ano,rasc);const L=fichLinhas(meses,m=>Object.values(m.c.res));const n=Math.max(0,...meses.map(m=>m?Object.keys(m.c.res).length:0));
+  return `<div class="fch ${rasc?'fch-r':''}">${fichCab('FICHA FINANCEIRA CONSOLIDADA',ano,rasc,`<div style="margin:6px 0"><small>Todos os empregados da competência (até ${n} no mês de maior movimento). Valores somados por rubrica.</small></div>`)}${meses.some(Boolean)?fichTabela(meses,L,rasc):'<div class="note">Nenhuma competência '+(rasc?'calculada':'fechada')+' em '+ano+'.</div>'}</div>`;}
+function fichaEmpHTML(e,ano,rasc){const meses=fichMeses(ano,rasc).map(m=>m&&m.c.res[e.id]?m:null);const L=fichLinhas(meses,m=>[m.c.res[e.id]]);const cg=byId(DB.cargos,e.cargo)||{},lo=byId(DB.lotacoes,e.lotacao)||{};
+  const id=`<table style="margin:6px 0"><tr><td><small>Matrícula</small><br><b>${esc(e.mat)}</b></td><td><small>Nome</small><br><b>${esc(e.nome)}</b></td><td><small>CPF</small><br>${fmtCPF(e.cpf)}</td><td><small>Cargo / CBO</small><br>${esc(cg.nome||'')} ${esc(cg.cbo||'')}</td><td><small>Lotação</small><br>${esc(lo.desc||'')}</td><td><small>Admissão</small><br>${fmtData(e.admissao)}</td></tr></table>`;
+  return `<div class="fch ${rasc?'fch-r':''}" style="page-break-after:always">${fichCab('FICHA FINANCEIRA INDIVIDUAL',ano,rasc,id)}${meses.some(Boolean)?fichTabela(meses,L,rasc):'<div class="note">Sem competências '+(rasc?'calculadas':'fechadas')+' para este empregado em '+ano+'.</div>'}</div>`;}
+const fichEmpsAno=(ano,rasc)=>{const ids=new Set();fichMeses(ano,rasc).forEach(m=>m&&Object.keys(m.c.res).forEach(i=>ids.add(i)));return DB.empregados.filter(e=>ids.has(e.id));};
+const fichNorm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+function fichFiltrados(ano,rasc){const q=fichNorm(FICH_BUSCA).trim(),qd=q.replace(/\D/g,'');return fichEmpsAno(ano,rasc).filter(e=>!q||fichNorm(e.nome).includes(q)||fichNorm(e.mat).includes(q)||(qd&&String(e.cpf||'').replace(/\D/g,'').includes(qd)));}
+function fichLista(ano,rasc){const ls=fichFiltrados(ano,rasc);if(!ls.length)return '<div class="note">Nenhum empregado encontrado com movimento '+(rasc?'calculado':'fechado')+' em '+ano+'.</div>';
+  return `<table><thead><tr><th style="width:34px"><input type="checkbox" id="fichAll" title="Selecionar todos os listados"></th><th>Matrícula</th><th>Nome</th><th>CPF</th><th>Situação</th></tr></thead><tbody>${ls.map(e=>`<tr><td><input type="checkbox" class="fichChk" value="${e.id}" ${FICH_SEL.has(e.id)?'checked':''}></td><td>${esc(e.mat)}</td><td>${esc(e.nome)}</td><td>${fmtCPF(e.cpf)}</td><td>${esc(e.situacao||'')}</td></tr>`).join('')}</tbody></table>`;}
+SC.ficha={view(p){const ano=fichAno(p),modo=p.modo||'consol',alvo=p.alvo||'consol',rasc=modo==='rasc';
+  const tab=(k,l)=>`<a class="btn sm ${modo===k?'pri':''}" data-act="fichModo" data-arg="${k}">${l}</a>`;
+  const anoI=`<b>Exercício:</b> <input type="number" id="fichAno" value="${ano}" min="2000" max="2100" style="width:84px;padding:7px 9px;border:1px solid #c7d0d9;border-radius:6px;font:inherit">`;
+  let corpo='';
+  if(modo==='consol')corpo=fichaConsolHTML(ano,false);
+  else if(modo==='rasc'&&alvo==='consol')corpo=`<div class="note">Rascunho: inclui competências calculadas e ainda não fechadas, assinaladas com “R”. Documento de conferência, sem valor oficial.</div>`+fichaConsolHTML(ano,true);
+  else{const rs=modo==='rasc';const sel=[...FICH_SEL].filter(id=>byId(DB.empregados,id));
+    corpo=`${rs?`<div class="note">Rascunho: inclui competências calculadas e ainda não fechadas. Documento de conferência, sem valor oficial.</div>`:''}<div class="row" style="margin-bottom:10px"><b>Localizar empregado:</b><input id="fichBusca" placeholder="Nome, matrícula ou CPF" value="${esc(FICH_BUSCA)}" style="padding:7px 9px;border:1px solid #c7d0d9;border-radius:6px;font:inherit;min-width:260px"><span id="fichCnt">${badge(sel.length+' selecionado(s)',sel.length?'ok':'gray')}</span><button class="btn sm" data-act="fichLimpa">Limpar seleção</button></div><div id="fichLista" style="max-height:300px;overflow:auto;margin-bottom:12px">${fichLista(ano,rs)}</div>
+    ${sel.length?`<h3 style="margin:10px 0">Pré-visualização (${sel.length} ficha(s))</h3>${sel.map(id=>fichaEmpHTML(byId(DB.empregados,id),ano,rs)).join('')}`:'<div class="note">Selecione um ou mais empregados na lista para visualizar e imprimir as fichas individuais.</div>'}`;}
+  return `<h1>Ficha Financeira</h1><p class="sub">Evolução anual das rubricas por competência, com bases e encargos. Fichas oficiais usam apenas competências fechadas.</p>
+  <div class="row" style="margin-bottom:12px">${anoI}${tab('consol','Ficha consolidada')}${tab('indiv','Ficha individualizada por empregado')}${tab('rasc','Rascunho')}${modo==='rasc'?`<span>Rascunho de:</span>${`<a class="btn sm ${alvo==='consol'?'pri':''}" data-act="fichAlvo" data-arg="consol">consolidada</a><a class="btn sm ${alvo==='indiv'?'pri':''}" data-act="fichAlvo" data-arg="indiv">individual</a>`}`:''}</div>${corpo}`;},
+  mount(p){const a=$('#fichAno');a&&a.addEventListener('change',()=>refresh({ano:a.value}));
+    const rs=(p.modo||'consol')==='rasc',ano=fichAno(p);
+    const bind=()=>{const all=$('#fichAll');all&&all.addEventListener('change',()=>{document.querySelectorAll('.fichChk').forEach(c=>{c.checked=all.checked;all.checked?FICH_SEL.add(c.value):FICH_SEL.delete(c.value);});});};
+    const b=$('#fichBusca');if(b){b.addEventListener('input',()=>{FICH_BUSCA=b.value;$('#fichLista').innerHTML=fichLista(ano,rs);bind();});bind();}},
+  actions:p=>[{label:'👁 Visualizar / atualizar',act:'fichVer'},{label:'🖨 Imprimir',act:'fichPrint',cls:'pri',key:'save'}]};
+document.addEventListener('change',fichChk);
+function fichChk(ev){const c=ev.target;if(!c||!c.classList||!c.classList.contains('fichChk'))return;c.checked?FICH_SEL.add(c.value):FICH_SEL.delete(c.value);}
+ACT.fichModo=el=>refresh({modo:el.dataset.arg});
+ACT.fichAlvo=el=>refresh({alvo:el.dataset.arg});
+ACT.fichLimpa=()=>{FICH_SEL.clear();refresh();};
+ACT.fichVer=()=>refresh();
+ACT.fichPrint=()=>{const p=NAV.cur.params,ano=fichAno(p),modo=p.modo||'consol',alvo=p.alvo||'consol',rasc=modo==='rasc';let h='';
+  if(modo==='consol'||(rasc&&alvo==='consol'))h=fichaConsolHTML(ano,rasc);
+  else{const ids=[...FICH_SEL].filter(id=>byId(DB.empregados,id));if(!ids.length){toast('Selecione ao menos um empregado.','err');return;}h=ids.map(id=>fichaEmpHTML(byId(DB.empregados,id),ano,rasc)).join('');}
+  $('#printarea').innerHTML=h;document.body.classList.add('printing');
+  try{window.print();}catch(e){toast('Impressão indisponível neste ambiente. Abra o arquivo HTML no navegador para imprimir ou salvar em PDF.','err');}
+  setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};

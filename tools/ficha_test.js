@@ -1,0 +1,21 @@
+const {JSDOM}=require('jsdom');const fs=require('fs');
+const html=fs.readFileSync(__dirname+'/../index.html','utf8');const errs=[];
+const d=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'https://x.test/',beforeParse(w){w.addEventListener('error',e=>errs.push('ERR '+e.message));w.print=()=>{};w.__FP_NOGATE=true;}});
+const w=d.window,ev=s=>w.eval(s),q=s=>w.document.querySelector(s);
+(async()=>{
+ev(`seedDemo('lp')`);const comp=ev('DB.cfg.comp'),ano=comp.slice(0,4);
+console.log('menu',/Ficha Financeira/.test(q('#side').innerHTML));
+ev(`calcFolha('${comp}')`);
+ev(`go('ficha',{ano:'${ano}'})`);console.log('consol sem fechada:',/Nenhuma compet/.test(q('#main').innerHTML));
+ev(`go('ficha',{ano:'${ano}',modo:'rasc'})`);console.log('rasc consol marca:',/RASCUNHO/.test(q('#main').innerHTML),/<small>R<\/small>|<b title/.test(q('#main').innerHTML));
+ev(`DB.comps['${comp}'].status='fechada'`);
+ev(`go('ficha',{ano:'${ano}'})`);const h=q('#main').innerHTML;console.log('consol fechada: tabela',/class="fich"/.test(h),'liquido',/LÍQUIDO/.test(h));
+const L=ev(`(()=>{const ms=fichMeses('${ano}',false);const L=fichLinhas(ms,m=>Object.values(m.c.res));return [fichSoma(L.tot.liq),r2(Object.values(DB.comps['${comp}'].res).reduce((s,r)=>s+r.liquido,0))]})()`);console.log('liquido ficha x folha',L,L[0]===L[1]?'OK':'DIVERGE');
+ev(`go('ficha',{ano:'${ano}',modo:'indiv'})`);console.log('lista',q('#fichLista').querySelectorAll('.fichChk').length);
+const e0=ev('DB.empregados[0]');const nome=e0.nome.split(' ')[0];
+const b=q('#fichBusca');b.value=nome.toUpperCase();b.dispatchEvent(new w.Event('input'));console.log('busca',q('#fichLista').querySelectorAll('.fichChk').length>0);
+const c=q('.fichChk');c.checked=true;c.dispatchEvent(new w.Event('change',{bubbles:true}));console.log('sel',ev('FICH_SEL.size'));
+ev(`refresh()`);console.log('previa',/FICHA FINANCEIRA INDIVIDUAL/.test(q('#main').innerHTML));
+ev(`ACT.fichPrint()`);console.log('print',/FICHA FINANCEIRA INDIVIDUAL/.test(q('#printarea').innerHTML)||'limpo');
+ev(`FICH_SEL.clear();ACT.fichPrint()`);
+console.log('ERROS',errs.length?errs:'nenhum');process.exit(0);})().catch(e=>{console.log('FALHA',e.stack);process.exit(1)});
