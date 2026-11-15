@@ -21,7 +21,7 @@ Em `docs/juridico/` (Markdown e Word): minuta de licença e suporte, contrato de
 
 - O envio ao eSocial é **simulação** por padrão. A transmissão real exige certificado digital A1, mTLS e assinatura XML num gateway próprio (contrato descrito na tela Integração).
 - Natureza das rubricas (Tabela 3) preenchida só onde conferida; as demais devem ser conferidas antes de produção.
-- Itens marcados `[VERIFICAR FONTE OFICIAL]` na interface dependem de conferência com a legislação/leiaute vigentes.
+- Itens marcados ` **` na interface dependem de conferência com a legislação/leiaute vigentes.
 - Os dados ficam no navegador (localStorage). Não há login nem servidor: **não use dados reais em instância pública**.
 - Não cobre ainda: SST (S-2210/2220/2240), RAIS, DIRF/EFD-Reinf.
 

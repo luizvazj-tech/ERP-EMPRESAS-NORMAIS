@@ -39,8 +39,8 @@ function defaultParams(){return{
   inss:[[1621.00,7.5],[2902.84,9],[4354.27,12],[8475.55,14]],
   irrf:[[2428.80,0,0],[2826.65,7.5,182.16],[3751.05,15,394.16],[4664.68,22.5,675.49],[999999999,27.5,908.73]],
   depIr:189.59, simpl:607.20,
-  plrTab:[[8214.40,0,0],[9922.28,7.5,616.08],[13167.00,15,1360.35],[16380.38,22.5,2347.85],[999999999,27.5,3166.58]], /* [VERIFICAR FONTE OFICIAL] tabela exclusiva da PLR: valores de fonte secundária */
-  consig:{emp:35,cartao:5}, /* Lei 10.820/2003, art. 2º, §2º [VERIFICAR FONTE OFICIAL] */
+  plrTab:[[8214.40,0,0],[9922.28,7.5,616.08],[13167.00,15,1360.35],[16380.38,22.5,2347.85],[999999999,27.5,3166.58]], /* ** tabela exclusiva da PLR: valores de fonte secundária */
+  consig:{emp:35,cartao:5}, /* Lei 10.820/2003, art. 2º, §2º ** */
   redutor:{isento:5000.00,teto:7350.00,a:978.62,b:0.133145},
   salFam:{cota:67.54,limite:1980.38,idade:14},
   fgts:8, fgtsAprendiz:2, vtPerc:6,
@@ -331,11 +331,11 @@ function calcRescisaoVerbas(e,r,P){const notas=[],mt=r.motivo;const anos=anosCom
   else if(r.aviso==='nao_cumprido'&&mt==='07'){avisoDesc=r2(rem);notas.push('Aviso prévio não cumprido: desconto de 30 dias de remuneração (CLT, art. 487, §2º).');}
   if(r.aviso!=='indenizado')avisoDias=0;if(!aviso&&!avisoDesc)avisoDias=0;
   const proj=aviso>0?avisoDias:0;const fimProj=proj?new Date(new Date(e.desligamento+'T12:00:00').getTime()+proj*864e5):null;
-  if(proj)notas.push('Aviso indenizado projeta o tempo de serviço para 13º e férias proporcionais (CLT, art. 487, §1º; Súmula 371 do TST) [VERIFICAR FONTE OFICIAL].');
+  if(proj)notas.push('Aviso indenizado projeta o tempo de serviço para 13º e férias proporcionais (CLT, art. 487, §1º; Súmula 371 do TST) **.');
   let avos13c=0,d13=0,inss13=0,irrf13=0;
   if(mt!=='01'){avos13c=avos13(e,Number(e.desligamento.slice(0,4)),fimProj);d13=r2(rem/12*avos13c);
     const nDep=(e.deps||[]).filter(x=>x.irrf).length;inss13=calcInss(d13,P);irrf13=calcIrrf(d13,inss13,nDep,0,P).irrf;}
-  else notas.push('Justa causa: sem 13º proporcional nem férias proporcionais (Lei 4.090/62, art. 3º; CLT, art. 146, parágrafo único) [VERIFICAR FONTE OFICIAL].');
+  else notas.push('Justa causa: sem 13º proporcional nem férias proporcionais (Lei 4.090/62, art. 3º; CLT, art. 146, parágrafo único) **.');
   const ferVencPer=num(r.ferVencPer),ferVenc=r2(rem*ferVencPer),ferVencTerco=r2(ferVenc/3);
   let avosFer=0,ferProp=0,ferPropTerco=0;
   if(mt!=='01'){const adm=new Date(e.admissao+'T12:00:00'),fim=fimProj||new Date(e.desligamento+'T12:00:00');
@@ -346,7 +346,7 @@ function calcRescisaoVerbas(e,r,P){const notas=[],mt=r.motivo;const anos=anosCom
     ferProp=r2(rem/12*avosFer);ferPropTerco=r2(ferProp/3);}
   const multaPct=['02','17'].includes(mt)?40:mt==='33'?20:0;
   const depRes=r2((aviso+d13)*P.fgts/100);const multaFgts=r2((num(r.saldoFgts)+depRes)*multaPct/100);
-  if(multaPct)notas.push('Multa rescisória do FGTS de '+multaPct+(mt==='33'?'% (CLT, art. 484-A, I, b)':'% (Lei 8.036/90, art. 18, §1º)')+', estimada sobre o saldo informado mais os depósitos da rescisão; é paga via FGTS Digital e não integra o líquido [VERIFICAR FONTE OFICIAL].');
+  if(multaPct)notas.push('Multa rescisória do FGTS de '+multaPct+(mt==='33'?'% (CLT, art. 484-A, I, b)':'% (Lei 8.036/90, art. 18, §1º)')+', estimada sobre o saldo informado mais os depósitos da rescisão; é paga via FGTS Digital e não integra o líquido **.');
   return{avisoDias:proj||avisoDias,aviso,avisoDesc,avos13:avos13c,d13,inss13,irrf13,ferVenc,ferVencTerco,avosFer,ferProp,ferPropTerco,multaPct,multaFgts,notas,
     bruto:r2(aviso+d13+ferVenc+ferVencTerco+ferProp+ferPropTerco)};}
 /* resumo por estabelecimento e lotação (guias e conferência) */
@@ -510,19 +510,19 @@ function validarEvento(ev){const o=validarBase(ev),E=DB.empresa;if(!E||!ev.gen)r
     if(E.regime==='sn'&&!E.anexo)o.push('Simples Nacional: informe o enquadramento da CPP (Anexos I–III/V, Anexo IV ou misto).');
     if(E.regime==='sn'&&E.cprb)o.push('CPRB (desoneração) é incompatível com o Simples Nacional.');
     if(E.regime&&E.classTrib&&E.classTrib!==classTribDe(E))o.push('classTrib '+E.classTrib+' não corresponde ao regime informado (esperado '+classTribDe(E)+'). Salve a empresa novamente.');
-    if(E.cprb&&!E.cnae)o.push('CPRB: informe o CNAE principal para conferir o enquadramento na atividade desonerada (Lei 12.546/2011, art. 7º-A) [VERIFICAR FONTE OFICIAL].');}
+    if(E.cprb&&!E.cnae)o.push('CPRB: informe o CNAE principal para conferir o enquadramento na atividade desonerada (Lei 12.546/2011, art. 7º-A) **.');}
   if(tipo==='S-1005'){const s=byId(DB.estabs,args.id);if(s){
     if(String(s.tpInsc)==='1'&&!cnpjValido(s.nrInsc))o.push('CNPJ do estabelecimento inválido.');
     if(String(s.tpInsc)==='1'&&onlyC(s.nrInsc).slice(0,8)!==onlyC(E.cnpj).slice(0,8))o.push('O CNPJ do estabelecimento deve ter a mesma raiz (8 primeiros dígitos) do empregador.');
     if(onlyD(s.cnae).length!==7)o.push('CNAE do estabelecimento deve ter 7 dígitos.');
-    if(ratIncide(E)){if(![1,2,3].includes(Number(s.rat)))o.push('RAT (grau de risco) deve ser 1, 2 ou 3 conforme o CNAE (Decreto 3.048/99, Anexo V) [VERIFICAR FONTE OFICIAL].');
+    if(ratIncide(E)){if(![1,2,3].includes(Number(s.rat)))o.push('RAT (grau de risco) deve ser 1, 2 ou 3 conforme o CNAE (Decreto 3.048/99, Anexo V) **.');
       const f=num(s.fap);if(!(f>=0.5&&f<=2))o.push('FAP deve estar entre 0,5000 e 2,0000 (Lei 10.666/2003, art. 10).');}
     if(DB.estabs.filter(x=>x.tpInsc==s.tpInsc&&onlyC(x.nrInsc)===onlyC(s.nrInsc)).length>1)o.push('Inscrição de estabelecimento duplicada.');}}
   if(tipo==='S-1020'){const l=byId(DB.lotacoes,args.id);if(l){
     if(!FPAS_OK.test(String(l.fpas||'')))o.push('FPAS deve ter 3 dígitos (Tabela 4).');
     if(!/^\d{4}$/.test(String(l.codTercs||'')))o.push('Código de terceiros deve ter 4 dígitos (Tabela 4); use 0000 quando não houver recolhimento a terceiros.');
     if(E.regime==='sn'&&String(l.codTercs)!=='0000')o.push('Simples Nacional: terceiros dispensados — use código 0000 (LC 123/2006, art. 13, §3º).');
-    if(E.regime!=='sn'&&String(l.codTercs)==='0000')o.push('Lucro Presumido/Real: informe o código de terceiros do FPAS (ex.: 0115 para FPAS 515; 0079 para FPAS 507) [VERIFICAR FONTE OFICIAL — Tabela 4].');
+    if(E.regime!=='sn'&&String(l.codTercs)==='0000')o.push('Lucro Presumido/Real: informe o código de terceiros do FPAS (ex.: 0115 para FPAS 515; 0079 para FPAS 507) **.');
     if(E.regime==='sn'&&E.anexo==='misto'&&!l.atvSimples)o.push('Simples misto: indique se a lotação é de atividade com CPP substituída ou não substituída.');
     if(DB.lotacoes.filter(x=>String(x.cod)===String(l.cod)).length>1)o.push('Código de lotação duplicado.');}}
   if(tipo==='S-2200'){const e=byId(DB.empregados,args.id);if(e){const l=byId(DB.lotacoes,e.lotacao),s=byId(DB.estabs,e.estab);

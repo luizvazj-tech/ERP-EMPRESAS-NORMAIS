@@ -1,7 +1,7 @@
 #!/bin/sh
 # Monta o index.html a partir dos módulos em src/, calcula o hash da CSP e valida a sintaxe.
 cd "$(dirname "$0")" || exit 1
-cat src/core.js src/core2.js src/ui1.js src/ui2.js src/ui3.js src/ui5.js src/ui6.js src/ui7.js src/ui8.js src/ui9.js src/ui10.js src/ui11.js src/ui4.js > _t.js
+cat src/core.js src/core2.js src/ui1.js src/ui2.js src/ui3.js src/ui5.js src/ui6.js src/ui7.js src/ui8.js src/ui9.js src/ui10.js src/ui11.js src/ui4.js src/ui12.js > _t.js
 node -e "
 const c=require('crypto'),f=require('fs');let t=f.readFileSync('_t.js','utf8');const v=(f.existsSync('VERSION')?f.readFileSync('VERSION','utf8').trim():'0')+'+'+c.createHash('sha256').update(t).digest('hex').slice(0,8);
 f.writeFileSync('_t.js',t.replace('%%APPVER%%',v));f.writeFileSync('version.json',JSON.stringify({versao:v,gerado:new Date().toISOString().slice(0,10)})+'\\n');console.log('VERSAO '+v);"

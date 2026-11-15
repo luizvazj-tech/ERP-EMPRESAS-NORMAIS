@@ -63,7 +63,7 @@ ACT.fichPrint=()=>{const p=NAV.cur.params,ano=fichAno(p),modo=p.modo||'consol',a
 /* ===================== MULTIEMPRESA: Novo cadastro, trocar e excluir ===================== */
 /* A empresa ativa é o próprio DB; as demais ficam em DB._emps como instantâneos (todos dentro do mesmo cofre cifrado). */
 function empSnap(){const c=Object.assign({},DB);delete c._emps;delete c.audit;return JSON.stringify(c);}
-function empArquivar(){if(!DB.empresa)return;DB._id=DB._id||uid('c');const l=(DB._emps=DB._emps||[]).filter(x=>x.id!==DB._id);l.push({id:DB._id,cnpj:DB.empresa.cnpj||'',razao:DB.empresa.razao||'',snap:empSnap(),em:agoraISO()});DB._emps=l;}
+function empArquivar(){if(!DB.empresa)return;DB._id=DB._id||uid('c');const l=(DB._emps=DB._emps||[]).filter(x=>x.id!==DB._id);l.push({id:DB._id,cnpj:DB.empresa.cnpj||'',razao:DB.empresa.razao||'',snap:empSnap(),em:agoraISO(),ex:!!DB._exemplo});DB._emps=l;}
 function empTroca(novo,resto){novo._emps=resto;novo.audit=DB.audit;VAULT.audit=DB.audit;DB=novo;NAV.stack=[];}
 ACT.empNovo=()=>modalConfirm('Será aberto um cadastro em branco para uma nova empresa. O cadastro atual'+(DB.empresa?' (<b>'+esc(DB.empresa.razao||'')+'</b>)':'')+' é preservado integralmente e poderá ser reaberto na lista “Empresas cadastradas”. Os parâmetros legais e a configuração de ambiente do eSocial são mantidos.',()=>{
   empArquivar();const n=emptyDB();n.params=DB.params;n.cfg=Object.assign({},DB.cfg,{comp:compAtual()});n._id=uid('c');empTroca(n,DB._emps);audit('empresa.novo','novo cadastro iniciado');saveDB();go('empresa');toast('Novo cadastro iniciado. Preencha os dados da empresa.','ok');},{title:'Novo cadastro de empresa',yes:'Abrir cadastro em branco'});
@@ -83,8 +83,8 @@ ACT.empExcluir=el=>empExcluirModal(el&&el.dataset&&el.dataset.arg||'');
 const _empView=SC.empresa.view;
 SC.empresa.view=function(p){const l=(DB._emps||[]);const ativa=DB.empresa;
   const card=`<div class="card"><h2>Empresas cadastradas</h2><table><thead><tr><th>Razão social</th><th>CNPJ</th><th>Situação</th><th style="width:230px"></th></tr></thead><tbody>
-  <tr><td>${esc(ativa?ativa.razao:'(novo cadastro em branco)')}</td><td>${ativa?fmtCNPJ(ativa.cnpj):''}</td><td>${badge('Em uso','ok')}</td><td></td></tr>
-  ${l.map(x=>`<tr><td>${esc(x.razao||'(sem razão social)')}</td><td>${fmtCNPJ(x.cnpj||'')}</td><td>${badge('Arquivada','gray')}</td><td><button class="btn sm" data-act="empTrocar" data-arg="${x.id}">Abrir</button> <button class="btn sm" data-act="empExcluir" data-arg="${x.id}">Excluir</button></td></tr>`).join('')}</tbody></table></div>`;
+  <tr><td>${esc(ativa?ativa.razao:'(novo cadastro em branco)')}${DB._exemplo?' '+badge('Exemplo','blue'):''}</td><td>${ativa?fmtCNPJ(ativa.cnpj):''}</td><td>${badge('Em uso','ok')}</td><td></td></tr>
+  ${l.map(x=>`<tr><td>${esc(x.razao||'(sem razão social)')}${x.ex?' '+badge('Exemplo','blue'):''}</td><td>${fmtCNPJ(x.cnpj||'')}</td><td>${badge('Arquivada','gray')}</td><td><button class="btn sm" data-act="empTrocar" data-arg="${x.id}">Abrir</button> <button class="btn sm" data-act="empExcluir" data-arg="${x.id}">Excluir</button></td></tr>`).join('')}</tbody></table></div>`;
   return _empView.call(this,p).replace(/(<div data-form id="f">)/,card+'$1');};
 const _empAct=SC.empresa.actions;
 SC.empresa.actions=function(p){return [{label:'＋ Novo cadastro',act:'empNovo'},{label:'🗑 Excluir cadastro',act:'empExcluir'}].concat(_empAct.call(this,p));};
