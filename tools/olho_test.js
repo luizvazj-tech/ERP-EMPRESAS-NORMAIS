@@ -1,0 +1,13 @@
+const {JSDOM}=require('jsdom');const fs=require('fs');
+const html=fs.readFileSync(__dirname+'/../index.html','utf8');
+const w=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'https://x.test/',beforeParse(w){w.print=()=>{};w.scrollTo=()=>{};Object.defineProperty(w,'crypto',{value:require('crypto').webcrypto,configurable:true});}}).window;
+const sl=ms=>new Promise(r=>setTimeout(r,ms));let fail=0;const ok=(n,c)=>{console.log((c?'PASS ':'FAIL ')+n);if(!c)fail++;};
+(async()=>{await sl(1200);const q=s=>w.document.querySelector(s),qa=s=>[...w.document.querySelectorAll(s)];
+ const ins=qa('#gate input[type=password],#gate input[data-pw]');ok('tela de senha inicial: campos com olho ('+ins.length+')',ins.length>=2&&qa('#gate .pw .pwb').length===ins.length);
+ const i=q('#g1'),b=i.parentNode.querySelector('.pwb');i.value='Segredo#123';ok('começa oculto',i.type==='password'&&b.getAttribute('aria-pressed')==='false');
+ b.click();ok('clique mostra o texto digitado',i.type==='text'&&i.value==='Segredo#123'&&b.getAttribute('aria-label')==='Ocultar senha'&&b.getAttribute('aria-pressed')==='true');
+ b.click();ok('novo clique oculta',i.type==='password'&&b.getAttribute('aria-label')==='Mostrar senha');
+ ok('botão é type=button (não envia formulário)',b.type==='button');
+ w.eval(`modal('<div class="f"><label for="zz">Senha</label><input id="zz" type="password"></div>',{title:'t'})`);await sl(50);ok('campo criado depois (modal) também recebe o olho',!!q('#zz').parentNode.querySelector('.pwb'));
+ ok('sem duplicar o olho',qa('.pw .pwb').length===qa('.pw').length&&qa('#zz ~ .pwb').length===1);
+ console.log(fail?'FALHAS '+fail:'TODOS OK');process.exit(fail?1:0);})();

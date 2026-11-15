@@ -105,6 +105,10 @@ details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);fon
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{#gate,#ckb{display:none!important}}
 .upd-has{background:var(--acc2,#F2B544)!important;color:#000!important;font-weight:700}
+/* campo de senha com olho para mostrar/ocultar */
+.pw{position:relative;display:block;flex:1 1 auto;min-width:0}.pw input{width:100%;padding-right:40px;box-sizing:border-box}
+.pw .pwb{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:32px;height:32px;padding:0;border:0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#475467;border-radius:6px}
+.pw .pwb:hover{background:rgba(0,0,0,.06)}.pw .pwb:focus-visible{outline:2px solid var(--brand,#0b5cad);outline-offset:1px}.pw .pwb svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head>
 <body>
