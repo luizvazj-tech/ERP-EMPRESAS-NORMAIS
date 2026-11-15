@@ -120,11 +120,11 @@ function defaultRubricas(){
 const LS_KEY='folhaPro.v1';
 let DB=null,_mem=null;
 function emptyDB(){return{ver:1,empresa:null,estabs:[],lotacoes:[],cargos:[],rubricas:defaultRubricas(),empregados:[],comps:{},eventos:[],seq:0,entregues:{},movs:[],ferias:[],decimo:{},rescisoes:{},
-  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams(),cct:[],bh:[],sstCat:[],sstAso:[],sstRisco:[],ret:[]};}
+  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams(),cct:[],bh:[],sstCat:[],sstAso:[],sstRisco:[],ret:[],hAdv:[],hCurso:[],atest:[],hAlt:[],hSnap:{},saude:{grau:'12',per:{}}};}
 function loadDB(src){let r=src||null;if(!r){try{r=localStorage.getItem(LS_KEY);}catch(e){}}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{const x=o.rubricas.find(y=>y.sys===r.sys);if(!x)o.rubricas.push(r);else if(!x.nat&&r.nat)x.nat=r.nat;});const FIX={INSS:[['00','31'],['31','41']],IRRF:[['00','00'],['00','31']],D13INSS:[['00','32'],['32','42']],D13IRRF:[['00','00'],['00','32']]};o.rubricas.forEach(x=>{const f=FIX[x.sys];if(f&&x.incCP===f[0][0]&&x.incIRRF===f[0][1]){x.incCP=f[1][0];x.incIRRF=f[1][1];}});const IRFIX={SALFAM:'79',VT:'9',ADIANT:'9',PENSAO:'51',OUTD:'9',FERIAS:'13',FERTERCO:'13',ABONO:'75',ABONOTERCO:'75',D13P1:'9',AVISO:'74',FERVENC:'74',FERPROP:'74',FERPTERCO:'74',AVISOD:'9'};
   o.rubricas.forEach(x=>{if(!o.migIR&&IRFIX[x.sys]&&(x.incIRRF==='00'||x.incIRRF==='11'&&['FERIAS','FERTERCO'].includes(x.sys)))x.incIRRF=IRFIX[x.sys];});o.migIR=1;
   if(Array.isArray(o.rubricas)){o.rubricas.forEach(r=>{if(r.sys==='CONSIG'){r.nat='9254';r.incFGTS='00';r.desc='EMPRÉSTIMO CONSIGNADO — DESCONTO';}});defaultRubricas().forEach(d=>{if(!o.rubricas.some(r=>r.sys===d.sys))o.rubricas.push(d);});}
-  ['cct','bh','sstCat','sstAso','sstRisco','ret'].forEach(k=>{if(!Array.isArray(o[k]))o[k]=[];});
+  ['cct','bh','sstCat','sstAso','sstRisco','ret','hAdv','hCurso','atest','hAlt'].forEach(k=>{if(!Array.isArray(o[k]))o[k]=[];});if(!o.hSnap||typeof o.hSnap!=='object')o.hSnap={};if(!o.saude||typeof o.saude!=='object')o.saude={grau:'12',per:{}};if(!o.saude.per)o.saude.per={};
   if(!o.migJorn){const M={'2':'4','3':'5','4':'3','5':'7','9':'9'};(o.empregados||[]).forEach(x=>{if(x.tpJornada)x.tpJornada=M[x.tpJornada]||x.tpJornada;});o.migJorn=1;}
   migrar(o);return o;}catch(e){}}return emptyDB();}
 function migrar(o){const E=o.empresa;if(E&&!E.regime){const ct=E.classTrib;E.regime=['01','02','03'].includes(ct)?'sn':'lp';E.anexo=ct==='03'?'iv':ct==='02'?'misto':'std';E.cprb=false;}
