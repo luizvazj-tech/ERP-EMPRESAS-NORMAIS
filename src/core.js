@@ -151,6 +151,10 @@ function calcIrrf(rendTrib,inss,nDep,pensao,P,semRed){
 const rubricaUsada=sys=>Object.values(DB.comps||{}).some(c=>Object.values(c.res||{}).some(r=>(r.itens||[]).some(i=>i.sys===sys)));
 const IR_BASE=c=>['11','12','13'].includes(String(c));
 const rubBy=(sys)=>DB.rubricas.find(r=>r.sys===sys);
+/* Rubricas incluídas pelo usuário: vigência (ini–fim), pausas por competência e público (todos ou selecionados) */
+const rubPausada=(r,comp)=>(r.pausas||[]).some(p=>comp>=p.de&&(!p.ate||comp<=p.ate));
+const rubAtiva=(r,comp)=>(!r.ini||comp>=r.ini)&&(!r.fim||comp<=r.fim)&&!rubPausada(r,comp);
+const rubAplica=(r,e)=>r.aplica!=='sel'||(r.emps||[]).includes(e.id);
 function empAtivoNaComp(e,comp){
   if(e.situacao==='afastado'&&e.afastAteComp&&e.afastAteComp>=comp)return false;
   if(e.admissao&&e.admissao.slice(0,7)>comp)return false;
@@ -202,6 +206,8 @@ function calcEmpregado(e,comp,L,P,emp){
   // faltas e atrasos
   const fal=num(L.faltas);if(fal>0)add('FALTAS',fal+' d',r2(sal/30*fal));
   const atr=num(L.atrasos);if(atr>0)add('ATRASOS',atr+' h',r2(vhSal*atr));
+  // rubricas incluídas pelo usuário (ativas na competência e não pausadas)
+  (DB.rubricas||[]).forEach(r=>{if(!r.custom||!rubAtiva(r,comp)||!rubAplica(r,e))return;const v=r.calc==='pct'?r2(sal*num(r.valor)/100):r2(num(r.valor));add(r.sys,r.calc==='pct'?num(r.valor)+'%':'',v);});
   // bases
   let bCP=0,bIR=0,bFG=0,prov=0,desc=0;
   for(const x of it){const r=x.r;if(x.sep)continue;

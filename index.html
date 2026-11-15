@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-nfuLG7ga2kYx3EuH6Orlg8mDkMN1n+7L/NYt+YmmWY4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-t3Cwv5RajelPn2UMACpx3qG3BaJvksK5jFTimi57yIU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -273,6 +273,10 @@ function calcIrrf(rendTrib,inss,nDep,pensao,P,semRed){
 const rubricaUsada=sys=>Object.values(DB.comps||{}).some(c=>Object.values(c.res||{}).some(r=>(r.itens||[]).some(i=>i.sys===sys)));
 const IR_BASE=c=>['11','12','13'].includes(String(c));
 const rubBy=(sys)=>DB.rubricas.find(r=>r.sys===sys);
+/* Rubricas incluídas pelo usuário: vigência (ini–fim), pausas por competência e público (todos ou selecionados) */
+const rubPausada=(r,comp)=>(r.pausas||[]).some(p=>comp>=p.de&&(!p.ate||comp<=p.ate));
+const rubAtiva=(r,comp)=>(!r.ini||comp>=r.ini)&&(!r.fim||comp<=r.fim)&&!rubPausada(r,comp);
+const rubAplica=(r,e)=>r.aplica!=='sel'||(r.emps||[]).includes(e.id);
 function empAtivoNaComp(e,comp){
   if(e.situacao==='afastado'&&e.afastAteComp&&e.afastAteComp>=comp)return false;
   if(e.admissao&&e.admissao.slice(0,7)>comp)return false;
@@ -324,6 +328,8 @@ function calcEmpregado(e,comp,L,P,emp){
   // faltas e atrasos
   const fal=num(L.faltas);if(fal>0)add('FALTAS',fal+' d',r2(sal/30*fal));
   const atr=num(L.atrasos);if(atr>0)add('ATRASOS',atr+' h',r2(vhSal*atr));
+  // rubricas incluídas pelo usuário (ativas na competência e não pausadas)
+  (DB.rubricas||[]).forEach(r=>{if(!r.custom||!rubAtiva(r,comp)||!rubAplica(r,e))return;const v=r.calc==='pct'?r2(sal*num(r.valor)/100):r2(num(r.valor));add(r.sys,r.calc==='pct'?num(r.valor)+'%':'',v);});
   // bases
   let bCP=0,bIR=0,bFG=0,prov=0,desc=0;
   for(const x of it){const r=x.r;if(x.sep)continue;
@@ -803,10 +809,10 @@ function crud(name,cfg){
       const showForm=p.novo||ed;
       return `<h1>${cfg.title}</h1><p class="sub">${cfg.sub||''}</p>${exigeEmpresa()}${cfg.note?`<div class="note info">${typeof cfg.note==='function'?cfg.note():cfg.note}</div>`:''}
       ${showForm?`<div class="card" data-form id="f"><h2>${ed?'Editar':'Novo'} registro</h2><div class="grid">${cfg.fields(ed||cfg.novo&&cfg.novo()||{},!!ed)}</div></div>`:''}
-      <div class="card"><div class="row sp"><h2>Registros (${rows.length})</h2>${cfg.noAdd?'':`<button class="btn pri" data-act="crudNovo">＋ Novo</button>`}</div>
+      <div class="card"><div class="row sp"><h2>Registros (${rows.length})</h2>${cfg.noAdd?'':`<button class="btn pri" data-act="crudNovo">${cfg.newLabel||'＋ Novo'}</button>`}</div>
       <div class="tw"><table class="t"><thead><tr>${cfg.cols.map(c=>`<th>${c[1]}</th>`).join('')}${cfg.tipo?'<th>eSocial</th>':''}<th></th></tr></thead><tbody>
       ${rows.map(r=>`<tr>${cfg.cols.map(c=>`<td>${c[2]?c[2](r):esc(r[c[0]])}</td>`).join('')}${cfg.tipo?`<td>${stBadge(ultEv(cfg.tipo,e=>e.gen.args.id===r[cfg.key]))}</td>`:''}
-      <td class="r"><button class="btn sm" data-act="crudEdit" data-id="${esc(r[cfg.key])}">Editar</button> ${cfg.tipo?`<button class="btn sm send" data-act="crudSend" data-id="${esc(r[cfg.key])}">Enviar ${cfg.tipo}</button> `:''}${cfg.noDel?'':`<button class="btn sm danger" data-act="crudDel" data-id="${esc(r[cfg.key])}">Excluir</button>`}</td></tr>`).join('')||`<tr><td colspan="${cfg.cols.length+2}" class="c" style="color:var(--mut);padding:18px">Nenhum registro cadastrado.</td></tr>`}
+      <td class="r"><button class="btn sm" data-act="crudEdit" data-id="${esc(r[cfg.key])}">Editar</button> ${cfg.tipo?`<button class="btn sm send" data-act="crudSend" data-id="${esc(r[cfg.key])}">Enviar ${cfg.tipo}</button> `:''}${cfg.rowBtns?cfg.rowBtns(r):''}${(typeof cfg.noDel==='function'?cfg.noDel(r):cfg.noDel)?'':`<button class="btn sm danger" data-act="crudDel" data-id="${esc(r[cfg.key])}">Excluir</button>`}</td></tr>`).join('')||`<tr><td colspan="${cfg.cols.length+2}" class="c" style="color:var(--mut);padding:18px">Nenhum registro cadastrado.</td></tr>`}
       </tbody></table></div></div>`;},
     actions(p){const a=[];if(p.novo||p.edit!=null){a.push({label:'Cancelar edição',act:'crudCancel'},{label:'💾 Salvar',act:'crudSave',cls:'pri',key:'save'});if(cfg.tipo)a.push({label:'Salvar e enviar '+cfg.tipo+' ao eSocial',act:'crudSaveSend',cls:'send',key:'send'});}
       else if(cfg.tipo)a.push({label:'Enviar todos ('+cfg.tipo+') ao eSocial',act:'crudSendAll',cls:'send',key:'send'});return a;}
@@ -816,7 +822,7 @@ const crudCfg=()=>CR[NAV.cur.name];
 ACT.crudNovo=()=>refresh({novo:true,edit:null});
 ACT.crudCancel=()=>guard(()=>refresh({novo:false,edit:null}));
 ACT.crudEdit=el=>refresh({edit:el.dataset.id,novo:false});
-ACT.crudDel=el=>{const cfg=crudCfg();modalConfirm('Excluir este registro? Eventos já enviados ao eSocial não são desfeitos por esta ação.',()=>{const a=cfg.list();const i=a.findIndex(x=>String(x[cfg.key])===el.dataset.id);if(i>=0)a.splice(i,1);saveDB();refresh();toast('Registro excluído.');},{yes:'Excluir'});};
+ACT.crudDel=el=>{const cfg=crudCfg();if(cfg.delCheck){const m=cfg.delCheck(cfg.list().find(x=>String(x[cfg.key])===el.dataset.id));if(m){toast(m,'err');return;}}modalConfirm(cfg.delMsg||'Excluir este registro? Eventos já enviados ao eSocial não são desfeitos por esta ação.',()=>{const a=cfg.list();const i=a.findIndex(x=>String(x[cfg.key])===el.dataset.id);if(i>=0)a.splice(i,1);saveDB();refresh();toast('Registro excluído.');},{yes:'Excluir'});};
 function crudSalvar(){const cfg=crudCfg(),f=$('#f');if(!f)return null;const mis=faltando(f);if(mis.length){toast('Preencha: '+mis.join(', '),'err');return null;}
   const o=readForm(f),p=NAV.cur.params;if(cfg.validate){const m=cfg.validate(o);if(m){toast(m,'err');return null;}}
   const arr=cfg.list();let rec;if(p.edit!=null){rec=arr.find(x=>String(x[cfg.key])===String(p.edit));Object.assign(rec,o);}else{rec=Object.assign({[cfg.key]:uid('r')},o);arr.push(rec);}
@@ -877,7 +883,7 @@ crud('lotacoes',{title:'Lotações tributárias e departamentos (S-1020)',sub:'A
 crud('cargos',{title:'Cargos e CBO',sub:'Cadastro interno de cargos/funções. Para empresas privadas o eSocial recebe o cargo e o CBO dentro do S-2200 (não há tabela S-1030 para o setor privado).',key:'id',list:()=>DB.cargos,
   cols:[['cod','Código'],['nome','Cargo'],['cbo','CBO'],['sumula','Descrição sumária']],
   fields:r=>F('Código','cod',r.cod,{req:1,w:2})+F('Cargo / função','nome',r.nome,{req:1,w:4})+F('CBO (6 dígitos)','cbo',r.cbo,{req:1,w:2})+F('Descrição sumária','sumula',r.sumula,{w:4})});
-crud('rubricas',{title:'Rubricas da folha (S-1010)',sub:'Verbas usadas pelo cálculo. Natureza (Tabela 3) e códigos de incidência (CP, IRRF, FGTS) precisam ser conferidos nas tabelas oficiais antes do envio em produção.',tipo:'S-1010',key:'sys',list:()=>DB.rubricas,noAdd:true,noDel:true,
+crud('rubricas',{title:'Rubricas da folha (S-1010)',sub:'Verbas usadas pelo cálculo. Natureza (Tabela 3) e códigos de incidência (CP, IRRF, FGTS) precisam ser conferidos nas tabelas oficiais antes do envio em produção.',tipo:'S-1010',key:'sys',list:()=>DB.rubricas,
   note:'As naturezas 1000 (salário), 1409 (salário-família), 9200 (desconto de adiantamentos), 9201 (contribuição previdenciária) e 9203 (IRRF) já vêm preenchidas conforme a Tabela 3. <b>As demais estão em branco de propósito</b>: preencha após consultar o Anexo I dos leiautes (Tabelas 3, 20, 21 e 22) e marque “conferida”. No modo webservice, o envio é bloqueado enquanto houver natureza em branco.',
   cols:[['cod','Cód.'],['desc','Descrição'],['tp','Tipo',r=>r.tp===1?'Provento':r.tp===2?'Desconto':'Informativa'],['nat','Natureza',r=>r.nat?esc(r.nat):badge('preencher','warn')],['incCP','CP'],['incIRRF','IRRF'],['incFGTS','FGTS'],['conf','Conferida',r=>r.conf?badge('Sim','ok'):badge('Não','gray')]],
   fields:r=>F('Código','cod',r.cod,{req:1,w:2})+F('Descrição','desc',r.desc,{req:1,w:4})+F('Natureza (Tabela 3)','nat',r.nat,{w:2})+F('Incidência CP','incCP',r.incCP,{req:1,w:1})+F('Incidência IRRF','incIRRF',r.incIRRF,{req:1,w:1})+F('Incidência FGTS','incFGTS',r.incFGTS,{req:1,w:1})+F('Conferida nas tabelas oficiais','conf',r.conf,{t:'check',w:3,cl:'Natureza e incidências conferidas'})});
@@ -1675,7 +1681,7 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
-const APP_VER='2026.11.14+1839f2df';
+const APP_VER='2026.11.14+52ca4bd6';
 const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
@@ -2213,5 +2219,63 @@ function a11yNomear(root){root=root||document;root.querySelectorAll('input:not([
 const _renderA11y=render;render=function(){_renderA11y.apply(this,arguments);try{a11yNomear($('#main'));a11yNomear($('#side'));}catch(e){}};
 const _modalA11y=modal;modal=function(){const r=_modalA11y.apply(this,arguments);try{a11yNomear($('#modal'));}catch(e){}return r;};
 try{a11yNomear();}catch(e){}
+
+/* ===================== RUBRICAS: INCLUIR, PAUSAR E EXCLUIR ===================== */
+/* Rubricas do sistema (salário, INSS, IRRF, FGTS, férias, 13º etc.) são estruturais: o cálculo depende delas e não podem ser pausadas nem excluídas.
+   Rubricas incluídas pelo usuário (custom) entram no cálculo conforme vigência, público e pausas. Pausa vale a partir da competência indicada
+   (inclusive); competências anteriores permanecem como foram calculadas. Excluir apaga a rubrica; se já foi usada em folha calculada, a exclusão
+   é barrada (o histórico e os XML dependem dela) e a pausa é o caminho. */
+const rubMesAnt=c=>compAdd(c,-1);
+const rubUsadaEv=r=>rubricaUsada(r.sys)||(DB.eventos||[]).some(e=>e.tipo==='S-1010'&&e.gen&&e.gen.args&&e.gen.args.id===r.sys);
+const rubSit=r=>{if(!r.custom)return badge('Sistema','gray');const hoje0=compAtual();const pz=(r.pausas||[]).find(p=>!p.ate);
+  if(pz)return badge('Pausada desde '+pz.de.split('-').reverse().join('/'),'warn');
+  if(r.fim&&r.fim<hoje0)return badge('Encerrada','gray');return badge('Ativa','ok');};
+(function(){const cfg=CR.rubricas;if(!cfg)return;
+  const campos0=cfg.fields;
+  cfg.newLabel='＋ Incluir rubrica';
+  cfg.novo=()=>{const mx=DB.rubricas.filter(r=>r.custom).map(r=>Number(r.cod)).filter(n=>n>=201&&n<=899);return{custom:true,cod:String((mx.length?Math.max(...mx):200)+1),tp:1,calc:'fixo',aplica:'todos',incCP:'11',incIRRF:'11',incFGTS:'11',ini:compAtual()};};
+  cfg.fields=(r,ed)=>{let h=campos0(r,ed);if(!(r.custom||!ed))return h;
+    const emps=(DB.empregados||[]).filter(e=>!e.desligamento).map(e=>`<label class="chk"><input type="checkbox" name="emp_${esc(e.id)}" ${(r.emps||[]).includes(e.id)?'checked':''}> ${esc(e.nome)}</label>`).join('');
+    h+=F('Tipo da rubrica','tp',r.tp||1,{t:'select',opts:[['1','Provento (soma ao bruto)'],['2','Desconto (subtrai do líquido)']],w:3})
+      +F('Forma de cálculo','calc',r.calc||'fixo',{t:'select',opts:[['fixo','Valor fixo mensal (R$)'],['pct','Percentual do salário contratual (%)']],w:3})
+      +F('Valor (R$ ou %)','valor',r.valor,{t:'money',w:2,req:1})
+      +F('Início (AAAA-MM)','ini',r.ini,{t:'month',req:1,w:2})
+      +F('Fim (AAAA-MM), opcional','fim',r.fim,{t:'month',w:2,hint:'Vazio = sem data de fim'})
+      +F('Quem recebe','aplica',r.aplica||'todos',{t:'select',opts:[['todos','Todos os empregados'],['sel','Somente os selecionados abaixo']],w:3})
+      +F('Desconto reduz as bases','reduz',r.reduz,{t:'check',cl:'Reduz as bases de INSS, IRRF e FGTS (só para desconto)',w:5})
+      +`<div class="f" style="grid-column:1/-1"><label>Empregados (quando “somente os selecionados”)</label><div class="row" style="flex-wrap:wrap;gap:6px 16px">${emps||'<small>Nenhum empregado ativo cadastrado.</small>'}</div></div>`
+      +`<div class="note info" style="grid-column:1/-1">Rubrica incluída por você: informe a <b>natureza (Tabela 3)</b> e as incidências (CP, IRRF, FGTS) conforme o Anexo I do leiaute **. O envio do S-1010 e do S-1200 fica bloqueado enquanto a natureza estiver em branco.</div>`;
+    return h;};
+  cfg.validate=o=>{const ed=NAV.cur.params.edit;const cur=ed!=null?DB.rubricas.find(x=>x.sys===ed):null;
+    if(cur&&!cur.custom)return null;
+    if(DB.rubricas.some(x=>x.cod===o.cod&&x!==cur))return 'Já existe rubrica com este código.';
+    if(!(num(o.valor)>0))return 'Informe um valor maior que zero.';
+    if(o.calc==='pct'&&num(o.valor)>100)return 'Percentual não pode ser maior que 100.';
+    if(o.fim&&o.ini&&o.fim<o.ini)return 'O fim não pode ser anterior ao início.';
+    if(cur&&cur.tp!==Number(o.tp)&&rubUsadaEv(cur))return 'Rubrica já usada em folha ou S-1010: não é possível mudar o tipo. Pause e inclua outra.';
+    o.emps=[];Object.keys(o).forEach(k=>{if(k.startsWith('emp_')){if(o[k])o.emps.push(k.slice(4));delete o[k];}});
+    if(o.aplica==='sel'&&!o.emps.length)return 'Selecione ao menos um empregado.';
+    o.tp=Number(o.tp);o.custom=true;o.opt=1;if(o.tp!==2)o.reduz=false;
+    if(!cur){o.pausas=[];audit('rubrica incluída',o.cod+' '+o.desc);}else audit('rubrica alterada',o.cod+' '+o.desc);
+    return null;};
+  cfg.noDel=r=>!r.custom;
+  cfg.delCheck=r=>{if(!r||!r.custom)return 'Rubrica do sistema não pode ser excluída.';if(rubUsadaEv(r))return 'Esta rubrica já foi usada em folha calculada ou em evento S-1010 e não pode ser apagada (o histórico depende dela). Use “Pausar”: ela deixa de ser calculada a partir da competência escolhida.';return null;};
+  cfg.delMsg='Excluir a rubrica? Ela será apagada definitivamente. Se apenas quiser que deixe de ser calculada, use “Pausar”.';
+  cfg.rowBtns=r=>{if(!r.custom)return '';const pz=(r.pausas||[]).some(p=>!p.ate);return pz?`<button class="btn sm" data-act="rubRetomar" data-id="${esc(r.sys)}">Retomar</button> `:`<button class="btn sm" data-act="rubPausar" data-id="${esc(r.sys)}">Pausar</button> `;};
+  cfg.cols=cfg.cols.slice();
+  cfg.cols.splice(3,0,['calc','Cálculo',r=>r.custom?(r.calc==='pct'?esc(String(num(r.valor)).replace('.',','))+'% do salário':'R$ '+brIn(num(r.valor)))+(r.aplica==='sel'?' · '+(r.emps||[]).length+' empr.':''):'—']);
+  cfg.cols.push(['sit','Situação',rubSit]);
+})();
+function rubModalMes(titulo,txt,def,btn,fn){modal(`<p>${txt}</p><div class="grid"><div class="f" style="grid-column:span 4"><label for="rubMes">Competência (AAAA-MM)</label><input type="month" id="rubMes" value="${esc(def)}"></div></div><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-act="closeModal">Cancelar</button><button class="btn pri" id="rubOk">${btn}</button></div>`,{title:titulo});
+  $('#rubOk').onclick=()=>{const v=$('#rubMes').value;if(!/^\d{4}-\d{2}$/.test(v)){toast('Informe a competência.','err');return;}closeModal();fn(v);};}
+ACT.rubPausar=el=>{const r=DB.rubricas.find(x=>x.sys===el.dataset.id);if(!r||!r.custom)return;
+  rubModalMes('Pausar rubrica '+r.cod+' — '+r.desc,'A rubrica deixa de ser calculada <b>a partir</b> da competência escolhida (inclusive). Competências anteriores permanecem como estão. Você pode retomá-la depois.',compAtual(),'Pausar',v=>{
+    const calc=Object.keys(DB.comps||{}).filter(k=>k>=v&&DB.comps[k].res&&Object.keys(DB.comps[k].res).length);
+    const go=()=>{r.pausas=(r.pausas||[]).filter(p=>!(p.de>=v&&!p.ate));r.pausas.push({de:v});audit('rubrica pausada',r.cod+' desde '+v);saveDB();refresh();toast('Rubrica pausada a partir de '+v.split('-').reverse().join('/')+'.','ok');};
+    if(calc.length)modalConfirm('Já existem competências calculadas a partir de '+v+' ('+calc.join(', ')+'). Elas só mudarão se você recalcular a folha; as fechadas devem ser reabertas antes. Pausar mesmo assim?',go,{yes:'Pausar'});else go();});};
+ACT.rubRetomar=el=>{const r=DB.rubricas.find(x=>x.sys===el.dataset.id);if(!r||!r.custom)return;const pz=(r.pausas||[]).find(p=>!p.ate);if(!pz)return;
+  rubModalMes('Retomar rubrica '+r.cod+' — '+r.desc,'A rubrica volta a ser calculada <b>a partir</b> da competência escolhida (inclusive). Pausada desde '+pz.de.split('-').reverse().join('/')+'.',compAtual()>pz.de?compAtual():pz.de,'Retomar',v=>{
+    if(v<=pz.de)r.pausas=r.pausas.filter(p=>p!==pz);else pz.ate=rubMesAnt(v);
+    audit('rubrica retomada',r.cod+' desde '+v);saveDB();refresh();toast('Rubrica retomada a partir de '+v.split('-').reverse().join('/')+'.','ok');});};
 
 </script></body></html>
