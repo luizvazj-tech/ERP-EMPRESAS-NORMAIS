@@ -45,7 +45,7 @@ SC.ficha={view(p){const ano=fichAno(p),modo=p.modo||'consol',alvo=p.alvo||'conso
   mount(p){const a=$('#fichAno');a&&a.addEventListener('change',()=>refresh({ano:a.value}));
     const rs=(p.modo||'consol')==='rasc',ano=fichAno(p);
     const bind=()=>{const all=$('#fichAll');all&&all.addEventListener('change',()=>{document.querySelectorAll('.fichChk').forEach(c=>{c.checked=all.checked;all.checked?FICH_SEL.add(c.value):FICH_SEL.delete(c.value);});});};
-    const b=$('#fichBusca');if(b){b.addEventListener('input',()=>{FICH_BUSCA=b.value;$('#fichLista').innerHTML=fichLista(ano,rs);bind();});bind();}},
+    const b=$('#fichBusca');if(b){b.addEventListener('input',()=>{FICH_BUSCA=b.value;$('#fichLista').innerHTML=fichLista(ano,rs);a11yNomear($('#fichLista'));bind();});bind();}},
   actions:p=>[{label:'👁 Visualizar / atualizar',act:'fichVer'},{label:'🖨 Imprimir',act:'fichPrint',cls:'pri',key:'save'}]};
 document.addEventListener('change',fichChk);
 function fichChk(ev){const c=ev.target;if(!c||!c.classList||!c.classList.contains('fichChk'))return;c.checked?FICH_SEL.add(c.value):FICH_SEL.delete(c.value);}

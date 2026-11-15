@@ -84,3 +84,16 @@ const exGuia=()=>`<p>Você está na empresa <b>Padaria Pão Dourado</b> (Simples
 const exCard=`<div class="card"><h2>Ambiente de exemplo (aprendizado)</h2><p class="sub">Cria 3 empresas fictícias (Simples Nacional, Lucro Presumido e Lucro Real) com 10 empregados cada, tudo preenchido: folhas fechadas, eventos, férias, SST, atestados, advertências e histórico. Seus dados reais são preservados como empresa arquivada.</p><div class="row"><button class="btn pri" data-act="exCarregar">Carregar ambiente de exemplo</button><button class="btn" data-act="exRemover">Remover ambiente de exemplo</button></div></div>`;
 const _bkView=SC.backup.view;SC.backup.view=function(p){return _bkView.call(this,p).replace('<div class="card"><h2>Apagar tudo</h2>',exCard+'<div class="card"><h2>Apagar tudo</h2>');};
 const _hmView=SC.home.view;SC.home.view=function(p){let h=_hmView.call(this,p);if(!DB.empresa)h=h.replace('<h2>Fluxo de trabalho</h2>',`<div class="note info">Quer conhecer o sistema antes de cadastrar a sua empresa? <button class="btn sm pri" data-act="exCarregar" style="margin-left:8px">Carregar ambiente de exemplo (3 empresas)</button></div><h2>Fluxo de trabalho</h2>`);return h;};
+
+/* ===================== ACESSIBILIDADE: nome acessível para todo controle de formulário (WCAG 2.1, critérios 1.3.1 e 4.1.2) ===================== */
+function a11yNomear(root){root=root||document;root.querySelectorAll('input:not([type=hidden]):not([type=submit]),select,textarea').forEach(el=>{
+  if(el.closest('label')||el.getAttribute('aria-label')||el.getAttribute('aria-labelledby')||el.getAttribute('title'))return;const id=el.id;if(id&&document.querySelector('label[for="'+CSS.escape(id)+'"]'))return;
+  let t='';const f=el.closest('.f');const lb=f&&f.querySelector('label');if(lb)t=lb.textContent;
+  if(!t&&el.dataset&&el.dataset.k){const th=[...document.querySelectorAll('#main table.mat thead th')][el.closest('td')?el.closest('td').cellIndex:0];const tr=el.closest('tr');t=(th?th.textContent:el.dataset.k)+(tr&&tr.cells[1]?' — '+tr.cells[1].textContent:'');}
+  if(!t&&el.closest('td')){const td=el.closest('td'),tb=td.closest('table'),th=tb&&tb.tHead&&tb.tHead.rows[0]&&tb.tHead.rows[0].cells[td.cellIndex];t=(th?th.textContent:'')+(td.closest('tr').cells[1]?' — '+td.closest('tr').cells[1].textContent:'');}
+  if(!t){const row=el.closest('.row,.card,div');let p=el.previousElementSibling;while(p&&!t){if(/^(B|LABEL|SPAN)$/.test(p.tagName)&&p.textContent.trim().length>1)t=p.textContent;p=p.previousElementSibling;}if(!t&&row){const b=row.querySelector('b');if(b)t=b.textContent;}}
+  if(!t)t=el.placeholder||el.name||(el.type==='checkbox'?'Selecionar':'Campo');
+  el.setAttribute('aria-label',t.replace(/[:*]/g,'').replace(/\s+/g,' ').trim().slice(0,90));});}
+const _renderA11y=render;render=function(){_renderA11y.apply(this,arguments);try{a11yNomear($('#main'));a11yNomear($('#side'));}catch(e){}};
+const _modalA11y=modal;modal=function(){const r=_modalA11y.apply(this,arguments);try{a11yNomear($('#modal'));}catch(e){}return r;};
+try{a11yNomear();}catch(e){}

@@ -17,7 +17,8 @@ def irrf(rend,inss_,ndep):
     red=imp if rend<=5000 else (min(imp,max(0,978.62-0.133145*rend)) if rend<7350 else 0)
     return round(max(0,imp-red),2)
 probs=[];n=0
-for reg in ['sn','sn4','lp','lr','lpcprb']:
+import os
+for reg in os.environ.get('REGS','sn,sn4,lp,lr,lpcprb').split(','):
     fs=glob.glob(f'{OUT}/{reg}__*.xml')
     rub={}
     for f in fs:
@@ -31,10 +32,10 @@ for reg in ['sn','sn4','lp','lr','lpcprb']:
     liq={}
     for f in fs:
         if '__S-1210__' in f:
-            d=etree.parse(f).getroot(); liq[val(d,'cpfBenef')]=float(val(d,'vrLiq'))
+            d=etree.parse(f).getroot(); liq[(val(d,'cpfBenef'),val(d,'perRef'))]=float(val(d,'vrLiq'))
     for f in fs:
         if '__S-1200__' in f:
-            d=etree.parse(f).getroot(); cpf=val(d,'cpfTrab'); n+=1
+            d=etree.parse(f).getroot(); cpf=val(d,'cpfTrab'); per=val(d,'perApur'); n+=1
             ven=des=0;base_cp=0;base_ir=0;i_inss=0;i_ir=0
             for it in d.iter(NS('itensRemun')):
                 r=rub[val(it,'codRubr')];v=float(val(it,'vrRubr'))
@@ -45,9 +46,9 @@ for reg in ['sn','sn4','lp','lr','lpcprb']:
                 if r['nat']=='9201':i_inss+=v
                 if r['nat']=='9203':i_ir+=v
             # líquido x S-1210
-            if cpf in liq and abs((ven-des)-liq[cpf])>0.011:probs.append(f'{reg} {cpf}: líquido do S-1200 {ven-des:.2f} difere do vrLiq do S-1210 {liq[cpf]:.2f}')
+            if (cpf,per) in liq and abs((ven-des)-liq[(cpf,per)])>0.011:probs.append(f'{reg} {cpf} {per}: líquido do S-1200 {ven-des:.2f} difere do vrLiq do S-1210 {liq[(cpf,per)]:.2f}')
             ri=inss(base_cp)
-            if abs(ri-i_inss)>0.011:probs.append(f'{reg} {cpf}: INSS informado {i_inss:.2f} x recálculo {ri:.2f} (base CP {base_cp:.2f})')
+            if abs(ri-i_inss)>0.011:probs.append(f'{reg} {cpf} {per}: INSS informado {i_inss:.2f} x recálculo {ri:.2f} (base CP {base_cp:.2f})')
             rr=irrf(base_ir,ri,deps.get(cpf,0))
-            if abs(rr-i_ir)>0.011:probs.append(f'{reg} {cpf}: IRRF informado {i_ir:.2f} x recálculo {rr:.2f} (rend. trib. {base_ir:.2f}, dep {deps.get(cpf,0)})')
+            if abs(rr-i_ir)>0.011:probs.append(f'{reg} {cpf} {per}: IRRF informado {i_ir:.2f} x recálculo {rr:.2f} (rend. trib. {base_ir:.2f}, dep {deps.get(cpf,0)})')
 print('S-1200 conferidos:',n); print('\n'.join(sorted(set(probs))) or 'sem divergência')

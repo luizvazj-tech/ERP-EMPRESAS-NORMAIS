@@ -1,9 +1,10 @@
 
 /* ===================== CONTROLE INTERNO: HISTÓRICO DO EMPREGADO E SAÚDE OCUPACIONAL ===================== */
 /* Nada deste módulo é enviado ao eSocial (exceto os ASO e CAT, que já possuem telas próprias S-2220/S-2210). */
-const hxAdd=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
-const hxDiff=(a,b)=>Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/864e5);
-const hxMeses=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+n);return d.toISOString().slice(0,10);};
+const hxAdd=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');if(isNaN(d))return '';d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
+const hxDiff=(a,b)=>{const r=Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/864e5);return isNaN(r)?0:r;};
+/* soma de meses com limite no último dia do mês de destino (31/08 + 6 meses = 28/02, e não 03/03) */
+const hxMeses=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');if(isNaN(d))return '';const dia=d.getUTCDate();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()+n);const ult=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate();d.setUTCDate(Math.min(dia,ult));return d.toISOString().slice(0,10);};
 const HX_ATIPO={d:'Atestado médico (doença)',at:'Acidente de trabalho / doença ocupacional',ai:'Auxílio por incapacidade temporária (INSS)',mat:'Licença-maternidade',pat:'Licença-paternidade',cas:'Licença-casamento, nojo ou outra (CLT, art. 473)',out:'Outro afastamento ou licença'};
 const HX_ASO={0:'Admissional',1:'Periódico',2:'Retorno ao trabalho',3:'Mudança de risco',4:'Monitoração pontual',9:'Demissional'};
 const HX_LAB={nome:'Nome',cpf:'CPF',salario:'Salário contratual',cargo:'Cargo',lotacao:'Lotação',categoria:'Categoria',admissao:'Data de admissão',desligamento:'Data de desligamento',situacao:'Situação',mat:'Matrícula',banco:'Banco',agencia:'Agência',conta:'Conta',cct:'Convenção coletiva',tpJornada:'Tipo de jornada',qtdHrsSem:'Horas semanais',logr:'Logradouro',nr:'Número',bairro:'Bairro',cep:'CEP',municipio:'Município',uf:'UF',estCiv:'Estado civil',grauInstr:'Grau de instrução',email:'E-mail',fone:'Telefone',deps:'Dependentes',peric:'Periculosidade',insal:'Insalubridade',j1236:'Jornada 12x36',consig:'Consignados',pensao:'Pensão alimentícia',planoSaude:'Plano de saúde'};

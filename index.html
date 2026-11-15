@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ZxTWOJHdE6+FcLcO5smQMULE1Nz/gpo6FxexHbBpf6U='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-nfuLG7ga2kYx3EuH6Orlg8mDkMN1n+7L/NYt+YmmWY4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -1675,7 +1675,7 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
-const APP_VER='2026.11.14+cd44078b';
+const APP_VER='2026.11.14+1839f2df';
 const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
@@ -1776,7 +1776,7 @@ SC.ficha={view(p){const ano=fichAno(p),modo=p.modo||'consol',alvo=p.alvo||'conso
   mount(p){const a=$('#fichAno');a&&a.addEventListener('change',()=>refresh({ano:a.value}));
     const rs=(p.modo||'consol')==='rasc',ano=fichAno(p);
     const bind=()=>{const all=$('#fichAll');all&&all.addEventListener('change',()=>{document.querySelectorAll('.fichChk').forEach(c=>{c.checked=all.checked;all.checked?FICH_SEL.add(c.value):FICH_SEL.delete(c.value);});});};
-    const b=$('#fichBusca');if(b){b.addEventListener('input',()=>{FICH_BUSCA=b.value;$('#fichLista').innerHTML=fichLista(ano,rs);bind();});bind();}},
+    const b=$('#fichBusca');if(b){b.addEventListener('input',()=>{FICH_BUSCA=b.value;$('#fichLista').innerHTML=fichLista(ano,rs);a11yNomear($('#fichLista'));bind();});bind();}},
   actions:p=>[{label:'👁 Visualizar / atualizar',act:'fichVer'},{label:'🖨 Imprimir',act:'fichPrint',cls:'pri',key:'save'}]};
 document.addEventListener('change',fichChk);
 function fichChk(ev){const c=ev.target;if(!c||!c.classList||!c.classList.contains('fichChk'))return;c.checked?FICH_SEL.add(c.value):FICH_SEL.delete(c.value);}
@@ -1869,9 +1869,10 @@ ACT.relCsvE=()=>{const o=relGerar();if(!o)return;const q=v=>'"'+String(v==null?'
 
 /* ===================== CONTROLE INTERNO: HISTÓRICO DO EMPREGADO E SAÚDE OCUPACIONAL ===================== */
 /* Nada deste módulo é enviado ao eSocial (exceto os ASO e CAT, que já possuem telas próprias S-2220/S-2210). */
-const hxAdd=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
-const hxDiff=(a,b)=>Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/864e5);
-const hxMeses=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+n);return d.toISOString().slice(0,10);};
+const hxAdd=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');if(isNaN(d))return '';d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
+const hxDiff=(a,b)=>{const r=Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/864e5);return isNaN(r)?0:r;};
+/* soma de meses com limite no último dia do mês de destino (31/08 + 6 meses = 28/02, e não 03/03) */
+const hxMeses=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');if(isNaN(d))return '';const dia=d.getUTCDate();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()+n);const ult=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate();d.setUTCDate(Math.min(dia,ult));return d.toISOString().slice(0,10);};
 const HX_ATIPO={d:'Atestado médico (doença)',at:'Acidente de trabalho / doença ocupacional',ai:'Auxílio por incapacidade temporária (INSS)',mat:'Licença-maternidade',pat:'Licença-paternidade',cas:'Licença-casamento, nojo ou outra (CLT, art. 473)',out:'Outro afastamento ou licença'};
 const HX_ASO={0:'Admissional',1:'Periódico',2:'Retorno ao trabalho',3:'Mudança de risco',4:'Monitoração pontual',9:'Demissional'};
 const HX_LAB={nome:'Nome',cpf:'CPF',salario:'Salário contratual',cargo:'Cargo',lotacao:'Lotação',categoria:'Categoria',admissao:'Data de admissão',desligamento:'Data de desligamento',situacao:'Situação',mat:'Matrícula',banco:'Banco',agencia:'Agência',conta:'Conta',cct:'Convenção coletiva',tpJornada:'Tipo de jornada',qtdHrsSem:'Horas semanais',logr:'Logradouro',nr:'Número',bairro:'Bairro',cep:'CEP',municipio:'Município',uf:'UF',estCiv:'Estado civil',grauInstr:'Grau de instrução',email:'E-mail',fone:'Telefone',deps:'Dependentes',peric:'Periculosidade',insal:'Insalubridade',j1236:'Jornada 12x36',consig:'Consignados',pensao:'Pensão alimentícia',planoSaude:'Plano de saúde'};
@@ -2199,5 +2200,18 @@ const exGuia=()=>`<p>Você está na empresa <b>Padaria Pão Dourado</b> (Simples
 const exCard=`<div class="card"><h2>Ambiente de exemplo (aprendizado)</h2><p class="sub">Cria 3 empresas fictícias (Simples Nacional, Lucro Presumido e Lucro Real) com 10 empregados cada, tudo preenchido: folhas fechadas, eventos, férias, SST, atestados, advertências e histórico. Seus dados reais são preservados como empresa arquivada.</p><div class="row"><button class="btn pri" data-act="exCarregar">Carregar ambiente de exemplo</button><button class="btn" data-act="exRemover">Remover ambiente de exemplo</button></div></div>`;
 const _bkView=SC.backup.view;SC.backup.view=function(p){return _bkView.call(this,p).replace('<div class="card"><h2>Apagar tudo</h2>',exCard+'<div class="card"><h2>Apagar tudo</h2>');};
 const _hmView=SC.home.view;SC.home.view=function(p){let h=_hmView.call(this,p);if(!DB.empresa)h=h.replace('<h2>Fluxo de trabalho</h2>',`<div class="note info">Quer conhecer o sistema antes de cadastrar a sua empresa? <button class="btn sm pri" data-act="exCarregar" style="margin-left:8px">Carregar ambiente de exemplo (3 empresas)</button></div><h2>Fluxo de trabalho</h2>`);return h;};
+
+/* ===================== ACESSIBILIDADE: nome acessível para todo controle de formulário (WCAG 2.1, critérios 1.3.1 e 4.1.2) ===================== */
+function a11yNomear(root){root=root||document;root.querySelectorAll('input:not([type=hidden]):not([type=submit]),select,textarea').forEach(el=>{
+  if(el.closest('label')||el.getAttribute('aria-label')||el.getAttribute('aria-labelledby')||el.getAttribute('title'))return;const id=el.id;if(id&&document.querySelector('label[for="'+CSS.escape(id)+'"]'))return;
+  let t='';const f=el.closest('.f');const lb=f&&f.querySelector('label');if(lb)t=lb.textContent;
+  if(!t&&el.dataset&&el.dataset.k){const th=[...document.querySelectorAll('#main table.mat thead th')][el.closest('td')?el.closest('td').cellIndex:0];const tr=el.closest('tr');t=(th?th.textContent:el.dataset.k)+(tr&&tr.cells[1]?' — '+tr.cells[1].textContent:'');}
+  if(!t&&el.closest('td')){const td=el.closest('td'),tb=td.closest('table'),th=tb&&tb.tHead&&tb.tHead.rows[0]&&tb.tHead.rows[0].cells[td.cellIndex];t=(th?th.textContent:'')+(td.closest('tr').cells[1]?' — '+td.closest('tr').cells[1].textContent:'');}
+  if(!t){const row=el.closest('.row,.card,div');let p=el.previousElementSibling;while(p&&!t){if(/^(B|LABEL|SPAN)$/.test(p.tagName)&&p.textContent.trim().length>1)t=p.textContent;p=p.previousElementSibling;}if(!t&&row){const b=row.querySelector('b');if(b)t=b.textContent;}}
+  if(!t)t=el.placeholder||el.name||(el.type==='checkbox'?'Selecionar':'Campo');
+  el.setAttribute('aria-label',t.replace(/[:*]/g,'').replace(/\s+/g,' ').trim().slice(0,90));});}
+const _renderA11y=render;render=function(){_renderA11y.apply(this,arguments);try{a11yNomear($('#main'));a11yNomear($('#side'));}catch(e){}};
+const _modalA11y=modal;modal=function(){const r=_modalA11y.apply(this,arguments);try{a11yNomear($('#modal'));}catch(e){}return r;};
+try{a11yNomear();}catch(e){}
 
 </script></body></html>
