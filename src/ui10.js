@@ -59,3 +59,35 @@ ACT.fichPrint=()=>{const p=NAV.cur.params,ano=fichAno(p),modo=p.modo||'consol',a
   $('#printarea').innerHTML=h;document.body.classList.add('printing');
   try{window.print();}catch(e){toast('Impressão indisponível neste ambiente. Abra o arquivo HTML no navegador para imprimir ou salvar em PDF.','err');}
   setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};
+
+/* ===================== MULTIEMPRESA: Novo cadastro, trocar e excluir ===================== */
+/* A empresa ativa é o próprio DB; as demais ficam em DB._emps como instantâneos (todos dentro do mesmo cofre cifrado). */
+function empSnap(){const c=Object.assign({},DB);delete c._emps;delete c.audit;return JSON.stringify(c);}
+function empArquivar(){if(!DB.empresa)return;DB._id=DB._id||uid('c');const l=(DB._emps=DB._emps||[]).filter(x=>x.id!==DB._id);l.push({id:DB._id,cnpj:DB.empresa.cnpj||'',razao:DB.empresa.razao||'',snap:empSnap(),em:agoraISO()});DB._emps=l;}
+function empTroca(novo,resto){novo._emps=resto;novo.audit=DB.audit;VAULT.audit=DB.audit;DB=novo;NAV.stack=[];}
+ACT.empNovo=()=>modalConfirm('Será aberto um cadastro em branco para uma nova empresa. O cadastro atual'+(DB.empresa?' (<b>'+esc(DB.empresa.razao||'')+'</b>)':'')+' é preservado integralmente e poderá ser reaberto na lista “Empresas cadastradas”. Os parâmetros legais e a configuração de ambiente do eSocial são mantidos.',()=>{
+  empArquivar();const n=emptyDB();n.params=DB.params;n.cfg=Object.assign({},DB.cfg,{comp:compAtual()});n._id=uid('c');empTroca(n,DB._emps);audit('empresa.novo','novo cadastro iniciado');saveDB();go('empresa');toast('Novo cadastro iniciado. Preencha os dados da empresa.','ok');},{title:'Novo cadastro de empresa',yes:'Abrir cadastro em branco'});
+ACT.empTrocar=el=>{const id=el.dataset.arg;const alvo=(DB._emps||[]).find(x=>x.id===id);if(!alvo)return;empArquivar();const resto=DB._emps.filter(x=>x.id!==id);const n=loadDB(alvo.snap);n._id=id;empTroca(n,resto);audit('empresa.trocar',alvo.cnpj);saveDB();go('home');toast('Empresa aberta: '+alvo.razao,'ok');};
+function empExcluirModal(id){const ativa=!id;const alvo=ativa?{razao:(DB.empresa||{}).razao||'(cadastro em branco)',cnpj:(DB.empresa||{}).cnpj||''}:(DB._emps||[]).find(x=>x.id===id);if(!alvo)return;
+  const env=ativa?DB.eventos.filter(e=>e.status==='processado').length:0;
+  modal(`<p>Será excluído, de forma <b>irreversível</b>, todo o cadastro de <b>${esc(alvo.razao)}</b>${alvo.cnpj?' (CNPJ '+fmtCNPJ(alvo.cnpj)+')':''}: empregados, folhas, eventos, férias, rescisões e demais registros locais.</p>
+  ${env?`<div class="note err">Há ${env} evento(s) já processado(s) pelo eSocial. A exclusão remove apenas os registros deste sistema; <b>não</b> cancela nem exclui nada no ambiente nacional do eSocial. Guarde os recibos e a biblioteca de eventos antes de prosseguir.</div>`:''}
+  <p class="sub">Recomenda-se gerar o backup cifrado antes (menu Sistema › Backup e dados). Para confirmar, digite <b>EXCLUIR</b>:</p><div class="row"><input id="exTx" autocomplete="off" style="padding:7px 9px;border:1px solid #c7d0d9;border-radius:6px;font:inherit"><button class="btn" data-act="closeModal">Cancelar</button><button class="btn pri" id="exOk" style="background:#b42318;border-color:#b42318">Excluir cadastro</button></div>`,{title:'Excluir cadastro de empresa'});
+  $('#exOk').onclick=()=>{if($('#exTx').value.trim().toUpperCase()!=='EXCLUIR'){toast('Digite EXCLUIR para confirmar.','err');return;}
+    closeModal();audit('empresa.excluir',(alvo.cnpj||'')+' '+(ativa?'(ativa)':'(arquivada)'));
+    if(!ativa){DB._emps=DB._emps.filter(x=>x.id!==id);saveDB();refresh();toast('Cadastro excluído.','ok');return;}
+    const resto=(DB._emps||[]).slice();let n;if(resto.length){const p=resto.shift();n=loadDB(p.snap);n._id=p.id;}else{n=emptyDB();n.params=DB.params;n.cfg=Object.assign({},DB.cfg,{comp:compAtual()});n._id=uid('c');}
+    empTroca(n,resto);saveDB();go(n.empresa?'home':'empresa');toast('Cadastro excluído.','ok');};}
+ACT.empExcluir=el=>empExcluirModal(el&&el.dataset&&el.dataset.arg||'');
+/* lista na tela da empresa + botões na barra */
+const _empView=SC.empresa.view;
+SC.empresa.view=function(p){const l=(DB._emps||[]);const ativa=DB.empresa;
+  const card=`<div class="card"><h2>Empresas cadastradas</h2><table><thead><tr><th>Razão social</th><th>CNPJ</th><th>Situação</th><th style="width:230px"></th></tr></thead><tbody>
+  <tr><td>${esc(ativa?ativa.razao:'(novo cadastro em branco)')}</td><td>${ativa?fmtCNPJ(ativa.cnpj):''}</td><td>${badge('Em uso','ok')}</td><td></td></tr>
+  ${l.map(x=>`<tr><td>${esc(x.razao||'(sem razão social)')}</td><td>${fmtCNPJ(x.cnpj||'')}</td><td>${badge('Arquivada','gray')}</td><td><button class="btn sm" data-act="empTrocar" data-arg="${x.id}">Abrir</button> <button class="btn sm" data-act="empExcluir" data-arg="${x.id}">Excluir</button></td></tr>`).join('')}</tbody></table></div>`;
+  return _empView.call(this,p).replace(/(<div data-form id="f">)/,card+'$1');};
+const _empAct=SC.empresa.actions;
+SC.empresa.actions=function(p){return [{label:'＋ Novo cadastro',act:'empNovo'},{label:'🗑 Excluir cadastro',act:'empExcluir'}].concat(_empAct.call(this,p));};
+/* impede dois cadastros com o mesmo CNPJ */
+const _empSalvar0=empSalvar;
+empSalvar=function(){const f=$('#f');if(f){const c=onlyC(readForm(f).cnpj||'');if(c&&(DB._emps||[]).some(x=>x.cnpj===c)){toast('Já existe outro cadastro com este CNPJ. Abra-o na lista de empresas cadastradas.','err');return false;}}return _empSalvar0();};
