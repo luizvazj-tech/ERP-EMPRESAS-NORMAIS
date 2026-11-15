@@ -29,6 +29,7 @@ function dctfApurar(comp){
    ['0561-07','IRRF — rendimentos do trabalho assalariado','ir',A.irM,'M'],['3562-01','IRRF — participação nos lucros ou resultados (PLR)','ir',A.plr,'M'],
    ['1082-21','CP Segurados — 13º salário','seg',A.inssD,'D'],['1138-21','CP Patronal — 13º salário','pat',A.patD,'D'],['1646-21','CP Patronal — GILRAT ajustado — 13º salário','pat',A.ratD,'D'],
    ['(por entidade)','CP Terceiros — 13º salário','terc',A.tercD,'D'],['0561-07','IRRF — 13º salário (confirmar código na tabela do Anexo I)','ir',A.irD,'D']].filter(l=>l[3]>0).map(l=>({cr:l[0],desc:l[1],grp:l[2],deb:l[3],cat:l[4],cred:0,creditos:{}}));
+  if(typeof dctfExtras==='function')dctfExtras(comp,L,E).forEach(x=>L.push(x));
   /* créditos vinculáveis — ordem padrão: pagamentos, salário-família, salário-maternidade, retenção Lei 9.711/98; só abatem CP e terceiros (PA ≥ 09/2023) */
   const creds=[['sf','Salário-família',A.sf],['sm','Salário-maternidade',num(cr.sm)],['ret','Retenção Lei 9.711/98',num(cr.ret)]];
   const ordem=['seg','pat','terc'],alvo=L.filter(l=>l.cat==='M'&&ordem.includes(l.grp)).sort((a,b)=>ordem.indexOf(a.grp)-ordem.indexOf(b.grp));

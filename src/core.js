@@ -45,7 +45,7 @@ function defaultParams(){return{
   redutor:{isento:5000.00,teto:7350.00,a:978.62,b:0.133145},
   salFam:{cota:67.54,limite:1980.38,idade:14},
   fgts:8, fgtsAprendiz:2, vtPerc:6,
-  patronal:20, rat:2, fap:1, terceiros:5.8, adNoturno:20, peric:30, he50:50, he100:100, divisor:220, cprbFrac:{2025:25,2026:50,2027:75}, venc:{inss:20,fgts:20}
+  patronal:20, rat:2, fap:1, terceiros:5.8, adNoturno:20, peric:30, he50:50, he100:100, divisor:220, cprbFrac:{2025:25,2026:50,2027:75},cprbRb:{2025:80,2026:60,2027:40}, venc:{inss:20,fgts:20}
 };}
 
 
@@ -121,7 +121,7 @@ function defaultRubricas(){
 const LS_KEY='folhaPro.v1';
 let DB=null,_mem=null;
 function emptyDB(){return{ver:1,empresa:null,estabs:[],lotacoes:[],cargos:[],rubricas:defaultRubricas(),empregados:[],comps:{},eventos:[],seq:0,entregues:{},movs:[],ferias:[],decimo:{},rescisoes:{},
-  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams(),cct:[],bh:[],sstCat:[],sstAso:[],sstRisco:[],ret:[],hAdv:[],hCurso:[],atest:[],hAlt:[],hSnap:{},saude:{grau:'12',per:{}},ctb:{plano:null,regra:{},lanc:[],fech:{},seq:0,prov:false,encProv:0},fin:{contas:[],tit:[],rem:[],seq:0},dctf:{cred:{},trans:{}}};}
+  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams(),cct:[],bh:[],sstCat:[],sstAso:[],sstRisco:[],ret:[],rf:{ci:[],cprb:[],nf:[]},hAdv:[],hCurso:[],atest:[],hAlt:[],hSnap:{},saude:{grau:'12',per:{}},ctb:{plano:null,regra:{},lanc:[],fech:{},seq:0,prov:false,encProv:0},fin:{contas:[],tit:[],rem:[],seq:0},dctf:{cred:{},trans:{}}};}
 function loadDB(src){let r=src||null;if(!r){try{r=localStorage.getItem(LS_KEY);}catch(e){}}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{const x=o.rubricas.find(y=>y.sys===r.sys);if(!x)o.rubricas.push(r);else if(!x.nat&&r.nat)x.nat=r.nat;});const FIX={INSS:[['00','31'],['31','41']],IRRF:[['00','00'],['00','31']],D13INSS:[['00','32'],['32','42']],D13IRRF:[['00','00'],['00','32']]};o.rubricas.forEach(x=>{const f=FIX[x.sys];if(f&&x.incCP===f[0][0]&&x.incIRRF===f[0][1]){x.incCP=f[1][0];x.incIRRF=f[1][1];}});const IRFIX={SALFAM:'79',VT:'9',ADIANT:'9',PENSAO:'51',OUTD:'9',FERIAS:'13',FERTERCO:'13',ABONO:'75',ABONOTERCO:'75',D13P1:'9',AVISO:'74',FERVENC:'74',FERPROP:'74',FERPTERCO:'74',AVISOD:'9'};
   o.rubricas.forEach(x=>{if(!o.migIR&&IRFIX[x.sys]&&(x.incIRRF==='00'||x.incIRRF==='11'&&['FERIAS','FERTERCO'].includes(x.sys)))x.incIRRF=IRFIX[x.sys];});o.migIR=1;
   if(Array.isArray(o.rubricas)){o.rubricas.forEach(r=>{if(r.sys==='CONSIG'){r.nat='9254';r.incFGTS='00';r.desc='EMPRÉSTIMO CONSIGNADO — DESCONTO';}});defaultRubricas().forEach(d=>{if(!o.rubricas.some(r=>r.sys===d.sys))o.rubricas.push(d);});}
@@ -281,9 +281,10 @@ function encargosEmpresa(res,P,emp,e,comp,raw){const q2=raw?(v=>v):r2;
   const pat=R.pat?q2(base*num(emp&&emp.patronal!=null&&emp.patronal!==''?emp.patronal:P.patronal)/100*R.fator/100):0;
   const ratP=est&&est.rat!==''&&est.rat!=null?num(est.rat):num(emp&&emp.rat!=null?emp.rat:P.rat),fapP=est&&est.fap!==''&&est.fap!=null?num(est.fap):num(emp&&emp.fap!=null?emp.fap:P.fap);
   const rat=R.rat?q2(base*ratP*fapP/100):0;
+  const apP=e&&e.apEsp?({'25':6,'20':9,'15':12}[String(e.apEsp)]||0):0,adic=R.rat&&apP?q2(base*apP/100):0;
   const tp=lot&&lot.terceiros!==''&&lot.terceiros!=null?num(lot.terceiros):num(emp&&emp.terceiros!=null?emp.terceiros:P.terceiros);
   const terc=R.terc?q2(base*tp/100):0;
-  return{patronal:pat,rat,terc,nota:R.nota,regra:R};
+  return{patronal:pat,rat,adic,terc,nota:R.nota,regra:R};
 }
 function calcFolha(comp){
   const P=DB.params;const c=DB.comps[comp]=DB.comps[comp]||{status:'aberta',lanc:{},res:{}};
@@ -295,11 +296,11 @@ function calcFolha(comp){
   c.status='calculada';c.calcEm=agoraISO();saveDB();return c;
 }
 function totaisComp(comp){
-  const c=DB.comps[comp];const t={n:0,prov:0,desc:0,liq:0,inss:0,irrf:0,irrfPlr:0,fgts:0,pat:0,rat:0,terc:0,sf:0};
+  const c=DB.comps[comp];const t={n:0,prov:0,desc:0,liq:0,inss:0,irrf:0,irrfPlr:0,fgts:0,pat:0,rat:0,terc:0,sf:0,adic:0};
   if(!c)return t;
   for(const id in c.res){const r=c.res[id];t.n++;t.prov+=r.totProv;t.desc+=r.totDesc;t.liq+=r.liquido;t.inss+=r.inss;t.irrf+=r.irrf;t.irrfPlr+=r.irrfPlr||0;t.fgts+=r.fgts;t.sf+=r.sf;
-    const en=encargosEmpresa(r,DB.params,DB.empresa,byId(DB.empregados,id),comp,true);t.pat+=en.patronal;t.rat+=en.rat;t.terc+=en.terc;}
-  for(const k in t)t[k]=k==='n'?t[k]:(k==='pat'||k==='rat'||k==='terc')?tr2(t[k]):r2(t[k]);return t;
+    const en=encargosEmpresa(r,DB.params,DB.empresa,byId(DB.empregados,id),comp,true);t.pat+=en.patronal;t.rat+=en.rat;t.adic+=en.adic;t.terc+=en.terc;}
+  for(const k in t)t[k]=k==='n'?t[k]:(k==='pat'||k==='rat'||k==='terc'||k==='adic')?tr2(t[k]):r2(t[k]);return t;
 }
 
 
