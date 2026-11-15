@@ -16,5 +16,5 @@ qa('.relS').forEach(c=>{c.checked=c.value==='cad';c.dispatchEvent(new w.Event('c
 q('[data-act=relGerar]').click();h=q('#relOutE').innerHTML;console.log('filtrado',/SEGUNDA LTDA/.test(h),!/DEMONSTRAÇÃO/.test(h),!/Folha por compet/.test(h));
 // todas via checkbox
 q('#relTodas').checked=true;q('#relTodas').dispatchEvent(new w.Event('change'));console.log('todas',ev('REL.emps.size'));
-ev("window.__csv=null;dl=function(n,t){window.__csv=t};ACT.relCsvE()");console.log('csv linhas',ev('__csv.split("\n").length'));ev('ACT.relPrintE()');
+ev('window.__csv=null;dl=function(n,t){window.__csv=t};ACT.relCsvE()');console.log('csv linhas',ev('__csv.split(String.fromCharCode(10)).length'));ev('ACT.relPrintE()');
 console.log('ERROS',errs.length?errs:'nenhum');process.exit(0);})().catch(e=>{console.log('FALHA',e.stack);process.exit(1)});

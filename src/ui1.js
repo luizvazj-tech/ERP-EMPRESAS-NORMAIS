@@ -19,8 +19,24 @@ const MENU=[['','home','⌂ Início'],['Cadastros','empresa','Empresa e regime (
  ['Folha de pagamento','lanc','Lançamentos do mês'],['','folha','Cálculo da folha'],['','ferias','Férias'],['','d13','13º salário'],['','resc','Rescisão (S-2299)'],['','holerite','Contracheques'],['','ficha','Ficha Financeira'],['','relEmp','Relatórios por empresa'],['','relat','Relatórios e guias'],
  ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','retornos','Retornos e conciliação (S-5001/5002/5011)'],['','guias','Guias e vencimentos'],['','integr','Webservice / Integração'],
  ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados'],['','seguranca','Segurança e acesso'],['','auditoria','Trilha de auditoria'],['','privacidade','Privacidade e cookies'],['','marca','Identidade visual']];
-function renderSide(){const cur=NAV.cur.name==='empForm'?'empregados':NAV.cur.name;let h='';MENU.forEach(([g,k,l])=>{if(g)h+=`<h6>${g}</h6>`;h+=`<a data-act="nav" data-to="${k}" class="${k===cur?'on':''}">${l}</a>`;});$('#side').innerHTML=h;
+const SIDE_ICO={'Cadastros':'🏢','Departamento Pessoal':'👥','Folha de pagamento':'💰','eSocial':'📡','Planejamento tributário':'📊','Sistema':'⚙'};
+const SIDE_OPEN=new Set();let SIDE_Q='';
+function sideGrupos(){const gs=[];let g=null;MENU.forEach(([n,k,l])=>{if(n){g={n,it:[]};gs.push(g);}if(!g)gs.push({n:'',it:[[k,l]]});else g.it.push([k,l]);});return gs;}
+const sideNorm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function renderSide(){const cur=NAV.cur.name==='empForm'?'empregados':NAV.cur.name;const gs=sideGrupos();
+  const gAtual=gs.find(g=>g.n&&g.it.some(x=>x[0]===cur));if(gAtual&&!SIDE_NAV_SEEN.has(cur)){SIDE_OPEN.add(gAtual.n);}SIDE_NAV_SEEN.add(cur);
+  let h=`<div class="sq"><input id="sideQ" type="search" placeholder="Buscar no menu…" aria-label="Buscar no menu" autocomplete="off" value="${esc(SIDE_Q)}"></div><div id="sideList">`;
+  gs.forEach(g=>{if(!g.n){g.it.forEach(([k,l])=>{h+=`<a data-act="nav" data-to="${k}" class="top ${k===cur?'on':''}">${l}</a>`;});return;}
+    const op=SIDE_OPEN.has(g.n);h+=`<div class="sg ${op?'open':''}" data-g="${esc(g.n)}"><button type="button" class="sh" data-act="sideTog" data-arg="${esc(g.n)}" aria-expanded="${op}"><span class="si">${SIDE_ICO[g.n]||'•'}</span><span class="sn">${esc(g.n)}</span><span class="sc">${g.it.length}</span><span class="sx">▸</span></button><div class="sb">${g.it.map(([k,l])=>`<a data-act="nav" data-to="${k}" data-l="${esc(sideNorm(l))}" class="${k===cur?'on':''}">${l}</a>`).join('')}</div></div>`;});
+  h+='</div><div id="sideNo" class="note" style="display:none;margin:8px">Nenhum item encontrado.</div>';
+  $('#side').innerHTML=h;sideFiltra();const q=$('#sideQ');
+  q.addEventListener('input',()=>{SIDE_Q=q.value;sideFiltra();});
+  q.addEventListener('keydown',e=>{if(e.key==='Escape'){q.value='';SIDE_Q='';sideFiltra();}else if(e.key==='Enter'){const a=document.querySelector('#sideList .sb a:not(.hid)');if(a&&SIDE_Q.trim()){e.preventDefault();SIDE_Q='';go(a.dataset.to);}}});
   $('#topemp').innerHTML=DB.empresa?`<b>${esc(DB.empresa.razao)}</b><br>CNPJ ${fmtCNPJ(DB.empresa.cnpj)} · eSocial: ${DB.cfg.ambiente==1?'Produção':'Produção restrita'} · ${DB.cfg.modo==='sim'?'modo simulação':'webservice'}`:'Empresa não cadastrada';}
+
+const SIDE_NAV_SEEN=new Set();
+function sideFiltra(){const q=sideNorm(SIDE_Q).trim();let n=0;document.querySelectorAll('#sideList .sg').forEach(g=>{let m=0;g.querySelectorAll('.sb a').forEach(a=>{const ok=!q||a.dataset.l.includes(q)||sideNorm(g.dataset.g).includes(q);a.classList.toggle('hid',!ok);if(ok)m++;});g.style.display=m?'':'none';g.classList.toggle('open',q?m>0:SIDE_OPEN.has(g.dataset.g));const b=g.querySelector('.sh');b&&b.setAttribute('aria-expanded',g.classList.contains('open'));n+=m;});const no=$('#sideNo');if(no)no.style.display=q&&!n?'':'none';}
+ACT.sideTog=el=>{const g=el.dataset.arg;SIDE_OPEN.has(g)?SIDE_OPEN.delete(g):SIDE_OPEN.add(g);sideFiltra();};
 function renderBar(sc){const acts=(sc.actions?sc.actions(NAV.cur.params):[])||[];
   $('#bar').innerHTML=`<button class="btn" data-act="back" title="Alt+V">◀ Voltar</button><button class="btn" data-act="home" title="Alt+I">⌂ Tela inicial</button><span class="sp"></span><span class="hint">Alt+V voltar · Alt+I início · Alt+S salvar · Alt+E enviar</span>`+
   acts.map(a=>`<button class="btn ${a.cls||''}" data-act="${a.act}" ${a.arg!=null?`data-arg="${esc(a.arg)}"`:''} ${a.key?`data-primary="${a.key}"`:''}>${a.label}</button>`).join('');}
