@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="fp-api" content="">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-kD3TD2B2+p+fNzE6FCPpkEuI0muFT7Dr5xxy3aKuaEk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-2QOQ4KWkTUCeHU12DrxnVZF6PLrqCFIOuNm8XdGdYrE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -741,7 +741,7 @@ const MENU=[['','home','⌂ Início'],['Cadastros','empresa','Empresa e regime (
  ['Departamento Pessoal','empregados','Empregados (S-2200)'],['','movs','Movimentações (S-2206/2230/2299)'],['','cct','Convenções coletivas e pisos'],['','bh','Banco de horas'],['','regras','Conferência de regras'],['','sstCat','CAT (S-2210)'],['','sstAso','ASO (S-2220)'],['','sstRisco','Condições ambientais (S-2240)'],['','hist','Histórico do empregado'],['','hAdv','Advertências e suspensões'],['','hCurso','Cursos e treinamentos'],['','saude','Saúde ocupacional (prazos e soma)'],['','atest','Atestados, afastamentos e licenças'],
  ['Folha de pagamento','lanc','Lançamentos do mês'],['','folha','Cálculo da folha'],['','ferias','Férias'],['','d13','13º salário'],['','resc','Rescisão (S-2299)'],['','holerite','Contracheques'],['','ficha','Ficha Financeira'],['','relEmp','Relatórios por empresa'],['','relat','Relatórios e guias'],
  ['Contabilidade','ctbLanc','Lançamentos contábeis'],['','ctbPlano','Plano de contas'],['','ctbParam','Parametrização contábil'],['','ctbBal','Balancete e razão'],
- ['Financeiro','finTit','Contas a pagar'],['','finContas','Contas bancárias'],['DCTFWeb','dctfApur','Apuração e saldo a pagar'],['','dctfPrazos','Calendário de prazos'],['','dctfMulta','Multas e acréscimos'],
+ ['Financeiro','finTit','Contas a pagar'],['','finContas','Contas bancárias'],['DCTFWeb','dctfApur','Apuração e saldo a pagar'],['','dctfPrazos','Calendário de prazos'],['','dctfMulta','Multas e acréscimos'],['','darf','DARF (espelho)'],['','feriados','Feriados e dias não úteis'],
  ['Arquivos bancários','bcoRem','Remessa e retorno CNAB 240'],
  ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','retornos','Retornos e conciliação (S-5001/5002/5011)'],['','guias','Guias e vencimentos'],['','integr','Webservice / Integração'],
  ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados'],['','seguranca','Segurança e acesso'],['','auditoria','Trilha de auditoria'],['','privacidade','Privacidade e cookies'],['','marca','Identidade visual']];
@@ -1680,7 +1680,19 @@ ACT.retImp=async()=>{const comp=$('#retComp').value,fs=Array.from($('#retFile').
 
 /* ---------- Guias: espelho de conferência com vencimentos ---------- */
 const FERIADOS_FIXOS=['01-01','04-21','05-01','09-07','10-12','11-02','11-15','11-20','12-25'];
-function diaUtilAnterior(d){const f=x=>FERIADOS_FIXOS.includes(x.toISOString().slice(5,10));while(d.getUTCDay()===0||d.getUTCDay()===6||f(d))d=new Date(d.getTime()-864e5);return d;}
+/* Feriados móveis: calculados a partir da Páscoa (algoritmo de Meeus/Jones/Butcher, calendário gregoriano). */
+function pascoa(a){const A=a%19,B=Math.floor(a/100),C=a%100,D=Math.floor(B/4),E=B%4,Fq=Math.floor((B+8)/25),G=Math.floor((B-Fq+1)/3),H=(19*A+B-D-G+15)%30,I=Math.floor(C/4),K=C%4,L=(32+2*E+2*I-H-K)%7,M=Math.floor((A+11*H+22*L)/451),mes=Math.floor((H+L-7*M+114)/31),dia=(H+L-7*M+114)%31+1;return new Date(Date.UTC(a,mes-1,dia));}
+const FER_MOV_PAD={carnaval:true,sextaSanta:true,corpus:true};
+function feriadosMoveis(a){const P=pascoa(a),add=n=>new Date(P.getTime()+n*864e5).toISOString().slice(0,10),c=Object.assign({},FER_MOV_PAD,(typeof DB!=='undefined'&&DB&&DB.cfg&&DB.cfg.ferMov)||{}),r=[];
+  if(c.carnaval){r.push([add(-48),'Carnaval (segunda-feira)']);r.push([add(-47),'Carnaval (terça-feira)']);}
+  if(c.sextaSanta)r.push([add(-2),'Sexta-feira Santa']);
+  if(c.corpus)r.push([add(60),'Corpus Christi']);return r;}
+function feriadosAno(a){const nome={'01-01':'Confraternização Universal','04-21':'Tiradentes','05-01':'Dia do Trabalho','09-07':'Independência','10-12':'Nossa Senhora Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Consciência Negra','12-25':'Natal'},r=FERIADOS_FIXOS.map(k=>[a+'-'+k,nome[k]||'Feriado']);
+  feriadosMoveis(a).forEach(x=>r.push(x));const ex=(typeof DB!=='undefined'&&DB&&DB.cfg&&DB.cfg.feriadosExtra)||[];
+  ex.forEach(x=>{const d=String(x.d||'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test(d)&&+d.slice(0,4)===a)r.push([d,x.n||'Feriado local']);else if(/^\d{2}-\d{2}$/.test(d))r.push([a+'-'+d,x.n||'Feriado local']);});
+  return r.sort((x,y)=>x[0]<y[0]?-1:1);}
+function ehFeriado(d){const iso=d.toISOString().slice(0,10);return feriadosAno(+iso.slice(0,4)).some(x=>x[0]===iso);}
+function diaUtilAnterior(d){while(d.getUTCDay()===0||d.getUTCDay()===6||ehFeriado(d))d=new Date(d.getTime()-864e5);return d;}
 function vencGuia(comp,dia){const [a,m]=comp.split('-').map(Number);return diaUtilAnterior(new Date(Date.UTC(m===12?a+1:a,m===12?0:m,dia))).toISOString().slice(0,10);}
 SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp),c=DB.comps[comp];const P=DB.params;
   const dInss=vencGuia(comp,P.venc.inss),dFgts=vencGuia(comp,P.venc.fgts);
@@ -1695,7 +1707,7 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
-const APP_VER='2026.11.14+528bde42';
+const APP_VER='2026.11.14+8f97fec5';
 const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
@@ -2305,7 +2317,7 @@ const SV={on:!!FPAPI,snap:{},tok:null,user:null,conta:null,emp:null,ver:0,perms:
 const SV_NIV=['Sem acesso','Visualizar','Editar','Aprovar / transmitir','Administrar'];
 const SV_MODN={cadastros:'Cadastros e DP',folha:'Folha de pagamento',ferias:'Férias, 13º e rescisão',esocial:'eSocial',sst:'Saúde e segurança (SST)',historico:'Histórico e controle interno',relatorios:'Relatórios e painéis',config:'Parâmetros e configurações',usuarios:'Usuários e permissões',auditoria:'Registro de ações',contabil:'Contabilidade',financeiro:'Financeiro e arquivos bancários'};
 const SV_PERFN={admin:'Administrador',dp:'Departamento pessoal',aprovador:'Aprovador',consulta:'Consulta',auditor:'Auditor',custom:'Personalizado'};
-const SV_PAG={dctfApur:'esocial',dctfPrazos:'esocial',dctfMulta:'esocial',ctbLanc:'contabil',ctbPlano:'contabil',ctbParam:'contabil',ctbBal:'contabil',finTit:'financeiro',finContas:'financeiro',bcoRem:'financeiro',empresa:'cadastros',estabs:'cadastros',lotacoes:'cadastros',estrutura:'cadastros',cargos:'cadastros',rubricas:'cadastros',empregados:'cadastros',empForm:'cadastros',movs:'cadastros',cct:'cadastros',bh:'cadastros',regras:'cadastros',
+const SV_PAG={dctfApur:'esocial',dctfPrazos:'esocial',dctfMulta:'esocial',darf:'esocial',feriados:'cadastros',ctbLanc:'contabil',ctbPlano:'contabil',ctbParam:'contabil',ctbBal:'contabil',finTit:'financeiro',finContas:'financeiro',bcoRem:'financeiro',empresa:'cadastros',estabs:'cadastros',lotacoes:'cadastros',estrutura:'cadastros',cargos:'cadastros',rubricas:'cadastros',empregados:'cadastros',empForm:'cadastros',movs:'cadastros',cct:'cadastros',bh:'cadastros',regras:'cadastros',
  sstCat:'sst',sstAso:'sst',sstRisco:'sst',saude:'sst',hist:'historico',hAdv:'historico',hCurso:'historico',atest:'historico',lanc:'folha',folha:'folha',d13:'folha',holerite:'folha',ficha:'folha',ferias:'ferias',resc:'ferias',
  relEmp:'relatorios',relat:'relatorios',painel:'relatorios',cmp:'relatorios',envio:'esocial',biblioteca:'esocial',retornos:'esocial',guias:'esocial',integr:'esocial',params:'config',backup:'config',marca:'config',usuarios:'usuarios',auditSrv:'auditoria'};
 const svNivel=m=>!SV.on?4:(m?(+SV.perms[m]||0):4);
@@ -2446,7 +2458,7 @@ const cnD=iso=>iso?iso.slice(8,10)+iso.slice(5,7)+iso.slice(0,4):'00000000';
 const cnB=n=>' '.repeat(n);
 const cents=v=>Math.round(r2(v)*100);
 function quintoDiaUtil(comp){const [a,m]=comp.split('-').map(Number);let d=new Date(Date.UTC(m===12?a+1:a,m===12?0:m,1)),n=0;
-  while(true){const f=FERIADOS_FIXOS.includes(d.toISOString().slice(5,10));if(d.getUTCDay()!==0&&!f){n++;if(n===5)break;}d=new Date(d.getTime()+864e5);}return d.toISOString().slice(0,10);}
+  while(true){const f=ehFeriado(d);if(d.getUTCDay()!==0&&!f){n++;if(n===5)break;}d=new Date(d.getTime()+864e5);}return d.toISOString().slice(0,10);}
 const somaDias=(iso,n)=>new Date(new Date(iso+'T00:00:00Z').getTime()+n*864e5).toISOString().slice(0,10);
 
 /* ---------- plano de contas e parametrização ---------- */
@@ -2698,7 +2710,7 @@ ACT.rtImp=async()=>{const fl=($('#rtFile')||{}).files&&$('#rtFile').files[0];if(
    Espelho de conferência: a DCTFWeb é gerada pela RFB a partir do S-1299 e do R-2099 e transmitida no e-CAC; este módulo
    não a transmite nem emite DARF. Valores apurados aqui são estimativas e devem ser conferidos com o S-5011 **. */
 const dctfDB=()=>{DB.dctf=DB.dctf||{};const d=DB.dctf;d.cred=d.cred||{};d.trans=d.trans||{};return d;};
-const diaUtilPosterior=d=>{const f=x=>FERIADOS_FIXOS.includes(x.toISOString().slice(5,10));while(d.getUTCDay()===0||d.getUTCDay()===6||f(d))d=new Date(d.getTime()+864e5);return d;};
+const diaUtilPosterior=d=>{while(d.getUTCDay()===0||d.getUTCDay()===6||ehFeriado(d))d=new Date(d.getTime()+864e5);return d;};
 const isoD=d=>d.toISOString().slice(0,10),dUTC=iso=>new Date(iso+'T00:00:00Z');
 const proxComp=comp=>{const [a,m]=comp.split('-').map(Number);return m===12?(a+1)+'-01':a+'-'+String(m+1).padStart(2,'0');};
 /* último dia útil do mês seguinte (Manual DCTFWeb, item 4.2) */
@@ -2971,5 +2983,37 @@ ACT.expXls=el=>{const m=el&&el.closest&&el.closest('#modal');exportar('xlsx',m||
 const expBtns=()=>'<button class="btn" data-act="expPdf" title="Exportar a tela atual em PDF">⬇ PDF</button><button class="btn" data-act="expXls" title="Exportar a tela atual em Excel (.xlsx)">⬇ Excel</button>';
 (function(){const _rb=renderBar;renderBar=function(sc){_rb(sc);const bar=document.getElementById('bar');if(!bar||bar.querySelector('[data-act=expPdf]'))return;const sp=bar.querySelector('.sp');const w=document.createElement('span');w.className='expb';w.innerHTML=expBtns();if(sp)bar.insertBefore(w,sp);else bar.appendChild(w);};
   const _md=modal;modal=function(html,o){_md(html,o);const mb=document.querySelector('#modal .mbox');if(mb&&mb.querySelector('table')&&!mb.querySelector('[data-act=expPdf]')){const d=document.createElement('div');d.className='row expm';d.style.marginTop='10px';d.innerHTML=expBtns();mb.appendChild(d);}};})();
+/* ===================== DARF (espelho para pagamento) e calendário de feriados ===================== */
+function darfLinhas(comp,pag,selic){
+  const A=dctfApurar(comp);if(!A)return null;
+  const venc=vencGuia(comp,DB.params.venc.inss),m={};
+  A.L.forEach(l=>{if(l.saldo<=0)return;const k=l.cr+'|'+l.cat;m[k]=m[k]||{cr:l.cr,cat:l.cat,descs:[],valor:0};m[k].descs.push(l.desc);m[k].valor=r2(m[k].valor+l.saldo);});
+  const out=Object.values(m).map(x=>{const mo=pag&&pag>venc?moraCalc({valor:x.valor,venc,pag,selic}):{dias:0,multa:0,juros:0,total:x.valor};
+    return{cr:x.cr,cat:x.cat,desc:x.descs.join('; '),pa:comp,venc,principal:x.valor,multa:mo.multa,juros:mo.juros,total:mo.total,dias:mo.dias,semCod:/^\(/.test(x.cr)};});
+  return{L:out,venc,total:r2(out.reduce((a,l)=>a+l.total,0)),A};}
+function darfHTML(comp,d,pag){const E=DB.empresa||{},cnpj=fmtCNPJ(E.cnpj||'');
+  return d.L.map(l=>`<div class="card" style="page-break-inside:avoid"><h3>DARF — ${esc(l.semCod?'código a definir **':l.cr)}${l.cat==='D'?' (13º salário)':''}</h3><p class="sub">${esc(l.desc)}</p>
+  <table><tbody><tr><th>01 Nome</th><td>${esc(E.razao||'')}</td><th>03 CNPJ</th><td>${cnpj}</td></tr>
+  <tr><th>02 Período de apuração</th><td>${esc(compLabel(l.pa))}</td><th>04 Código da receita</th><td>${esc(l.semCod?'** conforme entidade/FPAS':l.cr)}</td></tr>
+  <tr><th>05 Número de referência</th><td>— (gerado pela RFB na emissão)</td><th>06 Vencimento</th><td>${fmtData(l.venc)}</td></tr>
+  <tr><th>07 Valor do principal</th><td class="r">${brl(l.principal)}</td><th>08 Multa</th><td class="r">${brl(l.multa)}</td></tr>
+  <tr><th>09 Juros/encargos</th><td class="r">${brl(l.juros)}</td><th>10 Valor total</th><td class="r"><b>${brl(l.total)}</b></td></tr></tbody></table>
+  ${l.dias?`<p class="sub">Pagamento em ${fmtData(pag)}: ${l.dias} dia(s) de atraso — multa de mora de 0,33% ao dia (teto de 20%) e juros Selic + 1% (estimativa; o sistema da RFB calcula o valor oficial).</p>`:''}</div>`).join('');}
+SC.darf={view(p){const comp=p.comp||DB.cfg.comp,q=p.q||{},pag=q.pag||'',selic=q.selic||0,d=darfLinhas(comp,pag,selic);
+  return `<h1>DARF — espelho para pagamento</h1><p class="sub">Monta os dados de cada DARF da competência a partir da apuração da DCTFWeb. <b>Este documento não é o DARF oficial nem transmite a declaração:</b> o DARF numerado só é emitido pela Receita Federal após a transmissão da DCTFWeb (e-CAC) ou pelo Sicalcweb; use este espelho para conferir valores, códigos e vencimento. Transmissão pelo sistema depende de certificado digital e e-CAC (ou Serpro Integra Contador contratado).</p>
+  <div class="card" id="fd"><div class="grid">${F('Competência','comp',comp,{t:'month',w:3})+F('Data prevista de pagamento (para acréscimos)','pag',pag,{t:'date',w:3})+F('Selic acumulada (%)','selic',selic||'',{w:3,hint:'Mês seguinte ao vencimento até o mês anterior ao do pagamento'})}</div><div class="row"><button class="btn pri" data-act="darfCalc">Atualizar</button>${d?'<button class="btn" data-act="darfImp">Imprimir</button>':''}</div></div>
+  ${d&&d.L.length?`<div class="note info">Vencimento: <b>${fmtData(d.venc)}</b> (dia ${DB.params.venc.inss}, antecipado para o dia útil anterior, considerados feriados nacionais e móveis). Total dos DARFs: <b>R$ ${brl(d.total)}</b>. O FGTS (R$ ${brl(d.A.fgts)}) é recolhido pelo FGTS Digital, fora deste documento.</div>${darfHTML(comp,d,pag)}`:'<div class="note warn">Calcule a folha da competência (ou não há saldo a pagar) para gerar o espelho do DARF.</div>'}`;},actions:()=>[]};
+ACT.darfCalc=()=>{const o=readForm($('#fd'));go('darf',{comp:o.comp||DB.cfg.comp,q:{pag:o.pag,selic:o.selic}});};
+ACT.darfImp=()=>{const comp=NAV.cur.params.comp||DB.cfg.comp,q=NAV.cur.params.q||{},d=darfLinhas(comp,q.pag||'',q.selic||0);if(!d)return;$('#printarea').innerHTML='<h2>DARF — espelho de conferência — '+esc(compLabel(comp))+'</h2>'+darfHTML(comp,d,q.pag||'');document.body.classList.add('printing');try{window.print();}catch(e){toast('Impressão indisponível neste ambiente.','err');}setTimeout(()=>{document.body.classList.remove('printing');$('#printarea').innerHTML='';},800);};
+SC.feriados={view(p){const ano=+(p.ano||new Date().getFullYear()),c=Object.assign({},FER_MOV_PAD,DB.cfg.ferMov||{}),ex=DB.cfg.feriadosExtra||[];
+  const lista=feriadosAno(ano);
+  return `<h1>Feriados e dias não úteis</h1><p class="sub">Usados no cálculo de vencimentos (DARF, FGTS, DCTFWeb), prazos do eSocial e 5º dia útil. Os feriados móveis são calculados a partir da Páscoa (algoritmo gregoriano). Feriados nacionais fixos: Lei 662/1949 e Lei 6.802/1980; Consciência Negra (20/11): Lei 14.759/2023. Carnaval, Sexta-feira Santa e Corpus Christi não são feriados nacionais por lei federal geral — considere o calendário bancário da sua praça e desative o que não se aplica **. Feriados estaduais e municipais: cadastre abaixo.</p>
+  <div class="card" id="ff"><div class="grid">${F('Ano','ano',ano,{w:2})+F('Carnaval (seg. e ter.)','carnaval',c.carnaval,{t:'check',cl:'Considerar',w:3})+F('Sexta-feira Santa','sextaSanta',c.sextaSanta,{t:'check',cl:'Considerar',w:3})+F('Corpus Christi','corpus',c.corpus,{t:'check',cl:'Considerar',w:3})}</div>
+  <h3>Feriados estaduais/municipais (um por linha: AAAA-MM-DD ou MM-DD; separe o nome por ponto e vírgula)</h3><div class="grid">${F('Lista','extra',ex.map(x=>x.d+(x.n?';'+x.n:'')).join('\n'),{t:'textarea',w:12})}</div>
+  <div class="row"><button class="btn pri" data-act="ferSave">Salvar</button></div></div>
+  <div class="card"><h2>Feriados de ${ano}</h2><table><thead><tr><th>Data</th><th>Dia da semana</th><th>Feriado</th></tr></thead><tbody>${lista.map(x=>`<tr><td>${fmtData(x[0])}</td><td>${['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'][new Date(x[0]+'T00:00:00Z').getUTCDay()]}</td><td>${esc(x[1])}</td></tr>`).join('')}</tbody></table></div>`;},actions:()=>[]};
+ACT.ferSave=()=>{const o=readForm($('#ff'));DB.cfg.ferMov={carnaval:!!o.carnaval,sextaSanta:!!o.sextaSanta,corpus:!!o.corpus};
+  DB.cfg.feriadosExtra=String(o.extra||'').split('\n').map(s=>s.trim()).filter(Boolean).map(s=>{const [d,n]=s.split(';');return{d:d.trim(),n:(n||'').trim()};}).filter(x=>/^(\d{4}-)?\d{2}-\d{2}$/.test(x.d));
+  audit('Feriados','Calendário de feriados atualizado');saveDB();toast('Feriados salvos.','ok');go('feriados',{ano:o.ano});};
 
 </script></body></html>

@@ -114,7 +114,19 @@ ACT.retImp=async()=>{const comp=$('#retComp').value,fs=Array.from($('#retFile').
 
 /* ---------- Guias: espelho de conferência com vencimentos ---------- */
 const FERIADOS_FIXOS=['01-01','04-21','05-01','09-07','10-12','11-02','11-15','11-20','12-25'];
-function diaUtilAnterior(d){const f=x=>FERIADOS_FIXOS.includes(x.toISOString().slice(5,10));while(d.getUTCDay()===0||d.getUTCDay()===6||f(d))d=new Date(d.getTime()-864e5);return d;}
+/* Feriados móveis: calculados a partir da Páscoa (algoritmo de Meeus/Jones/Butcher, calendário gregoriano). */
+function pascoa(a){const A=a%19,B=Math.floor(a/100),C=a%100,D=Math.floor(B/4),E=B%4,Fq=Math.floor((B+8)/25),G=Math.floor((B-Fq+1)/3),H=(19*A+B-D-G+15)%30,I=Math.floor(C/4),K=C%4,L=(32+2*E+2*I-H-K)%7,M=Math.floor((A+11*H+22*L)/451),mes=Math.floor((H+L-7*M+114)/31),dia=(H+L-7*M+114)%31+1;return new Date(Date.UTC(a,mes-1,dia));}
+const FER_MOV_PAD={carnaval:true,sextaSanta:true,corpus:true};
+function feriadosMoveis(a){const P=pascoa(a),add=n=>new Date(P.getTime()+n*864e5).toISOString().slice(0,10),c=Object.assign({},FER_MOV_PAD,(typeof DB!=='undefined'&&DB&&DB.cfg&&DB.cfg.ferMov)||{}),r=[];
+  if(c.carnaval){r.push([add(-48),'Carnaval (segunda-feira)']);r.push([add(-47),'Carnaval (terça-feira)']);}
+  if(c.sextaSanta)r.push([add(-2),'Sexta-feira Santa']);
+  if(c.corpus)r.push([add(60),'Corpus Christi']);return r;}
+function feriadosAno(a){const nome={'01-01':'Confraternização Universal','04-21':'Tiradentes','05-01':'Dia do Trabalho','09-07':'Independência','10-12':'Nossa Senhora Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Consciência Negra','12-25':'Natal'},r=FERIADOS_FIXOS.map(k=>[a+'-'+k,nome[k]||'Feriado']);
+  feriadosMoveis(a).forEach(x=>r.push(x));const ex=(typeof DB!=='undefined'&&DB&&DB.cfg&&DB.cfg.feriadosExtra)||[];
+  ex.forEach(x=>{const d=String(x.d||'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test(d)&&+d.slice(0,4)===a)r.push([d,x.n||'Feriado local']);else if(/^\d{2}-\d{2}$/.test(d))r.push([a+'-'+d,x.n||'Feriado local']);});
+  return r.sort((x,y)=>x[0]<y[0]?-1:1);}
+function ehFeriado(d){const iso=d.toISOString().slice(0,10);return feriadosAno(+iso.slice(0,4)).some(x=>x[0]===iso);}
+function diaUtilAnterior(d){while(d.getUTCDay()===0||d.getUTCDay()===6||ehFeriado(d))d=new Date(d.getTime()-864e5);return d;}
 function vencGuia(comp,dia){const [a,m]=comp.split('-').map(Number);return diaUtilAnterior(new Date(Date.UTC(m===12?a+1:a,m===12?0:m,dia))).toISOString().slice(0,10);}
 SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp),c=DB.comps[comp];const P=DB.params;
   const dInss=vencGuia(comp,P.venc.inss),dFgts=vencGuia(comp,P.venc.fgts);

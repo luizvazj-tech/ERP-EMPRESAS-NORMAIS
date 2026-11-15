@@ -3,7 +3,7 @@
    Espelho de conferência: a DCTFWeb é gerada pela RFB a partir do S-1299 e do R-2099 e transmitida no e-CAC; este módulo
    não a transmite nem emite DARF. Valores apurados aqui são estimativas e devem ser conferidos com o S-5011 **. */
 const dctfDB=()=>{DB.dctf=DB.dctf||{};const d=DB.dctf;d.cred=d.cred||{};d.trans=d.trans||{};return d;};
-const diaUtilPosterior=d=>{const f=x=>FERIADOS_FIXOS.includes(x.toISOString().slice(5,10));while(d.getUTCDay()===0||d.getUTCDay()===6||f(d))d=new Date(d.getTime()+864e5);return d;};
+const diaUtilPosterior=d=>{while(d.getUTCDay()===0||d.getUTCDay()===6||ehFeriado(d))d=new Date(d.getTime()+864e5);return d;};
 const isoD=d=>d.toISOString().slice(0,10),dUTC=iso=>new Date(iso+'T00:00:00Z');
 const proxComp=comp=>{const [a,m]=comp.split('-').map(Number);return m===12?(a+1)+'-01':a+'-'+String(m+1).padStart(2,'0');};
 /* último dia útil do mês seguinte (Manual DCTFWeb, item 4.2) */

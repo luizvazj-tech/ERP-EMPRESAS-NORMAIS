@@ -1,0 +1,22 @@
+const {JSDOM}=require('jsdom');const fs=require('fs');
+const html=fs.readFileSync(__dirname+'/../index.html','utf8');const errs=[];
+const w=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'https://x.test/',beforeParse(w){w.addEventListener('error',e=>errs.push('ERR '+e.message));w.print=()=>{};w.scrollTo=()=>{};w.__FP_NOGATE=true;}}).window;
+const ev=s=>w.eval(s),q=s=>w.document.querySelector(s);let fail=0;const ok=(n,c)=>{console.log((c?'PASS ':'FAIL ')+n);if(!c)fail++;};
+ev(`seedDemo('lp')`);
+const f=a=>JSON.stringify(ev(`feriadosMoveis(${a})`));
+ok('Páscoa 2026 = 05/04',ev(`pascoa(2026).toISOString().slice(0,10)`)==='2026-04-05');
+ok('Páscoa 2025 = 20/04 e 2024 = 31/03',ev(`pascoa(2025).toISOString().slice(0,10)`)==='2025-04-20'&&ev(`pascoa(2024).toISOString().slice(0,10)`)==='2024-03-31');
+ok('Carnaval 2026 = 16 e 17/02; Sexta Santa = 03/04; Corpus Christi = 04/06',f(2026)==='[["2026-02-16","Carnaval (segunda-feira)"],["2026-02-17","Carnaval (terça-feira)"],["2026-04-03","Sexta-feira Santa"],["2026-06-04","Corpus Christi"]]');
+ok('prazo 20/06/2026... dia útil anterior a 04/06/2026 (Corpus Christi) = 03/06',ev(`diaUtilAnterior(new Date(Date.UTC(2026,5,4))).toISOString().slice(0,10)`)==='2026-06-03');
+ev(`DB.cfg.ferMov={corpus:false}`);ok('Corpus Christi desativado',ev(`diaUtilAnterior(new Date(Date.UTC(2026,5,4))).toISOString().slice(0,10)`)==='2026-06-04');
+ev(`DB.cfg.feriadosExtra=[{d:'03-19',n:'Municipal'}]`);ok('feriado local recorrente',ev(`ehFeriado(new Date(Date.UTC(2027,2,19)))`));
+ev(`DB.cfg.feriadosExtra=[];DB.cfg.ferMov={}`);
+const comp=ev(`(Object.keys(DB.comps).sort().pop()||DB.cfg.comp)`);ev(`calcFolha('${comp}')`);
+const d=ev(`darfLinhas('${comp}','','')`);
+ok('DARF: um por código, soma = saldo da DCTFWeb',d.L.length>=3&&Math.abs(d.total-ev(`dctfApurar('${comp}').saldo`))<0.011);
+const d2=ev(`darfLinhas('${comp}','${ev(`somaDiasIso(darfLinhas('${comp}','','').venc,10)`)}',0.5)`);
+ok('DARF em atraso: multa 3,3% + juros 1,5%',d2.L[0].dias===10&&Math.abs(d2.L[0].multa-d2.L[0].principal*0.033)<0.02&&Math.abs(d2.L[0].juros-d2.L[0].principal*0.015)<0.02);
+for(const s of ['darf','feriados']){ev(`go('${s}',{comp:'${comp}'})`);ok('tela '+s,q('#main').innerHTML.length>500);}
+ev(`go('feriados',{ano:2026})`);q('[name=extra]').value='2026-12-31;Teste';ev(`ACT.ferSave()`);ok('feriado extra salvo',ev(`DB.cfg.feriadosExtra.length`)===1&&ev(`ehFeriado(new Date(Date.UTC(2026,11,31)))`));
+ev(`go('darf',{comp:'${comp}'})`);ok('texto do espelho informa que não é o DARF oficial',/não é o DARF oficial/.test(q('#main').textContent));
+ok('sem erros',errs.length===0);console.log(fail?'FALHAS '+fail:'TODOS OK');process.exit(fail?1:0);

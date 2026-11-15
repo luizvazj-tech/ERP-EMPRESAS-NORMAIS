@@ -16,7 +16,7 @@ const cnD=iso=>iso?iso.slice(8,10)+iso.slice(5,7)+iso.slice(0,4):'00000000';
 const cnB=n=>' '.repeat(n);
 const cents=v=>Math.round(r2(v)*100);
 function quintoDiaUtil(comp){const [a,m]=comp.split('-').map(Number);let d=new Date(Date.UTC(m===12?a+1:a,m===12?0:m,1)),n=0;
-  while(true){const f=FERIADOS_FIXOS.includes(d.toISOString().slice(5,10));if(d.getUTCDay()!==0&&!f){n++;if(n===5)break;}d=new Date(d.getTime()+864e5);}return d.toISOString().slice(0,10);}
+  while(true){const f=ehFeriado(d);if(d.getUTCDay()!==0&&!f){n++;if(n===5)break;}d=new Date(d.getTime()+864e5);}return d.toISOString().slice(0,10);}
 const somaDias=(iso,n)=>new Date(new Date(iso+'T00:00:00Z').getTime()+n*864e5).toISOString().slice(0,10);
 
 /* ---------- plano de contas e parametrização ---------- */
