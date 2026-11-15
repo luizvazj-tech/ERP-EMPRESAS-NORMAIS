@@ -7,8 +7,11 @@ function checarEstrutura(){const E=DB.empresa,o=[];const add=(n,t)=>o.push({n,t}
   DB.estabs.forEach(s=>{if(s.tpInsc==='1'&&onlyC(s.nrInsc).slice(0,8)!==onlyC(E.cnpj).slice(0,8))add('err','Estabelecimento '+s.nome+': raiz do CNPJ diferente da do empregador.');
     if(ratIncide(E)&&![1,2,3].includes(Number(s.rat)))add('err','Estabelecimento '+s.nome+': grau de risco (RAT) deve ser 1, 2 ou 3.');
     if(!DB.empregados.some(e=>e.estab===s.id))add('warn','Estabelecimento '+s.nome+' sem empregados vinculados.');});
+  DB.rubricas.filter(r=>r.custom&&/consign/i.test(r.desc||'')&&r.nat!=='9253').forEach(r=>add('warn','Rubrica '+r.cod+' ('+r.desc+'): desconto de consignado do programa Crédito do Trabalhador (eConsignado) deve usar a natureza 9253, para entrar no S-5003 e na guia do FGTS Digital (MOS S-1.3, S-1200, informações adicionais) **.'));
   DB.lotacoes.forEach(l=>{if(E.regime==='sn'&&String(l.codTercs)!=='0000')add('err','Lotação '+l.cod+': Simples Nacional exige terceiros 0000.');
     if(E.regime&&E.regime!=='sn'&&String(l.codTercs)==='0000')add('warn','Lotação '+l.cod+': terceiros 0000 em empresa de Presumido/Real — confira o FPAS.');
+    if(compAtual()>='2026-05'&&['507','833'].includes(String(l.fpas))&&['0067','0071','0075'].includes(String(l.codTercs)))add('warn','Lotação '+l.cod+': a partir da competência 05/2026, quem recolhia terceiros por convênio deve criar nova vigência da S-1020 (início 2026-05) com FPAS 507 ou 833 e código de terceiros 0079 (MOS eSocial S-1.3, S-1020, informações adicionais, item 1.4.1) **.');
+    if(['507','833'].includes(String(l.fpas))&&DB.empregados.filter(e=>e.situacao!=='desligado').length>500)add('warn','Lotação '+l.cod+': com mais de 500 segurados empregados, o eSocial apura automaticamente, desde 05/2026, a contribuição adicional ao SENAI (MOS S-1.3, S-5011, item 1.6); o cálculo de terceiros deste sistema não a inclui **.');
     if(E.regime==='sn'&&E.anexo==='misto'&&!l.atvSimples)add('err','Lotação '+l.cod+': indique se a atividade é de CPP substituída ou não (Simples misto).');
     if(!DB.empregados.some(e=>e.lotacao===l.id))add('warn','Lotação '+l.cod+' sem empregados vinculados.');});
   if(!DB.lotacoes.length)add('err','Nenhuma lotação cadastrada: o S-1200 exige lotação.');

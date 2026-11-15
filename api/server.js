@@ -30,7 +30,7 @@ const PERFIS={
  auditor:{cadastros:1,folha:1,ferias:1,esocial:1,sst:1,historico:1,relatorios:1,config:0,usuarios:0,auditoria:1,contabil:1,financeiro:1}};
 /* chave de nível superior do banco do cliente -> módulo que a controla */
 const CHAVE_MOD={empresa:'cadastros',estabs:'cadastros',lotacoes:'cadastros',cargos:'cadastros',rubricas:'cadastros',empregados:'cadastros',movs:'cadastros',cct:'cadastros',
- comps:'folha',decimo:'folha',ctb:'contabil',fin:'financeiro',ferias:'ferias',rescisoes:'ferias',eventos:'esocial',entregues:'folha',sstCat:'sst',sstAso:'sst',sstRisco:'sst',
+ comps:'folha',decimo:'folha',dctf:'esocial',ctb:'contabil',fin:'financeiro',ferias:'ferias',rescisoes:'ferias',eventos:'esocial',entregues:'folha',sstCat:'sst',sstAso:'sst',sstRisco:'sst',
  hAdv:'historico',hCurso:'historico',atest:'historico',hAlt:'cadastros',hSnap:'cadastros',saude:'historico',params:'config',cfg:'config',seq:'esocial',updUndo:'config',updApl:'config'};
 const IGNORAR=new Set(['audit','_emps','_id','_exemplo','ver']);
 /* ---------- utilidades ---------- */

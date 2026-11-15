@@ -120,9 +120,9 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   const dInss=vencGuia(comp,P.venc.inss),dFgts=vencGuia(comp,P.venc.fgts);
   const plr=r2(c?Object.values(c.res||{}).reduce((a,r)=>a+(r.irrfPlr||0),0):0);const irTrab=r2(T.irrf-plr);
   const sn=E&&E.regime==='sn'&&E.anexo==='std';
-  const rows=[['Contribuição previdenciária (segurados'+(sn?'':' + patronal, RAT e terceiros')+')',r2(T.inss+(sn?0:T.pat+T.rat+T.terc)),'DCTFWeb → DARF numerado (código de receita da folha)',dInss,'Lei 8.212/1991, art. 30, I, “b”; IN RFB 2.110/2022 **'],
-   ['IRRF sobre rendimentos do trabalho',irTrab,'DCTFWeb → DARF numerado (código 0561)',dInss,'Lei 11.196/2005, art. 70 **'],
-   ['IRRF sobre PLR',plr,'DCTFWeb → DARF numerado (código 3562)',dInss,'Lei 10.101/2000, art. 3º, §5º **'],
+  const rows=[['Contribuição previdenciária (segurados'+(sn?'':' + patronal, RAT e terceiros')+')',r2(T.inss+(sn?0:T.pat+T.rat+T.terc)),'DCTFWeb → DARF numerado (CP segurados 1082-01; patronal 1138-01; RAT ajustado 1646-01; terceiros por entidade)',dInss,'Lei 8.212/1991, art. 30, I, “b”; IN RFB 2.110/2022 **'],
+   ['IRRF sobre rendimentos do trabalho',irTrab,'DCTFWeb → DARF numerado (código 0561-07)',dInss,'Lei 11.196/2005, art. 70 **'],
+   ['IRRF sobre PLR',plr,'DCTFWeb → DARF numerado (código 3562-01)',dInss,'Lei 10.101/2000, art. 3º, §5º **'],
    ['FGTS mensal',T.fgts,'FGTS Digital — guia por empregador',dFgts,'Lei 8.036/1990, art. 15 **']].filter(r=>r[1]>0);
   const tot=r2(rows.reduce((a,r)=>a+r[1],0));
   return `<h1>Guias e vencimentos — ${compLabel(comp)}</h1><p class="sub">Espelho de conferência dos valores a recolher. As guias oficiais são emitidas na DCTFWeb (a partir do S-1299 e dos retornos S-5011/S-5012) e no FGTS Digital; este sistema não substitui a emissão nem transmite a DCTFWeb. Vencimentos antecipados para o dia útil anterior quando recaem em fim de semana ou feriado nacional fixo (feriados móveis, estaduais e municipais não são considerados).</p>${exigeEmpresa()}

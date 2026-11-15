@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="fp-api" content="">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-REmTTSsXUxdr09qI63er8gq/3BSi09570Vd4yD57R0c='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-dFJAWvoQvIQrFjlW8Kjsb0YeOuVkKAey9SZ9bXqe9R8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -131,6 +131,7 @@ details.tv{margin-top:8px}details.tv summary{cursor:pointer;color:var(--pri);fon
    cálculo, banco local e geradores de eventos do eSocial (leiaute S-1.3)
    ===================================================================== */
 const r2=v=>Math.round((Number(v)+Number.EPSILON)*100)/100;
+const tr2=v=>Math.floor(Number(v)*100+1e-6)/100; /* truncamento na 2ª casa — MOS eSocial S-1.3: totalizadores (S-5001/S-5003/S-5011) não arredondam */
 const onlyD=s=>String(s==null?'':s).replace(/\D/g,'');
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const brl=v=>Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -247,7 +248,7 @@ function defaultRubricas(){
 const LS_KEY='folhaPro.v1';
 let DB=null,_mem=null;
 function emptyDB(){return{ver:1,empresa:null,estabs:[],lotacoes:[],cargos:[],rubricas:defaultRubricas(),empregados:[],comps:{},eventos:[],seq:0,entregues:{},movs:[],ferias:[],decimo:{},rescisoes:{},
-  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams(),cct:[],bh:[],sstCat:[],sstAso:[],sstRisco:[],ret:[],hAdv:[],hCurso:[],atest:[],hAlt:[],hSnap:{},saude:{grau:'12',per:{}},ctb:{plano:null,regra:{},lanc:[],fech:{},seq:0,prov:false,encProv:0},fin:{contas:[],tit:[],rem:[],seq:0}};}
+  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams(),cct:[],bh:[],sstCat:[],sstAso:[],sstRisco:[],ret:[],hAdv:[],hCurso:[],atest:[],hAlt:[],hSnap:{},saude:{grau:'12',per:{}},ctb:{plano:null,regra:{},lanc:[],fech:{},seq:0,prov:false,encProv:0},fin:{contas:[],tit:[],rem:[],seq:0},dctf:{cred:{},trans:{}}};}
 function loadDB(src){let r=src||null;if(!r){try{r=localStorage.getItem(LS_KEY);}catch(e){}}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{const x=o.rubricas.find(y=>y.sys===r.sys);if(!x)o.rubricas.push(r);else if(!x.nat&&r.nat)x.nat=r.nat;});const FIX={INSS:[['00','31'],['31','41']],IRRF:[['00','00'],['00','31']],D13INSS:[['00','32'],['32','42']],D13IRRF:[['00','00'],['00','32']]};o.rubricas.forEach(x=>{const f=FIX[x.sys];if(f&&x.incCP===f[0][0]&&x.incIRRF===f[0][1]){x.incCP=f[1][0];x.incIRRF=f[1][1];}});const IRFIX={SALFAM:'79',VT:'9',ADIANT:'9',PENSAO:'51',OUTD:'9',FERIAS:'13',FERTERCO:'13',ABONO:'75',ABONOTERCO:'75',D13P1:'9',AVISO:'74',FERVENC:'74',FERPROP:'74',FERPTERCO:'74',AVISOD:'9'};
   o.rubricas.forEach(x=>{if(!o.migIR&&IRFIX[x.sys]&&(x.incIRRF==='00'||x.incIRRF==='11'&&['FERIAS','FERTERCO'].includes(x.sys)))x.incIRRF=IRFIX[x.sys];});o.migIR=1;
   if(Array.isArray(o.rubricas)){o.rubricas.forEach(r=>{if(r.sys==='CONSIG'){r.nat='9254';r.incFGTS='00';r.desc='EMPRÉSTIMO CONSIGNADO — DESCONTO';}});defaultRubricas().forEach(d=>{if(!o.rubricas.some(r=>r.sys===d.sys))o.rubricas.push(d);});}
@@ -262,7 +263,7 @@ const uid=(p)=>p+Math.random().toString(36).slice(2,9);
 const byId=(arr,id)=>(arr||[]).find(x=>x.id===id);
 
 /* ---------------- Motor de cálculo ---------------- */
-function calcInss(base,P){base=Math.min(Math.max(base,0),P.tetoInss);let prev=0,t=0;for(const [lim,al] of P.inss){if(base>prev)t+=(Math.min(base,lim)-prev)*al/100;prev=lim;}return r2(t);}
+function calcInss(base,P){base=Math.min(Math.max(base,0),P.tetoInss);let prev=0,t=0;for(const [lim,al] of P.inss){if(base>prev)t+=tr2((Math.min(base,lim)-prev)*al/100);prev=lim;}return r2(t);}
 function impostoTabela(base,P){for(const [lim,al,ded] of P.irrf){if(base<=lim)return Math.max(0,r2(base*al/100-ded));}return 0;}
 function impostoPlr(v,P){for(const [lim,al,ded] of P.plrTab){if(v<=lim)return Math.max(0,r2(v*al/100-ded));}return 0;}
 const saldoBH=(id)=>r2((DB.bh||[]).filter(x=>x.empId===id).reduce((a,x)=>a+num(x.h),0));
@@ -379,7 +380,7 @@ function calcEmpregado(e,comp,L,P,emp){
   totProv=r2(totProv);totDesc=r2(totDesc);
   const aliqFg=e.categoria==='103'?P.fgtsAprendiz:P.fgts;
   return{itens:it.map(({r,...o})=>o),totProv,totDesc,liquido:r2(totProv-totDesc),baseCP:bCP,baseIR:bIR,baseFGTS:bFG,
-    inss:r2(inss+inss13),irrf:r2(ir.irrf+irrf13),irrfPlr:plrIR,margem,pensaoCalc:pensao,irrfInfo:ir,fgts:r2((bFG+base13)*aliqFg/100),aliqFgts:aliqFg,baseCP13:r2(base13),inss13,irrf13,multaFgts,notasRes,sf:sfOk?r2(nSF*P.salFam.cota):0,dias,calculadoEm:agoraISO()};
+    inss:r2(inss+inss13),irrf:r2(ir.irrf+irrf13),irrfPlr:plrIR,margem,pensaoCalc:pensao,irrfInfo:ir,fgts:tr2((bFG+base13)*aliqFg/100),aliqFgts:aliqFg,baseCP13:r2(base13),inss13,irrf13,multaFgts,notasRes,sf:sfOk?r2(nSF*P.salFam.cota):0,dias,calculadoEm:agoraISO()};
 }
 /* ---------------- Regimes tributários, estabelecimentos e lotações ---------------- */
 const REGIMES={sn:'Simples Nacional',lp:'Lucro Presumido',lr:'Lucro Real'};
@@ -401,14 +402,14 @@ function regraLot(E,l,comp,P){
   if(cprb){const f=fatorCprb(P,comp);return{pat:true,rat:true,terc:true,fator:f,nota:'CPRB: a contribuição patronal de 20% sobre a folha é reduzida e reonerada gradualmente (Lei 14.973/2024). Fator desta competência: '+f+'% da CPP. RAT e terceiros incidem normalmente. A CPRB sobre a receita bruta é apurada fora da folha.'};}
   return{pat:true,rat:true,terc:true,fator:100,nota:(REGIMES[E.regime]||'')+' — incidem CPP 20%, RAT×FAP e terceiros sobre a base previdenciária.'};
 }
-function encargosEmpresa(res,P,emp,e,comp){
+function encargosEmpresa(res,P,emp,e,comp,raw){const q2=raw?(v=>v):r2;
   const est=e?byId(DB.estabs,e.estab):null,lot=e?byId(DB.lotacoes,e.lotacao):null;
   const R=regraLot(emp,lot,comp,P),base=r2(res.baseCP+num(res.baseCP13));
-  const pat=R.pat?r2(base*num(emp&&emp.patronal!=null&&emp.patronal!==''?emp.patronal:P.patronal)/100*R.fator/100):0;
+  const pat=R.pat?q2(base*num(emp&&emp.patronal!=null&&emp.patronal!==''?emp.patronal:P.patronal)/100*R.fator/100):0;
   const ratP=est&&est.rat!==''&&est.rat!=null?num(est.rat):num(emp&&emp.rat!=null?emp.rat:P.rat),fapP=est&&est.fap!==''&&est.fap!=null?num(est.fap):num(emp&&emp.fap!=null?emp.fap:P.fap);
-  const rat=R.rat?r2(base*ratP*fapP/100):0;
+  const rat=R.rat?q2(base*ratP*fapP/100):0;
   const tp=lot&&lot.terceiros!==''&&lot.terceiros!=null?num(lot.terceiros):num(emp&&emp.terceiros!=null?emp.terceiros:P.terceiros);
-  const terc=R.terc?r2(base*tp/100):0;
+  const terc=R.terc?q2(base*tp/100):0;
   return{patronal:pat,rat,terc,nota:R.nota,regra:R};
 }
 function calcFolha(comp){
@@ -424,8 +425,8 @@ function totaisComp(comp){
   const c=DB.comps[comp];const t={n:0,prov:0,desc:0,liq:0,inss:0,irrf:0,irrfPlr:0,fgts:0,pat:0,rat:0,terc:0,sf:0};
   if(!c)return t;
   for(const id in c.res){const r=c.res[id];t.n++;t.prov+=r.totProv;t.desc+=r.totDesc;t.liq+=r.liquido;t.inss+=r.inss;t.irrf+=r.irrf;t.irrfPlr+=r.irrfPlr||0;t.fgts+=r.fgts;t.sf+=r.sf;
-    const en=encargosEmpresa(r,DB.params,DB.empresa,byId(DB.empregados,id),comp);t.pat+=en.patronal;t.rat+=en.rat;t.terc+=en.terc;}
-  for(const k in t)t[k]=k==='n'?t[k]:r2(t[k]);return t;
+    const en=encargosEmpresa(r,DB.params,DB.empresa,byId(DB.empregados,id),comp,true);t.pat+=en.patronal;t.rat+=en.rat;t.terc+=en.terc;}
+  for(const k in t)t[k]=k==='n'?t[k]:(k==='pat'||k==='rat'||k==='terc')?tr2(t[k]):r2(t[k]);return t;
 }
 
 
@@ -452,7 +453,7 @@ function avos13(e,ano,fimProj){let n=0;const adm=e.admissao?new Date(e.admissao+
   for(let m=1;m<=12;m++){let a=new Date(ano,m-1,1,12),b=new Date(ano,m,0,12);if(adm&&adm>a)a=adm;if(des&&des<b)b=des;if(b<a)continue;if(Math.round((b-a)/864e5)+1>=15)n++;}return n;}
 function calc13(e,ano,P,media,fimProj){const avos=avos13(e,ano,fimProj),base=remunBase(e,P,media),bruto=r2(base/12*avos),p1v=r2(bruto/2);
   const nDep=(e.deps||[]).filter(d=>d.irrf).length;const inss13=calcInss(bruto,P);const ir=calcIrrf(bruto,inss13,nDep,0,P);
-  return{avos,base,bruto,p1:p1v,inss13,irrf13:ir.irrf,fgts13:r2(bruto*(e.categoria==='103'?P.fgtsAprendiz:P.fgts)/100),liq2:r2(bruto-p1v-inss13-ir.irrf)};}
+  return{avos,base,bruto,p1:p1v,inss13,irrf13:ir.irrf,fgts13:tr2(bruto*(e.categoria==='103'?P.fgtsAprendiz:P.fgts)/100),liq2:r2(bruto-p1v-inss13-ir.irrf)};}
 const MOTIVOS_RESC={'01':'Justa causa (iniciativa do empregador)','02':'Sem justa causa (iniciativa do empregador)','06':'Término de contrato a termo','07':'Pedido de demissão (iniciativa do empregado)','17':'Rescisão indireta','33':'Acordo entre as partes (CLT, art. 484-A)'};
 const AVISOS={indenizado:'Indenizado (empregador dispensa o cumprimento)',trabalhado:'Trabalhado',nao_cumprido:'Não cumprido pelo empregado (desconto)',dispensado:'Dispensado / não aplicável'};
 function anosCompletos(ini,fim){const a=new Date(ini+'T12:00:00'),b=new Date(fim+'T12:00:00');let n=b.getFullYear()-a.getFullYear();const an=new Date(b.getFullYear(),a.getMonth(),a.getDate(),12);if(b<an)n--;return Math.max(0,n);}
@@ -740,10 +741,11 @@ const MENU=[['','home','⌂ Início'],['Cadastros','empresa','Empresa e regime (
  ['Departamento Pessoal','empregados','Empregados (S-2200)'],['','movs','Movimentações (S-2206/2230/2299)'],['','cct','Convenções coletivas e pisos'],['','bh','Banco de horas'],['','regras','Conferência de regras'],['','sstCat','CAT (S-2210)'],['','sstAso','ASO (S-2220)'],['','sstRisco','Condições ambientais (S-2240)'],['','hist','Histórico do empregado'],['','hAdv','Advertências e suspensões'],['','hCurso','Cursos e treinamentos'],['','saude','Saúde ocupacional (prazos e soma)'],['','atest','Atestados, afastamentos e licenças'],
  ['Folha de pagamento','lanc','Lançamentos do mês'],['','folha','Cálculo da folha'],['','ferias','Férias'],['','d13','13º salário'],['','resc','Rescisão (S-2299)'],['','holerite','Contracheques'],['','ficha','Ficha Financeira'],['','relEmp','Relatórios por empresa'],['','relat','Relatórios e guias'],
  ['Contabilidade','ctbLanc','Lançamentos contábeis'],['','ctbPlano','Plano de contas'],['','ctbParam','Parametrização contábil'],['','ctbBal','Balancete e razão'],
- ['Financeiro','finTit','Contas a pagar'],['','finContas','Contas bancárias'],['Arquivos bancários','bcoRem','Remessa e retorno CNAB 240'],
+ ['Financeiro','finTit','Contas a pagar'],['','finContas','Contas bancárias'],['DCTFWeb','dctfApur','Apuração e saldo a pagar'],['','dctfPrazos','Calendário de prazos'],['','dctfMulta','Multas e acréscimos'],
+ ['Arquivos bancários','bcoRem','Remessa e retorno CNAB 240'],
  ['eSocial','envio','Enviar competência'],['','biblioteca','Biblioteca de eventos'],['','retornos','Retornos e conciliação (S-5001/5002/5011)'],['','guias','Guias e vencimentos'],['','integr','Webservice / Integração'],
  ['Planejamento tributário','painel','Painel gerencial (dashboards)'],['','cmp','Comparativo de regimes'],['Sistema','params','Parâmetros legais'],['','backup','Backup e dados'],['','seguranca','Segurança e acesso'],['','auditoria','Trilha de auditoria'],['','privacidade','Privacidade e cookies'],['','marca','Identidade visual']];
-const SIDE_ICO={'Cadastros':'🏢','Departamento Pessoal':'👥','Folha de pagamento':'💰','Contabilidade':'📒','Financeiro':'💳','Arquivos bancários':'🏦','eSocial':'📡','Planejamento tributário':'📊','Sistema':'⚙'};
+const SIDE_ICO={'Cadastros':'🏢','Departamento Pessoal':'👥','Folha de pagamento':'💰','Contabilidade':'📒','Financeiro':'💳','DCTFWeb':'🧾','Arquivos bancários':'🏦','eSocial':'📡','Planejamento tributário':'📊','Sistema':'⚙'};
 const SIDE_OPEN=new Set();let SIDE_Q='';
 function sideGrupos(){const gs=[];let g=null;MENU.forEach(([n,k,l])=>{if(n){g={n,it:[]};gs.push(g);}if(!g)gs.push({n:'',it:[[k,l]]});else g.it.push([k,l]);});return gs;}
 const sideNorm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -1195,8 +1197,11 @@ function checarEstrutura(){const E=DB.empresa,o=[];const add=(n,t)=>o.push({n,t}
   DB.estabs.forEach(s=>{if(s.tpInsc==='1'&&onlyC(s.nrInsc).slice(0,8)!==onlyC(E.cnpj).slice(0,8))add('err','Estabelecimento '+s.nome+': raiz do CNPJ diferente da do empregador.');
     if(ratIncide(E)&&![1,2,3].includes(Number(s.rat)))add('err','Estabelecimento '+s.nome+': grau de risco (RAT) deve ser 1, 2 ou 3.');
     if(!DB.empregados.some(e=>e.estab===s.id))add('warn','Estabelecimento '+s.nome+' sem empregados vinculados.');});
+  DB.rubricas.filter(r=>r.custom&&/consign/i.test(r.desc||'')&&r.nat!=='9253').forEach(r=>add('warn','Rubrica '+r.cod+' ('+r.desc+'): desconto de consignado do programa Crédito do Trabalhador (eConsignado) deve usar a natureza 9253, para entrar no S-5003 e na guia do FGTS Digital (MOS S-1.3, S-1200, informações adicionais) **.'));
   DB.lotacoes.forEach(l=>{if(E.regime==='sn'&&String(l.codTercs)!=='0000')add('err','Lotação '+l.cod+': Simples Nacional exige terceiros 0000.');
     if(E.regime&&E.regime!=='sn'&&String(l.codTercs)==='0000')add('warn','Lotação '+l.cod+': terceiros 0000 em empresa de Presumido/Real — confira o FPAS.');
+    if(compAtual()>='2026-05'&&['507','833'].includes(String(l.fpas))&&['0067','0071','0075'].includes(String(l.codTercs)))add('warn','Lotação '+l.cod+': a partir da competência 05/2026, quem recolhia terceiros por convênio deve criar nova vigência da S-1020 (início 2026-05) com FPAS 507 ou 833 e código de terceiros 0079 (MOS eSocial S-1.3, S-1020, informações adicionais, item 1.4.1) **.');
+    if(['507','833'].includes(String(l.fpas))&&DB.empregados.filter(e=>e.situacao!=='desligado').length>500)add('warn','Lotação '+l.cod+': com mais de 500 segurados empregados, o eSocial apura automaticamente, desde 05/2026, a contribuição adicional ao SENAI (MOS S-1.3, S-5011, item 1.6); o cálculo de terceiros deste sistema não a inclui **.');
     if(E.regime==='sn'&&E.anexo==='misto'&&!l.atvSimples)add('err','Lotação '+l.cod+': indique se a atividade é de CPP substituída ou não (Simples misto).');
     if(!DB.empregados.some(e=>e.lotacao===l.id))add('warn','Lotação '+l.cod+' sem empregados vinculados.');});
   if(!DB.lotacoes.length)add('err','Nenhuma lotação cadastrada: o S-1200 exige lotação.');
@@ -1681,16 +1686,16 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   const dInss=vencGuia(comp,P.venc.inss),dFgts=vencGuia(comp,P.venc.fgts);
   const plr=r2(c?Object.values(c.res||{}).reduce((a,r)=>a+(r.irrfPlr||0),0):0);const irTrab=r2(T.irrf-plr);
   const sn=E&&E.regime==='sn'&&E.anexo==='std';
-  const rows=[['Contribuição previdenciária (segurados'+(sn?'':' + patronal, RAT e terceiros')+')',r2(T.inss+(sn?0:T.pat+T.rat+T.terc)),'DCTFWeb → DARF numerado (código de receita da folha)',dInss,'Lei 8.212/1991, art. 30, I, “b”; IN RFB 2.110/2022 **'],
-   ['IRRF sobre rendimentos do trabalho',irTrab,'DCTFWeb → DARF numerado (código 0561)',dInss,'Lei 11.196/2005, art. 70 **'],
-   ['IRRF sobre PLR',plr,'DCTFWeb → DARF numerado (código 3562)',dInss,'Lei 10.101/2000, art. 3º, §5º **'],
+  const rows=[['Contribuição previdenciária (segurados'+(sn?'':' + patronal, RAT e terceiros')+')',r2(T.inss+(sn?0:T.pat+T.rat+T.terc)),'DCTFWeb → DARF numerado (CP segurados 1082-01; patronal 1138-01; RAT ajustado 1646-01; terceiros por entidade)',dInss,'Lei 8.212/1991, art. 30, I, “b”; IN RFB 2.110/2022 **'],
+   ['IRRF sobre rendimentos do trabalho',irTrab,'DCTFWeb → DARF numerado (código 0561-07)',dInss,'Lei 11.196/2005, art. 70 **'],
+   ['IRRF sobre PLR',plr,'DCTFWeb → DARF numerado (código 3562-01)',dInss,'Lei 10.101/2000, art. 3º, §5º **'],
    ['FGTS mensal',T.fgts,'FGTS Digital — guia por empregador',dFgts,'Lei 8.036/1990, art. 15 **']].filter(r=>r[1]>0);
   const tot=r2(rows.reduce((a,r)=>a+r[1],0));
   return `<h1>Guias e vencimentos — ${compLabel(comp)}</h1><p class="sub">Espelho de conferência dos valores a recolher. As guias oficiais são emitidas na DCTFWeb (a partir do S-1299 e dos retornos S-5011/S-5012) e no FGTS Digital; este sistema não substitui a emissão nem transmite a DCTFWeb. Vencimentos antecipados para o dia útil anterior quando recaem em fim de semana ou feriado nacional fixo (feriados móveis, estaduais e municipais não são considerados).</p>${exigeEmpresa()}
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
-const APP_VER='2026.11.14+0aaea005';
+const APP_VER='2026.11.14+c092dbb9';
 const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
@@ -2300,7 +2305,7 @@ const SV={on:!!FPAPI,snap:{},tok:null,user:null,conta:null,emp:null,ver:0,perms:
 const SV_NIV=['Sem acesso','Visualizar','Editar','Aprovar / transmitir','Administrar'];
 const SV_MODN={cadastros:'Cadastros e DP',folha:'Folha de pagamento',ferias:'Férias, 13º e rescisão',esocial:'eSocial',sst:'Saúde e segurança (SST)',historico:'Histórico e controle interno',relatorios:'Relatórios e painéis',config:'Parâmetros e configurações',usuarios:'Usuários e permissões',auditoria:'Registro de ações',contabil:'Contabilidade',financeiro:'Financeiro e arquivos bancários'};
 const SV_PERFN={admin:'Administrador',dp:'Departamento pessoal',aprovador:'Aprovador',consulta:'Consulta',auditor:'Auditor',custom:'Personalizado'};
-const SV_PAG={ctbLanc:'contabil',ctbPlano:'contabil',ctbParam:'contabil',ctbBal:'contabil',finTit:'financeiro',finContas:'financeiro',bcoRem:'financeiro',empresa:'cadastros',estabs:'cadastros',lotacoes:'cadastros',estrutura:'cadastros',cargos:'cadastros',rubricas:'cadastros',empregados:'cadastros',empForm:'cadastros',movs:'cadastros',cct:'cadastros',bh:'cadastros',regras:'cadastros',
+const SV_PAG={dctfApur:'esocial',dctfPrazos:'esocial',dctfMulta:'esocial',ctbLanc:'contabil',ctbPlano:'contabil',ctbParam:'contabil',ctbBal:'contabil',finTit:'financeiro',finContas:'financeiro',bcoRem:'financeiro',empresa:'cadastros',estabs:'cadastros',lotacoes:'cadastros',estrutura:'cadastros',cargos:'cadastros',rubricas:'cadastros',empregados:'cadastros',empForm:'cadastros',movs:'cadastros',cct:'cadastros',bh:'cadastros',regras:'cadastros',
  sstCat:'sst',sstAso:'sst',sstRisco:'sst',saude:'sst',hist:'historico',hAdv:'historico',hCurso:'historico',atest:'historico',lanc:'folha',folha:'folha',d13:'folha',holerite:'folha',ficha:'folha',ferias:'ferias',resc:'ferias',
  relEmp:'relatorios',relat:'relatorios',painel:'relatorios',cmp:'relatorios',envio:'esocial',biblioteca:'esocial',retornos:'esocial',guias:'esocial',integr:'esocial',params:'config',backup:'config',marca:'config',usuarios:'usuarios',auditSrv:'auditoria'};
 const svNivel=m=>!SV.on?4:(m?(+SV.perms[m]||0):4);
@@ -2688,5 +2693,125 @@ ACT.rtImp=async()=>{const fl=($('#rtFile')||{}).files&&$('#rtFile').files[0];if(
     else if(x.st==='agendado'){ag++;}
     else{t.status='aberto';t.remId=null;t.motivo='Retorno bancário: '+x.oc.map(c=>c+' '+(CNAB_OC[c]||'ocorrência não mapeada')).join('; ');rj++;}});
   saveDB();audit('Retorno CNAB',pg+' pagos, '+rj+' rejeitados');toast(pg+' pagos, '+ag+' agendados, '+rj+' rejeitados'+(nf?', '+nf+' não localizados':'')+'.',rj||nf?'err':'ok');refresh();};
+/* ===================== DCTFWeb: apuração, créditos, prazos e multas =====================
+   Fonte: Manual de Orientação da DCTFWeb (janeiro/2025) e MOS eSocial S-1.3 (consolidado até a NO S-1.3 – 12.2026).
+   Espelho de conferência: a DCTFWeb é gerada pela RFB a partir do S-1299 e do R-2099 e transmitida no e-CAC; este módulo
+   não a transmite nem emite DARF. Valores apurados aqui são estimativas e devem ser conferidos com o S-5011 **. */
+const dctfDB=()=>{DB.dctf=DB.dctf||{};const d=DB.dctf;d.cred=d.cred||{};d.trans=d.trans||{};return d;};
+const diaUtilPosterior=d=>{const f=x=>FERIADOS_FIXOS.includes(x.toISOString().slice(5,10));while(d.getUTCDay()===0||d.getUTCDay()===6||f(d))d=new Date(d.getTime()+864e5);return d;};
+const isoD=d=>d.toISOString().slice(0,10),dUTC=iso=>new Date(iso+'T00:00:00Z');
+const proxComp=comp=>{const [a,m]=comp.split('-').map(Number);return m===12?(a+1)+'-01':a+'-'+String(m+1).padStart(2,'0');};
+/* último dia útil do mês seguinte (Manual DCTFWeb, item 4.2) */
+const dctfPrazoEntrega=comp=>{const [a,m]=proxComp(comp).split('-').map(Number);return isoD(diaUtilAnterior(new Date(Date.UTC(a,m,0))));};
+/* dia 15 do mês seguinte, postergado (MOS S-1.3: S-1200, S-1210, S-1299) */
+const esocPrazo15=comp=>{const [a,m]=proxComp(comp).split('-').map(Number);return isoD(diaUtilPosterior(new Date(Date.UTC(a,m-1,15))));};
+/* 13º salário: dia 20 de dezembro, antecipado */
+const prazo13=ano=>isoD(diaUtilAnterior(new Date(Date.UTC(ano,11,20))));
+
+function dctfApurar(comp){
+  const C=DB.comps[comp];if(!C||!Object.keys(C.res||{}).length)return null;
+  const P=DB.params,E=DB.empresa||{},cr=dctfDB().cred[comp]||{};
+  const A={inssM:0,inssD:0,patM:0,patD:0,ratM:0,ratD:0,tercM:0,tercD:0,irM:0,irD:0,plr:0,sf:0,fgts:0};
+  for(const id in C.res){const r=C.res[id],e=byId(DB.empregados,id);
+    const i13=r.inss13||0,ir13=r.irrf13||0;
+    A.inssM+=Math.max(0,r.inss-i13);A.inssD+=i13;A.irM+=Math.max(0,r.irrf-ir13);A.irD+=ir13;A.plr+=r.irrfPlr||0;A.sf+=r.sf||0;A.fgts+=r.fgts||0;
+    const em=encargosEmpresa(Object.assign({},r,{baseCP13:0}),P,E,e,comp,true),ed=encargosEmpresa(Object.assign({},r,{baseCP:0}),P,E,e,comp,true);
+    A.patM+=em.patronal;A.ratM+=em.rat;A.tercM+=em.terc;A.patD+=ed.patronal;A.ratD+=ed.rat;A.tercD+=ed.terc;}
+  for(const k in A)A[k]=tr2(A[k]);
+  const L=[ /* [cr, descrição, grupo, valor, categoria] */
+   ['1082-01','CP Segurados — empregados/avulsos','seg',A.inssM,'M'],['1138-01','CP Patronal — empregados/avulsos','pat',A.patM,'M'],['1646-01','CP Patronal — GILRAT ajustado (RAT × FAP)','pat',A.ratM,'M'],
+   ['(por entidade)','CP Terceiros — outras entidades e fundos, conforme FPAS/código de terceiros da lotação','terc',A.tercM,'M'],
+   ['0561-07','IRRF — rendimentos do trabalho assalariado','ir',A.irM,'M'],['3562-01','IRRF — participação nos lucros ou resultados (PLR)','ir',A.plr,'M'],
+   ['1082-21','CP Segurados — 13º salário','seg',A.inssD,'D'],['1138-21','CP Patronal — 13º salário','pat',A.patD,'D'],['1646-21','CP Patronal — GILRAT ajustado — 13º salário','pat',A.ratD,'D'],
+   ['(por entidade)','CP Terceiros — 13º salário','terc',A.tercD,'D'],['0561-07','IRRF — 13º salário (confirmar código na tabela do Anexo I)','ir',A.irD,'D']].filter(l=>l[3]>0).map(l=>({cr:l[0],desc:l[1],grp:l[2],deb:l[3],cat:l[4],cred:0,creditos:{}}));
+  /* créditos vinculáveis — ordem padrão: pagamentos, salário-família, salário-maternidade, retenção Lei 9.711/98; só abatem CP e terceiros (PA ≥ 09/2023) */
+  const creds=[['sf','Salário-família',A.sf],['sm','Salário-maternidade',num(cr.sm)],['ret','Retenção Lei 9.711/98',num(cr.ret)]];
+  const ordem=['seg','pat','terc'],alvo=L.filter(l=>l.cat==='M'&&ordem.includes(l.grp)).sort((a,b)=>ordem.indexOf(a.grp)-ordem.indexOf(b.grp));
+  const sobra={};
+  creds.forEach(([k,n,v])=>{let rest=r2(v);alvo.forEach(l=>{const disp=r2(l.deb-l.cred),u=Math.min(rest,disp);if(u>0){l.cred=r2(l.cred+u);l.creditos[k]=r2((l.creditos[k]||0)+u);rest=r2(rest-u);}});sobra[k]=rest;});
+  L.forEach(l=>{l.saldo=r2(l.deb-l.cred);});
+  const tot=(f)=>r2(L.filter(f).reduce((a,l)=>a+l.saldo,0));
+  const deb=r2(L.reduce((a,l)=>a+l.deb,0)),cre=r2(L.reduce((a,l)=>a+l.cred,0));
+  return{L,creds,sobra,deb,cre,saldoM:tot(l=>l.cat==='M'),saldoD:tot(l=>l.cat==='D'),saldo:r2(deb-cre),fgts:A.fgts,sn:E.regime==='sn'&&E.anexo==='std',cprb:!!E.cprb};
+}
+const dctfSt=comp=>{const t=dctfDB().trans[comp];if(!t||!t.data)return['Não transmitida','warn'];return t.data>dctfPrazoEntrega(comp)?['Transmitida em atraso (MAED)','err']:['Transmitida no prazo','ok'];};
+
+SC.dctfApur={view(p){const comp=p.comp||DB.cfg.comp,A=dctfApurar(comp),d=dctfDB(),cr=d.cred[comp]||{},P=DB.params;
+  const pz=dctfPrazoEntrega(comp),venc=vencGuia(comp,P.venc.inss),st=dctfSt(comp),tr=d.trans[comp]||{};
+  const ret=(DB.ret||[]).filter(r=>r.tipo==='S-5011'&&r.per===comp)[0];
+  return `<h1>DCTFWeb — apuração e saldo a pagar</h1><p class="sub">Espelho da declaração da competência, montado a partir da folha calculada. A DCTFWeb é gerada pela Receita Federal a partir do S-1299 (eSocial) e do R-2099 (EFD-Reinf), conferida e transmitida no e-CAC. Este sistema não a transmite nem emite o DARF.</p>${exigeEmpresa()}
+  <div class="card"><div class="row"><div class="f"><label>Competência</label><input type="month" id="dcComp" value="${comp}"></div></div>
+  <p class="sub">Transmissão até <b>${fmtData(pz)}</b> (último dia útil do mês seguinte) · DARF com vencimento em <b>${fmtData(venc)}</b> · situação: ${badge(st[0],st[1])}${venc<pz?' · <b>o vencimento antecede o prazo de entrega</b>: transmita antes do vencimento ou emita o DARF pelo Sicalcweb (Manual da DCTFWeb, item 16.3)':''}</p></div>
+  ${A?`<div class="card"><h2>Débitos apurados e créditos vinculados</h2><div class="tw"><table class="t"><thead><tr><th>Código de receita</th><th>Descrição</th><th class="r">Débito</th><th class="r">Crédito vinculado</th><th class="r">Saldo a pagar</th></tr></thead><tbody>
+  ${A.L.map(l=>`<tr><td>${esc(l.cr)}</td><td>${esc(l.desc)}${l.cat==='D'?' '+badge('DCTFWeb 13º','gray'):''}${Object.keys(l.creditos).length?`<br><small>${Object.entries(l.creditos).map(([k,v])=>A.creds.find(c=>c[0]===k)[1]+' R$ '+brl(v)).join(' · ')}</small>`:''}</td><td class="r">${brl(l.deb)}</td><td class="r">${l.cred?brl(l.cred):''}</td><td class="r">${brl(l.saldo)}</td></tr>`).join('')}
+  <tr><td colspan="2"><b>Total</b></td><td class="r"><b>${brl(A.deb)}</b></td><td class="r"><b>${brl(A.cre)}</b></td><td class="r"><b>${brl(A.saldo)}</b></td></tr></tbody></table></div>
+  <p class="sub">Declaração mensal: saldo de R$ ${brl(A.saldoM)}${A.saldoD?` · DCTFWeb 13º salário (anual, até ${fmtData(prazo13(+comp.slice(0,4)))}): R$ ${brl(A.saldoD)}`:''}. FGTS (R$ ${brl(A.fgts)}) <b>não</b> integra a DCTFWeb: é recolhido no FGTS Digital.</p>
+  ${A.creds.filter(c=>A.sobra[c[0]]>0).map(c=>`<div class="note warn">Crédito de ${c[1]} sem débito para abater: R$ ${brl(A.sobra[c[0]])}. O saldo remanescente deve ser objeto de pedido de reembolso/compensação por PER/DCOMP Web (Manual da DCTFWeb, itens 12.1 e 12.2).</div>`).join('')}</div>
+  <div class="card"><h2>Créditos informados fora da folha</h2><div class="grid">${F('Salário-maternidade pago (R$)','sm',cr.sm||'',{t:'money',w:4,hint:'Vem do eSocial; este sistema ainda não calcula o benefício.'})+F('Retenção Lei 9.711/98 sofrida (R$)','ret',cr.ret||'',{t:'money',w:4,hint:'Retenção na nota fiscal de serviços com cessão de mão de obra.'})+F('DARF já pago (R$)','pg',cr.pg||'',{t:'money',w:4})}</div>
+  <div class="row"><button class="btn pri" data-act="dcCredSave">💾 Salvar créditos</button></div>
+  ${cr.pg>0?`<p class="sub">Saldo após pagamentos informados: <b>R$ ${brl(Math.max(0,r2(A.saldo-num(cr.pg))))}</b></p>`:''}</div>`:'<div class="note warn">Calcule a folha da competência para apurar a DCTFWeb.</div>'}
+  <div class="card"><h2>Registro da transmissão</h2><div class="grid">${F('Data da transmissão','tdata',tr.data||'',{t:'date',w:3})+F('Número do recibo','trec',tr.rec||'',{w:6})}</div><div class="row"><button class="btn pri" data-act="dcTransSave">Registrar</button></div></div>
+  <div class="card"><h2>Conciliação com o S-5011 (eSocial)</h2>${ret&&A?(()=>{const calc=r2(A.L.filter(l=>l.cat==='M'&&l.cr==='1082-01').reduce((a,l)=>a+l.deb,0)),gov=ret.vrDescCP;const ok=Math.abs(calc-gov)<=0.01;return `<p>Contribuição descontada dos segurados (1082-01): sistema R$ ${brl(calc)} × S-5011 R$ ${brl(gov)} — ${ok?badge('confere','ok'):badge('diferença R$ '+brl(r2(gov-calc)),'err')}</p>`;})():'<p class="sub">Importe o retorno S-5011 da competência em “Retornos e conciliação” para comparar.</p>'}</div>
+  <div class="note info"><b>Regras aplicadas:</b> vinculação automática na ordem padrão — contribuições dos segurados, patronais e, por último, terceiros; créditos aproveitados na sequência pagamento, salário-família, salário-maternidade e Retenção Lei 9.711/98, e somente sobre contribuições previdenciárias e de terceiros desde o PA 09/2023 (Manual da DCTFWeb, itens 9 e 12.1). Valores truncados na 2ª casa decimal, como nos totalizadores do eSocial (MOS S-1.3, S-5011, item 1.5). <b>Não calculados:</b> adicional GILRAT/aposentadoria especial (1141-01), contribuintes individuais (1099-xx), CPRB e demais tributos recebidos da EFD-Reinf, e a contribuição adicional ao SENAI (&gt; 500 empregados, FPAS 507/833, desde 05/2026). Terceiros aparece em total; o código de receita por entidade depende do código de terceiros da lotação (Anexo I do Manual) **. IRRF do 13º: confirme o código de receita na tabela do Anexo I **.</div>`;},
+  actions:()=>[],mount(){const i=$('#dcComp');if(i)i.addEventListener('change',()=>refresh({comp:i.value}));}};
+ACT.dcCredSave=()=>{const comp=$('#dcComp').value,o=readForm($('#main'));const d=dctfDB();d.cred[comp]={sm:num(o.sm),ret:num(o.ret),pg:num(o.pg)};saveDB();audit('DCTFWeb créditos',comp);toast('Créditos salvos.','ok');refresh({comp});};
+ACT.dcTransSave=()=>{const comp=$('#dcComp').value,o=readForm($('#main'));const d=dctfDB();d.trans[comp]={data:o.tdata,rec:o.trec};saveDB();audit('DCTFWeb transmissão',comp+' '+o.tdata);const st=dctfSt(comp);toast('Registrado: '+st[0]+'.',st[1]==='err'?'err':'ok');refresh({comp});};
+
+/* ---------- calendário de prazos eSocial e DCTFWeb ---------- */
+function prazosComp(comp){
+  const P=DB.params,a=+comp.slice(0,4),m=+comp.slice(5),out=[];const hj=hoje();
+  const proc=(t)=>DB.eventos.some(e=>e.tipo===t&&e.status==='processado'&&((e.gen&&e.gen.args&&e.gen.args.comp)?e.gen.args.comp===comp:true));
+  const add=(obrig,data,base,feito)=>out.push({obrig,data,base,feito:!!feito});
+  add('S-1200 — remuneração do trabalhador',esocPrazo15(comp),'MOS S-1.3, S-1200: dia 15 do mês seguinte, postergado se dia não útil',proc('S-1200'));
+  add('S-1210 — pagamentos de rendimentos',esocPrazo15(comp),'MOS S-1.3, S-1210: dia 15, postergado se dia não útil',proc('S-1210'));
+  add('S-1299 — fechamento dos eventos periódicos',esocPrazo15(comp),'MOS S-1.3, S-1299: dia 15, postergado; após S-1200/S-1210',proc('S-1299'));
+  add('DCTFWeb mensal — transmissão',dctfPrazoEntrega(comp),'Manual da DCTFWeb, item 4.2: último dia útil do mês seguinte',!!(dctfDB().trans[comp]&&dctfDB().trans[comp].data));
+  add('DARF da DCTFWeb (CP, terceiros e IRRF)',vencGuia(comp,P.venc.inss),'Parâmetros legais (dia '+P.venc.inss+', antecipado) — Lei 8.212/1991, art. 30, I, “b” **',false);
+  add('FGTS Digital — guia mensal',vencGuia(comp,P.venc.fgts),'Parâmetros legais (dia '+P.venc.fgts+', antecipado) — Lei 8.036/1990, art. 15 **',false);
+  if(m===12){add('S-1200/S-1299 anual — 13º salário',prazo13(a),'MOS S-1.3: dia 20 de dezembro, antecipado se dia não útil',false);add('DCTFWeb 13º salário — transmissão',prazo13(a),'Manual da DCTFWeb, item 4.2: até 20 de dezembro',false);}
+  DB.empregados.forEach(e=>{
+    if(e.admissao&&e.admissao.slice(0,7)===proxComp(comp)&&!e.admPre)add('S-2200 — admissão de '+e.nome,isoD(new Date(dUTC(e.admissao).getTime()-864e5)),'MOS S-1.3, S-2200, alínea “a”: até o dia imediatamente anterior ao início da prestação (empregado)',DB.eventos.some(x=>x.tipo==='S-2200'&&x.status==='processado'&&x.gen&&x.gen.args&&x.gen.args.id===e.id));
+    if(e.desligamento&&e.desligamento.slice(0,7)===comp){const lim=isoD(diaUtilAnterior(new Date(dUTC(e.desligamento).getTime()+10*864e5)));
+      add('S-2299 — desligamento de '+e.nome,lim,'MOS S-1.3, S-2299: até 10 dias do desligamento (exclui o dia), antecipado se dia não útil',DB.eventos.some(x=>x.tipo==='S-2299'&&x.status==='processado'&&x.gen&&x.gen.args&&x.gen.args.id===e.id));
+      const dd=+e.desligamento.slice(8);if(dd>=1&&dd<=4)add('S-1200 de '+e.nome+' (mês anterior ao desligamento)',lim,'MOS S-1.3, S-1200: desligamento do 1º ao 4º dia — remuneração do mês anterior até o 10º dia seguinte ao desligamento',false);}});
+  return out.sort((x,y)=>x.data<y.data?-1:x.data>y.data?1:0).map(x=>Object.assign(x,{sit:x.feito?['Cumprido','ok']:x.data<hj?['Vencido','err']:(dUTC(x.data)-dUTC(hj))/864e5<=7?['Vence em até 7 dias','warn']:['A vencer','gray']}));
+}
+SC.dctfPrazos={view(p){const comp=p.comp||DB.cfg.comp,L=prazosComp(comp);
+  return `<h1>Calendário de prazos — eSocial e DCTFWeb</h1><p class="sub">Prazos da competência selecionada, conforme o Manual de Orientação do eSocial S-1.3 e o Manual da DCTFWeb. Só são considerados feriados nacionais fixos; feriados móveis, estaduais e municipais devem ser conferidos.</p>${exigeEmpresa()}
+  <div class="card"><div class="row"><div class="f"><label>Competência</label><input type="month" id="pzComp" value="${comp}"></div></div>
+  <div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th>Prazo</th><th>Situação</th><th>Base</th></tr></thead><tbody>${L.map(x=>`<tr><td>${esc(x.obrig)}</td><td>${fmtData(x.data)}</td><td>${badge(x.sit[0],x.sit[1])}</td><td><small>${esc(x.base)}</small></td></tr>`).join('')}</tbody></table></div>
+  <p class="sub">A situação “cumprido” dos eventos considera o envio processado nesta ferramenta; confira sempre no portal do eSocial e no e-CAC.</p></div>`;},
+  actions:()=>[],mount(){const i=$('#pzComp');if(i)i.addEventListener('change',()=>refresh({comp:i.value}));}};
+
+/* ---------- multas e acréscimos ---------- */
+function maedCalc(o){/* o:{montante,prazo,entrega,perfil:'geral'|'sn'|'mei',semFato,espontanea} */
+  const T=dUTC(somaDiasIso(o.prazo,1)),En=dUTC(o.entrega);if(En<=dUTC(o.prazo))return{meses:0,multa:0,minimo:0,base:0};
+  const meses=(En.getUTCFullYear()*12+En.getUTCMonth())-(T.getUTCFullYear()*12+T.getUTCMonth())+1;
+  const fator=o.perfil==='mei'?0.1:o.perfil==='sn'?0.5:1;const minimo=r2((o.semFato?200:500)*fator);
+  const pct=Math.min(20,2*meses),base=r2(o.montante*pct/100);let multa=Math.max(base,minimo);
+  if(o.espontanea)multa=Math.max(r2(multa*0.5),minimo);
+  return{meses,pct,base,minimo,multa:r2(multa)};
+}
+const somaDiasIso=(iso,n)=>new Date(dUTC(iso).getTime()+n*864e5).toISOString().slice(0,10);
+function moraCalc(o){/* o:{valor,venc,pag,selic} */
+  if(o.pag<=o.venc)return{dias:0,multa:0,juros:0,total:o.valor};
+  const dias=Math.round((dUTC(o.pag)-dUTC(o.venc))/864e5),pm=Math.min(20,0.33*dias),multa=r2(o.valor*pm/100),jp=num(o.selic)+1,juros=r2(o.valor*jp/100);
+  return{dias,pm:r2(pm),multa,jp,juros,total:r2(o.valor+multa+juros)};
+}
+SC.dctfMulta={view(p){const E=DB.empresa||{},q=p.q||{},perfilPad=E.regime==='sn'?'sn':'geral';
+  const o={montante:num(q.montante),prazo:q.prazo||dctfPrazoEntrega(DB.cfg.comp),entrega:q.entrega||'',perfil:q.perfil||perfilPad,semFato:!!q.semFato,espontanea:q.espontanea!=='0'};
+  const m=o.entrega&&o.montante>=0?maedCalc(o):null;
+  const z={valor:num(q.valor),venc:q.venc||'',pag:q.pag||'',selic:q.selic||0},mo=z.valor>0&&z.venc&&z.pag?moraCalc(z):null;
+  return `<h1>Multas e acréscimos legais — DCTFWeb</h1><p class="sub">Simulação da multa por atraso na entrega (MAED) e dos acréscimos moratórios do DARF. O valor oficial é o da notificação de lançamento emitida pela Receita Federal.</p>
+  <div class="card" id="fm"><h2>MAED — multa por atraso na entrega da declaração</h2><div class="grid">${F('Montante das contribuições declaradas (R$)','montante',o.montante||'',{t:'money',w:4})+F('Prazo de entrega','prazo',o.prazo,{t:'date',w:4})+F('Data da efetiva entrega','entrega',o.entrega,{t:'date',w:4})+F('Perfil do declarante','perfil',o.perfil,{t:'select',opts:[['geral','Demais empresas'],['sn','ME/EPP do Simples Nacional'],['mei','MEI']],w:4})+F('Declaração sem fatos geradores','semFato',o.semFato,{t:'check',w:4,cl:'Sem movimento (mínimo de R$ 200,00)'})+F('Entrega espontânea','espontanea',o.espontanea,{t:'check',w:4,cl:'Antes de qualquer procedimento de ofício (redução de 50%)'})}</div>
+  <div class="row"><button class="btn pri" data-act="mmCalc">Calcular MAED</button></div>
+  ${m?`<div class="note ${m.multa>0?'warn':'info'}">${m.meses?`Atraso de <b>${m.meses}</b> mês(es)-calendário ou fração: 2% ao mês, limitado a 20% (${m.pct}%) sobre R$ ${brl(o.montante)} = R$ ${brl(m.base)}; multa mínima R$ ${brl(m.minimo)}${o.espontanea?'; reduzida em 50% observado o mínimo':''}. <b>MAED estimada: R$ ${brl(m.multa)}</b> (DARF código 5440-01).`:'Entrega dentro do prazo: não há MAED.'}</div>`:''}
+  <p class="sub">Base: Manual da DCTFWeb, itens 5.1, 5.3 e 5.4. Multa mínima de R$ 500,00 (R$ 200,00 sem fatos geradores), reduzida em 90% para o MEI e em 50% para ME/EPP do Simples Nacional; prazo de impugnação de 30 dias (item 5.5). A não transmissão impede a emissão da CND. Incorreções ou omissões: R$ 20,00 por grupo de dez informações, observada a multa mínima (item 5.2).</p></div>
+  <div class="card" id="fz"><h2>Pagamento em atraso — multa de mora e juros</h2><div class="grid">${F('Valor do tributo (R$)','valor',z.valor||'',{t:'money',w:3})+F('Vencimento','venc',z.venc,{t:'date',w:3})+F('Data do pagamento','pag',z.pag,{t:'date',w:3})+F('Selic acumulada (%) do mês seguinte ao vencimento até o mês anterior ao do pagamento','selic',z.selic||'',{w:3,hint:'Informe a taxa acumulada divulgada pela RFB.'})}</div>
+  <div class="row"><button class="btn pri" data-act="mzCalc">Calcular acréscimos</button></div>
+  ${mo?`<div class="note info">${mo.dias?`${mo.dias} dia(s) de atraso: multa de mora de 0,33% ao dia, limitada a 20% (${brl(mo.pm)}%) = R$ ${brl(mo.multa)}; juros Selic acumulada + 1% no mês do pagamento (${brl(mo.jp)}%) = R$ ${brl(mo.juros)}. <b>Total: R$ ${brl(mo.total)}</b>.`:'Pagamento no prazo: sem acréscimos.'} O sistema oficial (Sicalcweb/DCTFWeb) calcula a multa a partir do primeiro dia útil subsequente ao vencimento; confira o valor na emissão do DARF.</div>`:''}
+  <p class="sub">Base: Manual da DCTFWeb, item 5.6.</p></div>`;},actions:()=>[]};
+ACT.mmCalc=()=>{const o=readForm($('#fm'));refresh({q:Object.assign({},NAV.cur.params.q,{montante:o.montante,prazo:o.prazo,entrega:o.entrega,perfil:o.perfil,semFato:o.semFato,espontanea:o.espontanea?'1':'0'})});};
+ACT.mzCalc=()=>{const o=readForm($('#fz'));refresh({q:Object.assign({},NAV.cur.params.q,{valor:o.valor,venc:o.venc,pag:o.pag,selic:o.selic})});};
 
 </script></body></html>

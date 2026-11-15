@@ -4,6 +4,7 @@
    cálculo, banco local e geradores de eventos do eSocial (leiaute S-1.3)
    ===================================================================== */
 const r2=v=>Math.round((Number(v)+Number.EPSILON)*100)/100;
+const tr2=v=>Math.floor(Number(v)*100+1e-6)/100; /* truncamento na 2ª casa — MOS eSocial S-1.3: totalizadores (S-5001/S-5003/S-5011) não arredondam */
 const onlyD=s=>String(s==null?'':s).replace(/\D/g,'');
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const brl=v=>Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -120,7 +121,7 @@ function defaultRubricas(){
 const LS_KEY='folhaPro.v1';
 let DB=null,_mem=null;
 function emptyDB(){return{ver:1,empresa:null,estabs:[],lotacoes:[],cargos:[],rubricas:defaultRubricas(),empregados:[],comps:{},eventos:[],seq:0,entregues:{},movs:[],ferias:[],decimo:{},rescisoes:{},
-  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams(),cct:[],bh:[],sstCat:[],sstAso:[],sstRisco:[],ret:[],hAdv:[],hCurso:[],atest:[],hAlt:[],hSnap:{},saude:{grau:'12',per:{}},ctb:{plano:null,regra:{},lanc:[],fech:{},seq:0,prov:false,encProv:0},fin:{contas:[],tit:[],rem:[],seq:0}};}
+  cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams(),cct:[],bh:[],sstCat:[],sstAso:[],sstRisco:[],ret:[],hAdv:[],hCurso:[],atest:[],hAlt:[],hSnap:{},saude:{grau:'12',per:{}},ctb:{plano:null,regra:{},lanc:[],fech:{},seq:0,prov:false,encProv:0},fin:{contas:[],tit:[],rem:[],seq:0},dctf:{cred:{},trans:{}}};}
 function loadDB(src){let r=src||null;if(!r){try{r=localStorage.getItem(LS_KEY);}catch(e){}}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{const x=o.rubricas.find(y=>y.sys===r.sys);if(!x)o.rubricas.push(r);else if(!x.nat&&r.nat)x.nat=r.nat;});const FIX={INSS:[['00','31'],['31','41']],IRRF:[['00','00'],['00','31']],D13INSS:[['00','32'],['32','42']],D13IRRF:[['00','00'],['00','32']]};o.rubricas.forEach(x=>{const f=FIX[x.sys];if(f&&x.incCP===f[0][0]&&x.incIRRF===f[0][1]){x.incCP=f[1][0];x.incIRRF=f[1][1];}});const IRFIX={SALFAM:'79',VT:'9',ADIANT:'9',PENSAO:'51',OUTD:'9',FERIAS:'13',FERTERCO:'13',ABONO:'75',ABONOTERCO:'75',D13P1:'9',AVISO:'74',FERVENC:'74',FERPROP:'74',FERPTERCO:'74',AVISOD:'9'};
   o.rubricas.forEach(x=>{if(!o.migIR&&IRFIX[x.sys]&&(x.incIRRF==='00'||x.incIRRF==='11'&&['FERIAS','FERTERCO'].includes(x.sys)))x.incIRRF=IRFIX[x.sys];});o.migIR=1;
   if(Array.isArray(o.rubricas)){o.rubricas.forEach(r=>{if(r.sys==='CONSIG'){r.nat='9254';r.incFGTS='00';r.desc='EMPRÉSTIMO CONSIGNADO — DESCONTO';}});defaultRubricas().forEach(d=>{if(!o.rubricas.some(r=>r.sys===d.sys))o.rubricas.push(d);});}
@@ -135,7 +136,7 @@ const uid=(p)=>p+Math.random().toString(36).slice(2,9);
 const byId=(arr,id)=>(arr||[]).find(x=>x.id===id);
 
 /* ---------------- Motor de cálculo ---------------- */
-function calcInss(base,P){base=Math.min(Math.max(base,0),P.tetoInss);let prev=0,t=0;for(const [lim,al] of P.inss){if(base>prev)t+=(Math.min(base,lim)-prev)*al/100;prev=lim;}return r2(t);}
+function calcInss(base,P){base=Math.min(Math.max(base,0),P.tetoInss);let prev=0,t=0;for(const [lim,al] of P.inss){if(base>prev)t+=tr2((Math.min(base,lim)-prev)*al/100);prev=lim;}return r2(t);}
 function impostoTabela(base,P){for(const [lim,al,ded] of P.irrf){if(base<=lim)return Math.max(0,r2(base*al/100-ded));}return 0;}
 function impostoPlr(v,P){for(const [lim,al,ded] of P.plrTab){if(v<=lim)return Math.max(0,r2(v*al/100-ded));}return 0;}
 const saldoBH=(id)=>r2((DB.bh||[]).filter(x=>x.empId===id).reduce((a,x)=>a+num(x.h),0));
@@ -252,7 +253,7 @@ function calcEmpregado(e,comp,L,P,emp){
   totProv=r2(totProv);totDesc=r2(totDesc);
   const aliqFg=e.categoria==='103'?P.fgtsAprendiz:P.fgts;
   return{itens:it.map(({r,...o})=>o),totProv,totDesc,liquido:r2(totProv-totDesc),baseCP:bCP,baseIR:bIR,baseFGTS:bFG,
-    inss:r2(inss+inss13),irrf:r2(ir.irrf+irrf13),irrfPlr:plrIR,margem,pensaoCalc:pensao,irrfInfo:ir,fgts:r2((bFG+base13)*aliqFg/100),aliqFgts:aliqFg,baseCP13:r2(base13),inss13,irrf13,multaFgts,notasRes,sf:sfOk?r2(nSF*P.salFam.cota):0,dias,calculadoEm:agoraISO()};
+    inss:r2(inss+inss13),irrf:r2(ir.irrf+irrf13),irrfPlr:plrIR,margem,pensaoCalc:pensao,irrfInfo:ir,fgts:tr2((bFG+base13)*aliqFg/100),aliqFgts:aliqFg,baseCP13:r2(base13),inss13,irrf13,multaFgts,notasRes,sf:sfOk?r2(nSF*P.salFam.cota):0,dias,calculadoEm:agoraISO()};
 }
 /* ---------------- Regimes tributários, estabelecimentos e lotações ---------------- */
 const REGIMES={sn:'Simples Nacional',lp:'Lucro Presumido',lr:'Lucro Real'};
@@ -274,14 +275,14 @@ function regraLot(E,l,comp,P){
   if(cprb){const f=fatorCprb(P,comp);return{pat:true,rat:true,terc:true,fator:f,nota:'CPRB: a contribuição patronal de 20% sobre a folha é reduzida e reonerada gradualmente (Lei 14.973/2024). Fator desta competência: '+f+'% da CPP. RAT e terceiros incidem normalmente. A CPRB sobre a receita bruta é apurada fora da folha.'};}
   return{pat:true,rat:true,terc:true,fator:100,nota:(REGIMES[E.regime]||'')+' — incidem CPP 20%, RAT×FAP e terceiros sobre a base previdenciária.'};
 }
-function encargosEmpresa(res,P,emp,e,comp){
+function encargosEmpresa(res,P,emp,e,comp,raw){const q2=raw?(v=>v):r2;
   const est=e?byId(DB.estabs,e.estab):null,lot=e?byId(DB.lotacoes,e.lotacao):null;
   const R=regraLot(emp,lot,comp,P),base=r2(res.baseCP+num(res.baseCP13));
-  const pat=R.pat?r2(base*num(emp&&emp.patronal!=null&&emp.patronal!==''?emp.patronal:P.patronal)/100*R.fator/100):0;
+  const pat=R.pat?q2(base*num(emp&&emp.patronal!=null&&emp.patronal!==''?emp.patronal:P.patronal)/100*R.fator/100):0;
   const ratP=est&&est.rat!==''&&est.rat!=null?num(est.rat):num(emp&&emp.rat!=null?emp.rat:P.rat),fapP=est&&est.fap!==''&&est.fap!=null?num(est.fap):num(emp&&emp.fap!=null?emp.fap:P.fap);
-  const rat=R.rat?r2(base*ratP*fapP/100):0;
+  const rat=R.rat?q2(base*ratP*fapP/100):0;
   const tp=lot&&lot.terceiros!==''&&lot.terceiros!=null?num(lot.terceiros):num(emp&&emp.terceiros!=null?emp.terceiros:P.terceiros);
-  const terc=R.terc?r2(base*tp/100):0;
+  const terc=R.terc?q2(base*tp/100):0;
   return{patronal:pat,rat,terc,nota:R.nota,regra:R};
 }
 function calcFolha(comp){
@@ -297,8 +298,8 @@ function totaisComp(comp){
   const c=DB.comps[comp];const t={n:0,prov:0,desc:0,liq:0,inss:0,irrf:0,irrfPlr:0,fgts:0,pat:0,rat:0,terc:0,sf:0};
   if(!c)return t;
   for(const id in c.res){const r=c.res[id];t.n++;t.prov+=r.totProv;t.desc+=r.totDesc;t.liq+=r.liquido;t.inss+=r.inss;t.irrf+=r.irrf;t.irrfPlr+=r.irrfPlr||0;t.fgts+=r.fgts;t.sf+=r.sf;
-    const en=encargosEmpresa(r,DB.params,DB.empresa,byId(DB.empregados,id),comp);t.pat+=en.patronal;t.rat+=en.rat;t.terc+=en.terc;}
-  for(const k in t)t[k]=k==='n'?t[k]:r2(t[k]);return t;
+    const en=encargosEmpresa(r,DB.params,DB.empresa,byId(DB.empregados,id),comp,true);t.pat+=en.patronal;t.rat+=en.rat;t.terc+=en.terc;}
+  for(const k in t)t[k]=k==='n'?t[k]:(k==='pat'||k==='rat'||k==='terc')?tr2(t[k]):r2(t[k]);return t;
 }
 
 
@@ -325,7 +326,7 @@ function avos13(e,ano,fimProj){let n=0;const adm=e.admissao?new Date(e.admissao+
   for(let m=1;m<=12;m++){let a=new Date(ano,m-1,1,12),b=new Date(ano,m,0,12);if(adm&&adm>a)a=adm;if(des&&des<b)b=des;if(b<a)continue;if(Math.round((b-a)/864e5)+1>=15)n++;}return n;}
 function calc13(e,ano,P,media,fimProj){const avos=avos13(e,ano,fimProj),base=remunBase(e,P,media),bruto=r2(base/12*avos),p1v=r2(bruto/2);
   const nDep=(e.deps||[]).filter(d=>d.irrf).length;const inss13=calcInss(bruto,P);const ir=calcIrrf(bruto,inss13,nDep,0,P);
-  return{avos,base,bruto,p1:p1v,inss13,irrf13:ir.irrf,fgts13:r2(bruto*(e.categoria==='103'?P.fgtsAprendiz:P.fgts)/100),liq2:r2(bruto-p1v-inss13-ir.irrf)};}
+  return{avos,base,bruto,p1:p1v,inss13,irrf13:ir.irrf,fgts13:tr2(bruto*(e.categoria==='103'?P.fgtsAprendiz:P.fgts)/100),liq2:r2(bruto-p1v-inss13-ir.irrf)};}
 const MOTIVOS_RESC={'01':'Justa causa (iniciativa do empregador)','02':'Sem justa causa (iniciativa do empregador)','06':'Término de contrato a termo','07':'Pedido de demissão (iniciativa do empregado)','17':'Rescisão indireta','33':'Acordo entre as partes (CLT, art. 484-A)'};
 const AVISOS={indenizado:'Indenizado (empregador dispensa o cumprimento)',trabalhado:'Trabalhado',nao_cumprido:'Não cumprido pelo empregado (desconto)',dispensado:'Dispensado / não aplicável'};
 function anosCompletos(ini,fim){const a=new Date(ini+'T12:00:00'),b=new Date(fim+'T12:00:00');let n=b.getFullYear()-a.getFullYear();const an=new Date(b.getFullYear(),a.getMonth(),a.getDate(),12);if(b<an)n--;return Math.max(0,n);}

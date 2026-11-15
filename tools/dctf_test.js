@@ -1,0 +1,45 @@
+const {JSDOM}=require('jsdom');const fs=require('fs');
+const html=fs.readFileSync(__dirname+'/../index.html','utf8');const errs=[];
+const w=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'https://x.test/',beforeParse(w){w.addEventListener('error',e=>errs.push('ERR '+e.message));w.print=()=>{};w.scrollTo=()=>{};w.__FP_NOGATE=true;}}).window;
+const ev=s=>w.eval(s),q=s=>w.document.querySelector(s);let fail=0;const ok=(n,c)=>{console.log((c?'PASS ':'FAIL ')+n);if(!c)fail++;};
+(async()=>{
+/* exemplo oficial do MOS: remuneração 2.500,00 cat. 101 → 221,62 (faixas 7,5%/9%/12% com truncamento) */
+ev(`seedDemo('lp')`);
+const P=ev(`DB.params`);
+ok('truncamento por faixa: 1.045,00×7,5% = 78,37 (MOS, S-5001)',ev(`tr2(1045*7.5/100)`)===78.37);
+ok('tr2 não perde centavo por ponto flutuante (0,29 / 1,15)',ev(`tr2(0.29)`)===0.29&&ev(`tr2(1.15)`)===1.15);
+const tabela=ev(`JSON.stringify(DB.params.inss)`);console.log(tabela);
+ev(`DB.params.inss=[[1045,7.5],[2089.6,9],[3134.4,12],[6101.06,14]];DB.params.tetoInss=6101.06`);
+ok('INSS de 2.500,00 pela tabela do MOS = 221,62',ev(`calcInss(2500,DB.params)`)===221.62);
+ev(`seedDemo('lp')`);
+const comp=ev(`(Object.keys(DB.comps).sort().pop()||DB.cfg.comp)`);ev(`calcFolha('${comp}')`);
+const A=ev(`dctfApurar('${comp}')`);ok('apuração gerada com '+A.L.length+' códigos',A&&A.L.length>=3);
+ok('1082-01 = INSS descontado da folha',Math.abs(A.L.find(l=>l.cr==='1082-01').deb-ev(`totaisComp('${comp}').inss`))<0.011);
+ok('saldo = débitos − créditos',Math.abs(A.saldo-(A.deb-A.cre))<0.011);
+ok('créditos não abatem IRRF',A.L.filter(l=>l.grp==='ir').every(l=>l.cred===0));
+ev(`dctfDB().cred['${comp}']={sm:100000,ret:0,pg:0}`);const B=ev(`dctfApurar('${comp}')`);
+ok('crédito maior que os débitos de CP: sem saldo negativo e sobra informada',B.L.every(l=>l.saldo>=0)&&B.sobra.sm>0);
+ev(`dctfDB().cred['${comp}']={sm:50,ret:0,pg:0}`);const Cc=ev(`dctfApurar('${comp}')`);
+ok('salário-maternidade vinculado primeiro aos segurados (1082-01)',Cc.L.find(l=>l.cr==='1082-01').creditos.sm===50);
+ok('prazo de entrega = último dia útil do mês seguinte',/^\d{4}-\d{2}-(2[6-9]|3[01])$/.test(ev(`dctfPrazoEntrega('2026-08')`))&&ev(`dctfPrazoEntrega('2026-08')`)==='2026-09-30');
+ok('S-1200 dia 15 postergado (15/11/2026 é domingo → 16/11)',ev(`esocPrazo15('2026-10')`)==='2026-11-16');
+ok('13º: dia 20/12/2026 (domingo) antecipado para 18/12',ev(`prazo13(2026)`)==='2026-12-18');
+const m1=ev(`maedCalc({montante:10000,prazo:'2026-09-30',entrega:'2026-10-05',perfil:'geral',semFato:false,espontanea:false})`);
+ok('MAED 1 mês: 2% de 10.000 = 200 → mínimo 500',m1.meses===1&&m1.multa===500);
+const m2=ev(`maedCalc({montante:100000,prazo:'2026-09-30',entrega:'2026-11-10',perfil:'geral',semFato:false,espontanea:false})`);
+ok('MAED 2 meses: 4% de 100.000 = 4.000',m2.meses===2&&m2.multa===4000);
+const m3=ev(`maedCalc({montante:100000,prazo:'2026-09-30',entrega:'2027-08-10',perfil:'geral',semFato:false,espontanea:true})`);
+ok('MAED limitada a 20% e reduzida 50% se espontânea = 10.000',m3.pct===20&&m3.multa===10000);
+ok('mínimo reduzido: MEI 90% (R$ 50) e SN 50% (R$ 250)',ev(`maedCalc({montante:0,prazo:'2026-09-30',entrega:'2026-10-02',perfil:'mei',semFato:false}).multa`)===50&&ev(`maedCalc({montante:0,prazo:'2026-09-30',entrega:'2026-10-02',perfil:'sn',semFato:false}).multa`)===250);
+const z=ev(`moraCalc({valor:1000,venc:'2026-10-20',pag:'2026-10-30',selic:0.5})`);
+ok('mora 10 dias: 3,3% + juros 1,5%',z.dias===10&&z.multa===33&&z.juros===15&&z.total===1048);
+const pz=ev(`prazosComp('${comp}')`);ok('calendário com S-1200, S-1299, DCTFWeb e FGTS ('+pz.length+')',['S-1200','S-1299','DCTFWeb mensal','FGTS Digital'].every(k=>pz.some(x=>x.obrig.startsWith(k))));
+ev(`DB.empregados[0].desligamento='${comp}-03';`);ok('desligamento dia 1–4 gera prazo de S-1200 do mês anterior',ev(`prazosComp('${comp}')`).some(x=>/mês anterior ao desligamento/.test(x.obrig)));
+for(const s of ['dctfApur','dctfPrazos','dctfMulta']){ev(`go('${s}',{comp:'${comp}'})`);ok('tela '+s+' renderiza',q('#main').innerHTML.length>300);}
+ev(`go('dctfApur',{comp:'${comp}'})`);ev(`ACT.dcCredSave()`);ok('créditos persistidos',ev(`dctfDB().cred['${comp}'].sm`)>=0);
+ev(`go('dctfApur',{comp:'${comp}'})`);q('[name=tdata]').value='2099-01-01';q('[name=trec]').value='123';ev(`ACT.dcTransSave()`);ok('transmissão registrada e identificada em atraso',ev(`dctfSt('${comp}')[1]`)==='err');
+ev(`DB.rubricas.push({sys:'CUSTCONS',cod:'250',desc:'Consignado Crédito do Trabalhador',tp:2,nat:'',custom:true})`);ok('alerta: consignado exige natureza 9253',ev(`checarEstrutura().some(x=>/9253/.test(x.t))`));
+ev(`DB.cfg.comp='2026-06';DB.lotacoes[0].fpas='507';DB.lotacoes[0].codTercs='0067'`);ok('alerta: terceiros 0079 a partir de 05/2026',ev(`checarEstrutura().some(x=>/0079/.test(x.t))`));
+ok('menu com grupo DCTFWeb',ev(`sideGrupos().some(g=>g.n==='DCTFWeb')`));
+ok('sem erros de script',errs.length===0);if(errs.length)console.log(errs.join('\n'));
+console.log(fail?'FALHAS '+fail:'TODOS OK');process.exit(fail?1:0);})();

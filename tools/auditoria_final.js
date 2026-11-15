@@ -18,7 +18,7 @@ for(let i=0;i<3;i++){const r=withDb(i,`()=>{const P=DB.params,out={n:0,bad:[]};c
   if(JSON.stringify(r).match(/NaN|undefined|Infinity/))out.bad.push('NaN '+nm);
   if(r.inss>r2(P.tetoInss*0.14)+0.01)out.bad.push('INSS acima do teto '+nm);
   const e=byId(DB.empregados,id);
-  if(!r.rescisao&&r.baseCP>0){const b=Math.min(r.baseCP,P.tetoInss);let prev=0,t=0;for(const [lim,al] of P.inss){if(b>prev)t+=(Math.min(b,lim)-prev)*al/100;prev=lim;}t=r2(t);const it=r.itens.find(x=>x.sys==='INSS');const v=it?it.valor:0;if(Math.abs(v-t)>0.02)out.bad.push('INSS recalc '+nm+' '+v+' x '+t);}
+  if(!r.rescisao&&r.baseCP>0){const b=Math.min(r.baseCP,P.tetoInss);let prev=0,t=0;for(const [lim,al] of P.inss){if(b>prev)t+=Math.floor((Math.min(b,lim)-prev)*al+1e-4)/100;prev=lim;}t=r2(t);const it=r.itens.find(x=>x.sys==='INSS');const v=it?it.valor:0;if(Math.abs(v-t)>0.02)out.bad.push('INSS recalc '+nm+' '+v+' x '+t);}
   if(r.baseFGTS>0&&Math.abs(r.fgts-r2(r.baseFGTS*r.aliqFgts/100))>0.02)out.bad.push('FGTS '+nm);
   if(r.irrfInfo){const I=r.irrfInfo;if(Math.abs((r.irrf||0)-Math.max(0,r2(I.imposto-I.reducao)))>0.02&&!r.irrfPlr)out.bad.push('IRRF imposto-reducao '+nm+' '+r.irrf+' x '+r2(I.imposto-I.reducao));}
  }});return out;}`);
