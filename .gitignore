@@ -1,4 +1,5 @@
-server/data/
-node_modules/
 *.pem
+api/data/
 chaves*.txt
+node_modules/
+server/data/

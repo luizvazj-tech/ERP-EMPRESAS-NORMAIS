@@ -1,0 +1,1 @@
+{"name":"folhapro-api","version":"1.0.0","private":true,"description":"API do FolhaPro: contas, usuários, permissões por módulo, MFA, auditoria encadeada e licenças","main":"server.js","scripts":{"start":"node server.js","test":"node test.js"},"engines":{"node":">=18"}}

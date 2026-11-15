@@ -52,4 +52,4 @@ function updModal(){const pend=UPDS.pacotes,apl=(DB&&DB.updApl||[]).slice(-8).re
   <details style="margin-top:10px"><summary>Servidor de atualizações</summary><div class="row"><div class="f" style="flex:1"><label for="updUrl">Endereço</label><input id="updUrl" value="${esc((DB&&DB.cfg&&DB.cfg.updUrl)||'')}" placeholder="${esc(UPD.url)}"></div><button class="btn" data-act="updSalvarUrl">Salvar</button></div></details>
   <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-act="updVerificar">Verificar novamente</button> <button class="btn" data-act="closeModal">Fechar</button></div>`);}
 ACT.atualizar=()=>{if(!DB){toast('Entre no sistema para verificar atualizações.','err');return;}UPDS.em=null;updModal();updChecar(false);};
-if(!window.__FP_NOGATE)window.addEventListener('load',()=>{setTimeout(()=>{if(DB)updChecar(true);},4000);setInterval(()=>{if(DB)updChecar(true);},30*60e3);});
+if(!window.__FP_NOGATE&&!window.__SVON)window.addEventListener('load',()=>{setTimeout(()=>{if(DB)updChecar(true);},4000);setInterval(()=>{if(DB)updChecar(true);},30*60e3);});

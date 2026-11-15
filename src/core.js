@@ -130,7 +130,7 @@ function loadDB(src){let r=src||null;if(!r){try{r=localStorage.getItem(LS_KEY);}
 function migrar(o){const E=o.empresa;if(E&&!E.regime){const ct=E.classTrib;E.regime=['01','02','03'].includes(ct)?'sn':'lp';E.anexo=ct==='03'?'iv':ct==='02'?'misto':'std';E.cprb=false;}
   if(E&&E.regime)E.classTrib=classTribDe(E);
   (o.lotacoes||[]).forEach(l=>{if(l.terceiros==null)l.terceiros='';});}
-function saveDB(){if(!DB)return;const s=JSON.stringify(DB);if(typeof VAULT!=='undefined'&&VAULT.on){if(!DB.audit&&VAULT.audit)DB.audit=VAULT.audit;VAULT.audit=DB.audit;vaultPersist(JSON.stringify(DB));return;}_mem=s;try{localStorage.setItem(LS_KEY,s);}catch(e){}}
+function saveDB(){if(!DB)return;if(window.__SVON){svAgendar();return;}const s=JSON.stringify(DB);if(typeof VAULT!=='undefined'&&VAULT.on){if(!DB.audit&&VAULT.audit)DB.audit=VAULT.audit;VAULT.audit=DB.audit;vaultPersist(JSON.stringify(DB));return;}_mem=s;try{localStorage.setItem(LS_KEY,s);}catch(e){}}
 const uid=(p)=>p+Math.random().toString(36).slice(2,9);
 const byId=(arr,id)=>(arr||[]).find(x=>x.id===id);
 

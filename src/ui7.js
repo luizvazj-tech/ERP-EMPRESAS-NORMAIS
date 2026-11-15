@@ -143,6 +143,7 @@ let _idt=0;function vaultIdleThrottle(){const n=Date.now();if(n-_idt>5000){_idt=
 
 /* ---------- inicialização ---------- */
 function boot(){brandLoad();consentLoad();applyBrand();if(!CONSENT)bannerShow();
+  {const m=document.querySelector('meta[name="fp-api"]');if(m&&m.content&&m.content.indexOf('%%')<0){window.__SVON=true;setTimeout(()=>svStart(),0);return;}}
   if(window.__FP_NOGATE){DB=loadDB();render();return;}
   if(!(window.crypto&&crypto.subtle)){document.body.innerHTML='<div style="padding:30px;font:16px system-ui"><h1>Navegador sem suporte à criptografia</h1><p>O sistema exige HTTPS e um navegador atual (WebCrypto). Acesse por https:// ou atualize o navegador.</p></div>';return;}
   let has=null;try{has=localStorage.getItem(VK);}catch(e){}
