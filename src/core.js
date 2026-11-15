@@ -168,6 +168,7 @@ function calcEmpregado(e,comp,L,P,emp){
   const dm=diasMes(comp);let dias=30;
   if(e.admissao&&e.admissao.slice(0,7)===comp)dias=Math.max(0,30-(Number(e.admissao.slice(8,10))-1));
   if(e.desligamento&&e.desligamento.slice(0,7)===comp)dias=Math.min(dias,Number(e.desligamento.slice(8,10)));
+  const diasAD=dias;
   const fer=feriasNoMes(e,comp);dias=Math.max(0,dias-fer.diasGozoMes);
   const sal=num(e.salario);
   const salMes=dias>=30?sal:r2(sal/30*dias);
@@ -207,7 +208,7 @@ function calcEmpregado(e,comp,L,P,emp){
   const fal=num(L.faltas);if(fal>0)add('FALTAS',fal+' d',r2(sal/30*fal));
   const atr=num(L.atrasos);if(atr>0)add('ATRASOS',atr+' h',r2(vhSal*atr));
   // rubricas incluídas pelo usuário (ativas na competência e não pausadas)
-  (DB.rubricas||[]).forEach(r=>{if(!r.custom||!rubAtiva(r,comp)||!rubAplica(r,e))return;const v=r.calc==='pct'?r2(sal*num(r.valor)/100):r2(num(r.valor));add(r.sys,r.calc==='pct'?num(r.valor)+'%':'',v);});
+  (DB.rubricas||[]).forEach(r=>{if(!r.custom||!rubAtiva(r,comp)||!rubAplica(r,e))return;const f=r.prop==='dias'?dias/30:r.prop==='adm'?diasAD/30:1;const v0=r.calc==='pct'?sal*num(r.valor)/100:num(r.valor);add(r.sys,(r.calc==='pct'?num(r.valor)+'%':'')+(f<1?(r.calc==='pct'?' · ':'')+Math.round(f*30)+'/30':''),r2(v0*f));});
   // bases
   let bCP=0,bIR=0,bFG=0,prov=0,desc=0;
   for(const x of it){const r=x.r;if(x.sep)continue;

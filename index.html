@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-t3Cwv5RajelPn2UMACpx3qG3BaJvksK5jFTimi57yIU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-w6phHoK6Yxpx8sKMQ8n6KdAYIhD3OJS37vn/uxwoyN0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -290,6 +290,7 @@ function calcEmpregado(e,comp,L,P,emp){
   const dm=diasMes(comp);let dias=30;
   if(e.admissao&&e.admissao.slice(0,7)===comp)dias=Math.max(0,30-(Number(e.admissao.slice(8,10))-1));
   if(e.desligamento&&e.desligamento.slice(0,7)===comp)dias=Math.min(dias,Number(e.desligamento.slice(8,10)));
+  const diasAD=dias;
   const fer=feriasNoMes(e,comp);dias=Math.max(0,dias-fer.diasGozoMes);
   const sal=num(e.salario);
   const salMes=dias>=30?sal:r2(sal/30*dias);
@@ -329,7 +330,7 @@ function calcEmpregado(e,comp,L,P,emp){
   const fal=num(L.faltas);if(fal>0)add('FALTAS',fal+' d',r2(sal/30*fal));
   const atr=num(L.atrasos);if(atr>0)add('ATRASOS',atr+' h',r2(vhSal*atr));
   // rubricas incluídas pelo usuário (ativas na competência e não pausadas)
-  (DB.rubricas||[]).forEach(r=>{if(!r.custom||!rubAtiva(r,comp)||!rubAplica(r,e))return;const v=r.calc==='pct'?r2(sal*num(r.valor)/100):r2(num(r.valor));add(r.sys,r.calc==='pct'?num(r.valor)+'%':'',v);});
+  (DB.rubricas||[]).forEach(r=>{if(!r.custom||!rubAtiva(r,comp)||!rubAplica(r,e))return;const f=r.prop==='dias'?dias/30:r.prop==='adm'?diasAD/30:1;const v0=r.calc==='pct'?sal*num(r.valor)/100:num(r.valor);add(r.sys,(r.calc==='pct'?num(r.valor)+'%':'')+(f<1?(r.calc==='pct'?' · ':'')+Math.round(f*30)+'/30':''),r2(v0*f));});
   // bases
   let bCP=0,bIR=0,bFG=0,prov=0,desc=0;
   for(const x of it){const r=x.r;if(x.sep)continue;
@@ -1681,7 +1682,7 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
-const APP_VER='2026.11.14+52ca4bd6';
+const APP_VER='2026.11.14+40e6b6e4';
 const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
@@ -2239,6 +2240,7 @@ const rubSit=r=>{if(!r.custom)return badge('Sistema','gray');const hoje0=compAtu
     h+=F('Tipo da rubrica','tp',r.tp||1,{t:'select',opts:[['1','Provento (soma ao bruto)'],['2','Desconto (subtrai do líquido)']],w:3})
       +F('Forma de cálculo','calc',r.calc||'fixo',{t:'select',opts:[['fixo','Valor fixo mensal (R$)'],['pct','Percentual do salário contratual (%)']],w:3})
       +F('Valor (R$ ou %)','valor',r.valor,{t:'money',w:2,req:1})
+      +F('Proporcionalidade no mês','prop',r.prop||'int',{t:'select',opts:[['int','Integral (todo mês de vigência)'],['adm','Proporcional à admissão e ao desligamento (dias/30)'],['dias','Proporcional aos dias trabalhados (admissão, desligamento e férias gozadas)']],w:6,hint:'Base de 30 dias, como no salário. Valor fixo e percentual são proporcionalizados do mesmo modo.'})
       +F('Início (AAAA-MM)','ini',r.ini,{t:'month',req:1,w:2})
       +F('Fim (AAAA-MM), opcional','fim',r.fim,{t:'month',w:2,hint:'Vazio = sem data de fim'})
       +F('Quem recebe','aplica',r.aplica||'todos',{t:'select',opts:[['todos','Todos os empregados'],['sel','Somente os selecionados abaixo']],w:3})
@@ -2255,7 +2257,7 @@ const rubSit=r=>{if(!r.custom)return badge('Sistema','gray');const hoje0=compAtu
     if(cur&&cur.tp!==Number(o.tp)&&rubUsadaEv(cur))return 'Rubrica já usada em folha ou S-1010: não é possível mudar o tipo. Pause e inclua outra.';
     o.emps=[];Object.keys(o).forEach(k=>{if(k.startsWith('emp_')){if(o[k])o.emps.push(k.slice(4));delete o[k];}});
     if(o.aplica==='sel'&&!o.emps.length)return 'Selecione ao menos um empregado.';
-    o.tp=Number(o.tp);o.custom=true;o.opt=1;if(o.tp!==2)o.reduz=false;
+    o.tp=Number(o.tp);o.custom=true;if(!['int','adm','dias'].includes(o.prop))o.prop='int';o.opt=1;if(o.tp!==2)o.reduz=false;
     if(!cur){o.pausas=[];audit('rubrica incluída',o.cod+' '+o.desc);}else audit('rubrica alterada',o.cod+' '+o.desc);
     return null;};
   cfg.noDel=r=>!r.custom;
@@ -2263,7 +2265,7 @@ const rubSit=r=>{if(!r.custom)return badge('Sistema','gray');const hoje0=compAtu
   cfg.delMsg='Excluir a rubrica? Ela será apagada definitivamente. Se apenas quiser que deixe de ser calculada, use “Pausar”.';
   cfg.rowBtns=r=>{if(!r.custom)return '';const pz=(r.pausas||[]).some(p=>!p.ate);return pz?`<button class="btn sm" data-act="rubRetomar" data-id="${esc(r.sys)}">Retomar</button> `:`<button class="btn sm" data-act="rubPausar" data-id="${esc(r.sys)}">Pausar</button> `;};
   cfg.cols=cfg.cols.slice();
-  cfg.cols.splice(3,0,['calc','Cálculo',r=>r.custom?(r.calc==='pct'?esc(String(num(r.valor)).replace('.',','))+'% do salário':'R$ '+brIn(num(r.valor)))+(r.aplica==='sel'?' · '+(r.emps||[]).length+' empr.':''):'—']);
+  cfg.cols.splice(3,0,['calc','Cálculo',r=>r.custom?(r.calc==='pct'?esc(String(num(r.valor)).replace('.',','))+'% do salário':'R$ '+brIn(num(r.valor)))+(r.prop==='dias'?' · prop. dias trab.':r.prop==='adm'?' · prop. adm./deslig.':'')+(r.aplica==='sel'?' · '+(r.emps||[]).length+' empr.':''):'—']);
   cfg.cols.push(['sit','Situação',rubSit]);
 })();
 function rubModalMes(titulo,txt,def,btn,fn){modal(`<p>${txt}</p><div class="grid"><div class="f" style="grid-column:span 4"><label for="rubMes">Competência (AAAA-MM)</label><input type="month" id="rubMes" value="${esc(def)}"></div></div><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-act="closeModal">Cancelar</button><button class="btn pri" id="rubOk">${btn}</button></div>`,{title:titulo});

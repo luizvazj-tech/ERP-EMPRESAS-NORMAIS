@@ -18,6 +18,7 @@ const rubSit=r=>{if(!r.custom)return badge('Sistema','gray');const hoje0=compAtu
     h+=F('Tipo da rubrica','tp',r.tp||1,{t:'select',opts:[['1','Provento (soma ao bruto)'],['2','Desconto (subtrai do líquido)']],w:3})
       +F('Forma de cálculo','calc',r.calc||'fixo',{t:'select',opts:[['fixo','Valor fixo mensal (R$)'],['pct','Percentual do salário contratual (%)']],w:3})
       +F('Valor (R$ ou %)','valor',r.valor,{t:'money',w:2,req:1})
+      +F('Proporcionalidade no mês','prop',r.prop||'int',{t:'select',opts:[['int','Integral (todo mês de vigência)'],['adm','Proporcional à admissão e ao desligamento (dias/30)'],['dias','Proporcional aos dias trabalhados (admissão, desligamento e férias gozadas)']],w:6,hint:'Base de 30 dias, como no salário. Valor fixo e percentual são proporcionalizados do mesmo modo.'})
       +F('Início (AAAA-MM)','ini',r.ini,{t:'month',req:1,w:2})
       +F('Fim (AAAA-MM), opcional','fim',r.fim,{t:'month',w:2,hint:'Vazio = sem data de fim'})
       +F('Quem recebe','aplica',r.aplica||'todos',{t:'select',opts:[['todos','Todos os empregados'],['sel','Somente os selecionados abaixo']],w:3})
@@ -34,7 +35,7 @@ const rubSit=r=>{if(!r.custom)return badge('Sistema','gray');const hoje0=compAtu
     if(cur&&cur.tp!==Number(o.tp)&&rubUsadaEv(cur))return 'Rubrica já usada em folha ou S-1010: não é possível mudar o tipo. Pause e inclua outra.';
     o.emps=[];Object.keys(o).forEach(k=>{if(k.startsWith('emp_')){if(o[k])o.emps.push(k.slice(4));delete o[k];}});
     if(o.aplica==='sel'&&!o.emps.length)return 'Selecione ao menos um empregado.';
-    o.tp=Number(o.tp);o.custom=true;o.opt=1;if(o.tp!==2)o.reduz=false;
+    o.tp=Number(o.tp);o.custom=true;if(!['int','adm','dias'].includes(o.prop))o.prop='int';o.opt=1;if(o.tp!==2)o.reduz=false;
     if(!cur){o.pausas=[];audit('rubrica incluída',o.cod+' '+o.desc);}else audit('rubrica alterada',o.cod+' '+o.desc);
     return null;};
   cfg.noDel=r=>!r.custom;
@@ -42,7 +43,7 @@ const rubSit=r=>{if(!r.custom)return badge('Sistema','gray');const hoje0=compAtu
   cfg.delMsg='Excluir a rubrica? Ela será apagada definitivamente. Se apenas quiser que deixe de ser calculada, use “Pausar”.';
   cfg.rowBtns=r=>{if(!r.custom)return '';const pz=(r.pausas||[]).some(p=>!p.ate);return pz?`<button class="btn sm" data-act="rubRetomar" data-id="${esc(r.sys)}">Retomar</button> `:`<button class="btn sm" data-act="rubPausar" data-id="${esc(r.sys)}">Pausar</button> `;};
   cfg.cols=cfg.cols.slice();
-  cfg.cols.splice(3,0,['calc','Cálculo',r=>r.custom?(r.calc==='pct'?esc(String(num(r.valor)).replace('.',','))+'% do salário':'R$ '+brIn(num(r.valor)))+(r.aplica==='sel'?' · '+(r.emps||[]).length+' empr.':''):'—']);
+  cfg.cols.splice(3,0,['calc','Cálculo',r=>r.custom?(r.calc==='pct'?esc(String(num(r.valor)).replace('.',','))+'% do salário':'R$ '+brIn(num(r.valor)))+(r.prop==='dias'?' · prop. dias trab.':r.prop==='adm'?' · prop. adm./deslig.':'')+(r.aplica==='sel'?' · '+(r.emps||[]).length+' empr.':''):'—']);
   cfg.cols.push(['sit','Situação',rubSit]);
 })();
 function rubModalMes(titulo,txt,def,btn,fn){modal(`<p>${txt}</p><div class="grid"><div class="f" style="grid-column:span 4"><label for="rubMes">Competência (AAAA-MM)</label><input type="month" id="rubMes" value="${esc(def)}"></div></div><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-act="closeModal">Cancelar</button><button class="btn pri" id="rubOk">${btn}</button></div>`,{title:titulo});
