@@ -20,17 +20,17 @@ const PLANOS_PADRAO=[
 let PLANOS=rd(F.planos,null);if(!PLANOS){PLANOS=PLANOS_PADRAO;wr(F.planos,PLANOS);}
 const saveT=()=>wr(F.tenants,TENANTS),saveU=()=>wr(F.users,USERS),saveP=()=>wr(F.planos,PLANOS);
 /* ---------- módulos e níveis ---------- */
-const MODULOS=['cadastros','folha','ferias','esocial','sst','historico','relatorios','config','usuarios','auditoria'];
+const MODULOS=['cadastros','folha','ferias','esocial','sst','historico','relatorios','config','usuarios','auditoria','contabil','financeiro'];
 /* níveis: 0 sem acesso · 1 visualizar · 2 editar · 3 aprovar/fechar/enviar · 4 administrar */
 const PERFIS={
  admin:Object.fromEntries(MODULOS.map(m=>[m,4])),
- dp:{cadastros:2,folha:2,ferias:2,esocial:1,sst:2,historico:2,relatorios:2,config:0,usuarios:0,auditoria:0},
- aprovador:{cadastros:1,folha:3,ferias:3,esocial:3,sst:1,historico:1,relatorios:2,config:0,usuarios:0,auditoria:0},
- consulta:{cadastros:1,folha:1,ferias:1,esocial:1,sst:1,historico:1,relatorios:1,config:0,usuarios:0,auditoria:0},
- auditor:{cadastros:1,folha:1,ferias:1,esocial:1,sst:1,historico:1,relatorios:1,config:0,usuarios:0,auditoria:1}};
+ dp:{cadastros:2,folha:2,ferias:2,esocial:1,sst:2,historico:2,relatorios:2,config:0,usuarios:0,auditoria:0,contabil:0,financeiro:0},
+ aprovador:{cadastros:1,folha:3,ferias:3,esocial:3,sst:1,historico:1,relatorios:2,config:0,usuarios:0,auditoria:0,contabil:0,financeiro:0},
+ consulta:{cadastros:1,folha:1,ferias:1,esocial:1,sst:1,historico:1,relatorios:1,config:0,usuarios:0,auditoria:0,contabil:0,financeiro:0},
+ auditor:{cadastros:1,folha:1,ferias:1,esocial:1,sst:1,historico:1,relatorios:1,config:0,usuarios:0,auditoria:1,contabil:1,financeiro:1}};
 /* chave de nível superior do banco do cliente -> módulo que a controla */
 const CHAVE_MOD={empresa:'cadastros',estabs:'cadastros',lotacoes:'cadastros',cargos:'cadastros',rubricas:'cadastros',empregados:'cadastros',movs:'cadastros',cct:'cadastros',
- comps:'folha',decimo:'folha',ferias:'ferias',rescisoes:'ferias',eventos:'esocial',entregues:'folha',sstCat:'sst',sstAso:'sst',sstRisco:'sst',
+ comps:'folha',decimo:'folha',ctb:'contabil',fin:'financeiro',ferias:'ferias',rescisoes:'ferias',eventos:'esocial',entregues:'folha',sstCat:'sst',sstAso:'sst',sstRisco:'sst',
  hAdv:'historico',hCurso:'historico',atest:'historico',hAlt:'cadastros',hSnap:'cadastros',saude:'historico',params:'config',cfg:'config',seq:'esocial',updUndo:'config',updApl:'config'};
 const IGNORAR=new Set(['audit','_emps','_id','_exemplo','ver']);
 /* ---------- utilidades ---------- */
