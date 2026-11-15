@@ -13,11 +13,11 @@ ev(`go('empresa')`);const f=q('#f');console.log('tela empresa nova ok',!!f);
 ev(`DB.empresa={cnpj:'11444777000161',razao:'SEGUNDA LTDA',regime:'sn',anexo:'std'};DB.estabs=[];saveDB()`);
 ev(`go('empresa')`);console.log('lista mostra arquivada',/DEMONSTRAÇÃO/.test(q('#main').innerHTML));
 const idArq=ev('DB._emps[0].id');
-const bt=q('[data-act=empTrocar]');bt.click();
+const nm=q('[data-act=empAbrirConf]');console.log('nome é clicável',!!nm);nm.click();console.log('pergunta antes de abrir',/Deseja abrir a empresa cadastrada\?/.test(q('#modal').textContent));const razao0=ev('DB.empresa.razao');q('#modal [data-act=closeModal]').click();console.log('cancelar não troca',ev('DB.empresa.razao')===razao0&&!q('#modal.on'));q('[data-act=empAbrirConf]').click();q('#mcy').click();
 console.log('trocou p/ 1a',ev('DB.empresa.cnpj')===cn,'empregados',ev('DB.empregados.length')===n0,'arquivadas',ev('DB._emps.map(x=>x.razao)'));
 // excluir arquivada
-ev(`empExcluirModal('${ev('DB._emps[0].id')}')`);q('#exTx').value='nao';q('#exOk').click();console.log('sem confirmar mantem',ev('DB._emps.length'));
-q('#exTx').value='excluir';q('#exOk').click();console.log('apos excluir arquivada',ev('DB._emps.length'));
+ev(`empExcluirModal('${ev('DB._emps[0].id')}')`);console.log('aviso irreversivel',/realmente excluir este cadastro/.test(q('#modal').textContent)&&/irrevers/.test(q('#modal').textContent));q('#exNao').click();console.log('Nao, cancelar mantem',ev('DB._emps.length'));
+ev(`empExcluirModal('${ev('DB._emps[0].id')}')`);q('#exOk').click();console.log('apos excluir arquivada',ev('DB._emps.length'));
 // excluir ativa (unica)
-ev(`ACT.empExcluir()`);q('#exTx').value='EXCLUIR';q('#exOk').click();console.log('ativa excluida -> vazio',ev('DB.empresa===null&&DB.empregados.length===0'));
+ev(`ACT.empExcluir()`);q('#exOk').click();console.log('ativa excluida -> vazio',ev('DB.empresa===null&&DB.empregados.length===0'));
 console.log('ERROS',errs.length?errs:'nenhum');process.exit(0);})().catch(e=>{console.log('FALHA',e.stack);process.exit(1)});
