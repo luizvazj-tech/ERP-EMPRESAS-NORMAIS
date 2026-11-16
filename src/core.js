@@ -478,9 +478,9 @@ GEN['S-2240']=(a)=>{const r=byId(DB.sstRisco,a.id),e=sstEmp(r),id=novoId();
     +(!ausente?`<epcEpi><utilizEPC>${r.epc||0}</utilizEPC>${r.epc==='2'?`<eficEpc>${r.eficEpc||'S'}</eficEpc>`:''}<utilizEPI>${r.epi||0}</utilizEPI>${r.epi==='2'?`<eficEpi>${r.eficEpi||'S'}</eficEpi><epi><docAval>${xe(r.docAval||'CA')}</docAval></epi><epiCompl><medProtecao>S</medProtecao><condFuncto>S</condFuncto><usoInint>S</usoInint><przValid>S</przValid><periodicTroca>S</periodicTroca><higienizacao>S</higienizacao></epiCompl>`:''}</epcEpi>`:'')+`</agNoc>`;
   const corpo=`${ideEvt()}${ideEmp()}${sstVinc(e)}<infoExpRisco><dtIniCondicao>${r.ini}</dtIniCondicao>${r.fim?`<dtFimCondicao>${r.fim}</dtFimCondicao>`:''}<infoAmb><localAmb>${r.localAmb||1}</localAmb><dscSetor>${xe(r.setor)}</dscSetor><tpInsc>${r.tpInsc||1}</tpInsc><nrInsc>${onlyC(r.nrInsc)}</nrInsc></infoAmb><infoAtiv><dscAtivDes>${xe(r.ativ)}</dscAtivDes></infoAtiv>${ag}<respReg><cpfResp>${onlyD(r.respCpf)}</cpfResp>${r.ideOC?`<ideOC>${r.ideOC}</ideOC>`:''}${tag('nrOC',r.nrOC)}${tag('ufOC',r.ufOC)}</respReg>${r.obs?`<obs><obsCompl>${xe(r.obs)}</obsCompl></obs>`:''}</infoExpRisco>`;
   return{id,evt:'evtExpRisco',titulo:'Condições ambientais — '+(e.nome||'')+' ('+fmtData(r.ini)+')',ref:e.mat,xml:envelope('evtExpRisco',id,corpo)};};
-const TIPOS={'S-1000':'Informações do empregador','S-1005':'Estabelecimentos','S-1010':'Rubricas','S-1020':'Lotações tributárias','S-2200':'Admissão','S-2206':'Alteração contratual','S-2230':'Afastamento temporário','S-2299':'Desligamento','S-1200':'Remuneração','S-1210':'Pagamentos','S-1299':'Fechamento periódico','S-2205':'Alteração cadastral','S-1298':'Reabertura de eventos periódicos','S-3000':'Exclusão de evento','S-2210':'Comunicação de acidente de trabalho (CAT)','S-2220':'Monitoramento da saúde do trabalhador (ASO)','S-2240':'Condições ambientais do trabalho'};
+const TIPOS={'S-2300':'Trabalhador sem vínculo — início','S-1000':'Informações do empregador','S-1005':'Estabelecimentos','S-1010':'Rubricas','S-1020':'Lotações tributárias','S-2200':'Admissão','S-2206':'Alteração contratual','S-2230':'Afastamento temporário','S-2299':'Desligamento','S-1200':'Remuneração','S-1210':'Pagamentos','S-1299':'Fechamento periódico','S-2205':'Alteração cadastral','S-1298':'Reabertura de eventos periódicos','S-3000':'Exclusão de evento','S-2210':'Comunicação de acidente de trabalho (CAT)','S-2220':'Monitoramento da saúde do trabalhador (ASO)','S-2240':'Condições ambientais do trabalho'};
 const ratIncide=E=>!E||E.regime!=='sn'||E.anexo==='iv'||E.anexo==='misto';
-const ORDEM=['S-1000','S-1005','S-1020','S-1010','S-2200','S-2205','S-2206','S-2230','S-2299','S-1298','S-1200','S-1210','S-2210','S-2220','S-2240','S-3000','S-1299'];
+const ORDEM=['S-1000','S-1005','S-1020','S-1010','S-2200','S-2300','S-2205','S-2206','S-2230','S-2299','S-1298','S-1200','S-1210','S-2210','S-2220','S-2240','S-3000','S-1299'];
 
 function criarEvento(tipo,args,opts){
   const g=GEN[tipo](args,opts);
@@ -495,6 +495,7 @@ function validarBase(ev){
   if(!cnpjValido(E.cnpj))o.push('CNPJ do empregador inválido.');
   if(!ev.gen)return o;
   const{tipo,args}=ev.gen;
+  if((args&&args.ci)||tipo==='S-2300')return validarCI(ev,o,E);
   if(['S-1000'].includes(tipo)&&!E.classTrib)o.push('Informe a classificação tributária (classTrib).');
   if(tipo==='S-2200'||tipo==='S-2206'||tipo==='S-2230'||tipo==='S-2299'||tipo==='S-1200'||tipo==='S-1210'){
     const e=byId(DB.empregados,args.id);if(!e){o.push('Empregado não encontrado.');return o;}
