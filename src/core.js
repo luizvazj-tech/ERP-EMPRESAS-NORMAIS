@@ -57,8 +57,10 @@ let BRAND=Object.assign({},BRAND_DEF);
 function brandLoad(){try{const r=localStorage.getItem(BRAND_KEY);if(r)BRAND=Object.assign({},BRAND_DEF,JSON.parse(r));}catch(e){}}
 function brandSave(){if(!(typeof CONSENT!=='undefined'&&CONSENT&&CONSENT.pref))return;try{localStorage.setItem(BRAND_KEY,JSON.stringify(BRAND));}catch(e){}}
 function mixHex(a,b,t){const p=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');return[0,2,4].map(i=>parseInt(h.substr(i,2),16));};const A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v*(1-t)+B[i]*t).toString(16).padStart(2,'0')).join('');}
+function temaEscuro(){const a=document.documentElement.getAttribute('data-theme');if(a)return a==='dark';try{return !!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}catch(e){return false;}}
 function applyBrand(b){b=b||BRAND;const s=document.documentElement.style;
-  s.setProperty('--pri',b.pri);s.setProperty('--pri2',b.pri2);s.setProperty('--pri3',mixHex(b.pri,'#ffffff',.9));s.setProperty('--acc2',b.acc);s.setProperty('--acc',mixHex(b.acc,'#000000',.3));
+  const dk=temaEscuro(),lm=h=>{const m=[1,3,5].map(i=>parseInt(h.replace('#','').padEnd(6,'0').substr(i-1,2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));return .2126*m[0]+.7152*m[1]+.0722*m[2];};
+  s.setProperty('--pri',dk&&lm(b.pri)<.05?'#3b4a59':b.pri);s.setProperty('--pri2',b.pri2);s.setProperty('--pri3',dk?mixHex(b.pri,'#26323f',.8):mixHex(b.pri,'#ffffff',.9));s.setProperty('--pt',dk?mixHex(b.pri,'#ffffff',.65):b.pri);s.setProperty('--acc2',b.acc);s.setProperty('--acc',mixHex(b.acc,'#000000',.3));
   const fam=b.fonte?`"${b.fonte}",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`:'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
   document.body.style.fontFamily=fam;
   let l=document.getElementById('brandfont');if(!l){l=document.createElement('link');l.id='brandfont';l.rel='stylesheet';document.head.appendChild(l);}
