@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="fp-api" content="">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-nQF+vQcE6GIUvwwltpkaggFIvDuqsAlgP0z3MGkbCNo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-fNrA93gP/Rnmx3iBICnDVrhFVE12vPGvGVE2fG8E3V8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -161,6 +161,7 @@ kbd{font:11.5px ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--ibd
   <button data-act="home" title="Alt+I">⌂ Tela inicial</button>
   <button data-act="back" title="Alt+V">◀ Voltar</button>
   <button data-act="atualizar" id="btnUpd" title="Verificar atualizações do sistema">⟳ Atualizar</button>
+  <button data-act="sair" id="btnSair" title="Sair do sistema (salva as últimas ações)">⎋ Sair</button>
   <select id="mnav" aria-label="Menu de navegação"></select>
   <div class="emp" id="topemp"></div>
 </header>
@@ -1566,7 +1567,7 @@ ACT.pwdChange=async()=>{const a=$('#pw0').value,b=$('#pw1').value,c=$('#pw2').va
   VAULT.salt=crypto.getRandomValues(new Uint8Array(16));VAULT.key=await deriveKey(b,VAULT.salt,VAULT.it);audit('senha alterada');saveDB();await vaultFlush();toast('Senha alterada.','ok');render();};
 ACT.lock=async()=>{await vaultFlush();vaultLock();};
 function vaultIdle(){clearTimeout(VAULT.idleT);if(!VAULT.on)return;VAULT.idleT=setTimeout(()=>{ACT.lock();},((DB&&DB.cfg&&DB.cfg.idle)||15)*60000);}
-function vaultLock(){VAULT.key=null;VAULT.on=false;DB=null;clearTimeout(VAULT.idleT);closeModal();$('#main').innerHTML='';$('#bar').innerHTML='';$('#side').innerHTML='';$('#topemp').textContent='Sessão bloqueada';gateUnlock('Sessão bloqueada por segurança.');}
+function vaultLock(msg){VAULT.key=null;VAULT.on=false;DB=null;clearTimeout(VAULT.idleT);closeModal();$('#main').innerHTML='';$('#bar').innerHTML='';$('#side').innerHTML='';$('#topemp').textContent='Sessão bloqueada';gateUnlock(msg||'Sessão bloqueada por segurança.');}
 
 /* ---------- tela de acesso ---------- */
 function gate(html){let g=document.getElementById('gate');if(!g){g=document.createElement('div');g.id='gate';g.setAttribute('role','dialog');g.setAttribute('aria-modal','true');g.setAttribute('aria-labelledby','gt');document.body.appendChild(g);}g.innerHTML=`<div class="gbox">${html}<p class="gl"><a href="#" data-act="ckPolicy" data-arg="privacidade">Privacidade</a> · <a href="#" data-act="ckPolicy" data-arg="cookies">Cookies</a> · <a href="#" data-act="ckReopen">Preferências de cookies</a></p></div>`;const f=g.querySelector('input');f&&f.focus();return g;}
@@ -1760,7 +1761,7 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
-const APP_VER='2026.11.14+6814ae08';
+const APP_VER='2026.11.14+59813d40';
 const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
@@ -2413,7 +2414,7 @@ async function svAbrir(id){const r=await svApi('GET','/api/empresas/'+encodeURIC
   gateClose();wrapAudit();NAV={stack:[],cur:{name:'home',params:{}}};
   if(!$('#svsair')){const b=document.createElement('button');b.id='svsair';b.dataset.act='svSair';b.textContent='⎋ Sair';b.title='Encerrar a sessão';$('#top').appendChild(b);const t=document.createElement('button');t.id='svtroca';t.dataset.act='svTroca';t.textContent='⇄ Empresa';t.title='Trocar de empresa';$('#top').appendChild(t);}
   render();}
-ACT.svSair=async()=>{await svFlush();await svApi('POST','/api/auth/logout',{},{semLogout:1});SV.tok=null;SV.emp=null;svTelaLogin('Sessão encerrada.');};
+async function svSairExec(){await svFlush();await svApi('POST','/api/auth/logout',{},{semLogout:1});SV.tok=null;SV.emp=null;svTelaLogin('Você saiu do sistema. Suas últimas ações foram salvas.');}
 ACT.svTroca=async()=>{await svFlush();DB=null;svEntrar();};
 /* ---------- sincronização ---------- */
 const SV_IGN=new Set(['audit','_emps','_id','_exemplo','ver']);
@@ -3201,7 +3202,7 @@ ACT.tema=()=>themeNext();
 /* ---------- paleta de comandos ---------- */
 let CMD_SEL=0,CMD_LST=[],CMD_FROM=null;
 function cmdItens(){const it=[];let g='';MENU.forEach(([n,k,l])=>{if(n)g=n;it.push({l:l,g:g||'Início',run:()=>go(k)});});
-  it.push({l:'Alternar tema (claro/escuro/automático)',g:'Comando',run:themeNext},{l:'Voltar à tela anterior',g:'Comando',run:()=>back()},{l:'Ir à tela inicial',g:'Comando',run:()=>home()},{l:'Atalhos de teclado',g:'Comando',run:cmdAjuda});
+  it.push({l:'Alternar tema (claro/escuro/automático)',g:'Comando',run:themeNext},{l:'Voltar à tela anterior',g:'Comando',run:()=>back()},{l:'Ir à tela inicial',g:'Comando',run:()=>home()},{l:'Sair do sistema',g:'Comando',run:()=>ACT.sair()},{l:'Atalhos de teclado',g:'Comando',run:cmdAjuda});
   if(typeof exportar==='function'){it.push({l:'Exportar a tela atual em PDF',g:'Comando',run:()=>ACT.expPdf&&ACT.expPdf(document.body)},{l:'Exportar a tela atual em Excel',g:'Comando',run:()=>ACT.expXls&&ACT.expXls(document.body)});}
   return it;}
 function cmdFiltra(q){const t=sideNorm(q).split(/\s+/).filter(Boolean);return cmdItens().map(i=>{const h=sideNorm(i.l+' '+i.g);if(!t.every(x=>h.includes(x)))return null;const sc=t.reduce((a,x)=>a+(sideNorm(i.l).startsWith(x)?0:sideNorm(i.l).includes(x)?1:2),0);return {i,sc};}).filter(Boolean).sort((a,b)=>a.sc-b.sc).slice(0,30).map(x=>x.i);}
@@ -3280,5 +3281,34 @@ SC.empresa.mount=function(p){_empMount22&&_empMount22.call(this,p);const q=docum
   let x0=null;st.addEventListener('pointerdown',e=>{x0=e.clientX;});st.addEventListener('pointerup',e=>{if(x0===null)return;const dx=e.clientX-x0;x0=null;if(Math.abs(dx)>45)ecStep(dx<0?1:-1);});
   st.addEventListener('wheel',e=>{if(Math.abs(e.deltaX)<Math.abs(e.deltaY)&&!e.shiftKey)return;e.preventDefault();const n=Date.now();if(n-EC.wheelT<260)return;EC.wheelT=n;ecStep((e.deltaX||e.deltaY)>0?1:-1);},{passive:false});
   window.addEventListener('resize',()=>{if(document.getElementById('ecStage'))ecDraw(false);},{once:true});};
+/* ui23 — Sair do sistema com confirmação e gravação das últimas ações */
+let SAINDO=false;
+async function sairExec(){
+  if(SAINDO)return;SAINDO=true;
+  try{
+    if(window.__SVON){await svSairExec();return;}
+    try{audit('sessao.sair','encerrada pelo usuário');}catch(e){}
+    saveDB();
+    if(typeof VAULT!=='undefined'&&VAULT.on){await vaultFlush();vaultLock('Você saiu do sistema. Suas últimas ações foram salvas.');}
+    else{toast('Dados salvos. Sessão encerrada.','ok');try{location.reload();}catch(e){}}
+  }catch(e){SAINDO=false;toast('Não foi possível concluir a saída: '+(e&&e.message||e)+'. Seus dados continuam abertos; gere um backup antes de tentar de novo.','err');return;}
+  SAINDO=false;
+}
+ACT.sair=()=>{
+  if(!DB){return;}
+  const sujo=typeof DIRTY!=='undefined'&&DIRTY,btnSalvar=document.querySelector('[data-primary="save"]');
+  const ped=(window.__SVON&&typeof SV!=='undefined'&&(SV.busy||SV.t))?'<br><br>Há sincronização com o servidor em andamento; ela será concluída antes de sair.':'';
+  const corpo='<b>Deseja realmente sair do sistema?</b><br><br>As últimas ações executadas serão <b>salvas</b> antes de encerrar a sessão. Para voltar, será necessário informar a senha novamente.'+ped
+    +(sujo?'<div class="note warn" role="alert"><b>Esta tela tem alterações ainda não gravadas.</b> Escolha “Salvar e sair” para gravá-las, ou “Sair sem salvar a tela” para descartá-las.</div>':'');
+  modal(`<h2>Sair do sistema</h2><p>${corpo}</p><div class="row" style="justify-content:flex-end;flex-wrap:wrap"><button class="btn" data-act="closeModal" id="sairNao">Cancelar</button>${sujo?'<button class="btn" id="sairDescarta">Sair sem salvar a tela</button>':''}<button class="btn pri" id="sairSim">${sujo&&btnSalvar?'Salvar e sair':'Sim, sair'}</button></div>`,{title:'Sair do sistema'});
+  const nao=document.getElementById('sairNao');nao&&nao.focus();
+  document.getElementById('sairSim').onclick=async()=>{
+    if(sujo&&btnSalvar){closeModal();btnSalvar.click();await new Promise(r=>setTimeout(r,60));
+      if(typeof DIRTY!=='undefined'&&DIRTY){toast('A tela não pôde ser salva (verifique os campos destacados). A saída foi cancelada.','err');return;}}
+    closeModal();await sairExec();};
+  const d=document.getElementById('sairDescarta');if(d)d.onclick=async()=>{DIRTY=false;closeModal();await sairExec();};
+};
+ACT.svSair=ACT.sair;
+(function(){const b=document.getElementById('btnSair');if(b&&window.__SVON)b.hidden=true;})();
 
 </script></body></html>

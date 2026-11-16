@@ -21,7 +21,7 @@ Na primeira visita, o sistema pergunta sobre o armazenamento de preferências. �
 
 ## 1.3. Conhecendo a tela
 
-No topo ficam “Tela inicial”, “Voltar”, “Atualizar”, “Buscar (Ctrl+K)” e “Tema”. À esquerda, o menu agrupado por assunto, com busca no topo. Na parte inferior, a barra de ações da tela (salvar, exportar em PDF e Excel, enviar ao eSocial etc.). Em telas estreitas, o menu vira uma lista de seleção no topo.
+No topo ficam “Tela inicial”, “Voltar”, “Atualizar”, “Sair”, “Buscar (Ctrl+K)” e “Tema”. À esquerda, o menu agrupado por assunto, com busca no topo. Na parte inferior, a barra de ações da tela (salvar, exportar em PDF e Excel, enviar ao eSocial etc.). Em telas estreitas, o menu vira uma lista de seleção no topo.
 
 | Atalho | Ação |
 |---|---|
@@ -34,6 +34,10 @@ No topo ficam “Tela inicial”, “Voltar”, “Atualizar”, “Buscar (Ctrl
 | Esc | Fechar janela ou paleta |
 
 O botão “Tema” alterna entre automático (segue o sistema), claro e escuro. Qualquer tela, relatório ou ficha pode ser exportada em **PDF** ou **Excel** pelos botões da barra inferior.
+
+## 1.4. Sair do sistema
+
+O botão **Sair**, no topo, pede confirmação (“Deseja realmente sair do sistema?”). Ao confirmar, as últimas ações são gravadas e a sessão é encerrada; para voltar é preciso informar a senha. Se a tela aberta tiver campos alterados e ainda não gravados, o sistema avisa e oferece “Salvar e sair” (grava a tela e sai; se a tela tiver erro de preenchimento, a saída é cancelada) ou “Sair sem salvar a tela”. No modo servidor, a saída conclui a sincronização antes de encerrar. Fechar a aba sem usar “Sair” também mantém os dados já gravados, mas deixa a sessão aberta até o bloqueio por inatividade.
 
 # 2. Fluxo de trabalho recomendado
 

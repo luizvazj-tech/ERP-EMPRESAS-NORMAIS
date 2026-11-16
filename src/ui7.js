@@ -100,7 +100,7 @@ ACT.pwdChange=async()=>{const a=$('#pw0').value,b=$('#pw1').value,c=$('#pw2').va
   VAULT.salt=crypto.getRandomValues(new Uint8Array(16));VAULT.key=await deriveKey(b,VAULT.salt,VAULT.it);audit('senha alterada');saveDB();await vaultFlush();toast('Senha alterada.','ok');render();};
 ACT.lock=async()=>{await vaultFlush();vaultLock();};
 function vaultIdle(){clearTimeout(VAULT.idleT);if(!VAULT.on)return;VAULT.idleT=setTimeout(()=>{ACT.lock();},((DB&&DB.cfg&&DB.cfg.idle)||15)*60000);}
-function vaultLock(){VAULT.key=null;VAULT.on=false;DB=null;clearTimeout(VAULT.idleT);closeModal();$('#main').innerHTML='';$('#bar').innerHTML='';$('#side').innerHTML='';$('#topemp').textContent='Sessão bloqueada';gateUnlock('Sessão bloqueada por segurança.');}
+function vaultLock(msg){VAULT.key=null;VAULT.on=false;DB=null;clearTimeout(VAULT.idleT);closeModal();$('#main').innerHTML='';$('#bar').innerHTML='';$('#side').innerHTML='';$('#topemp').textContent='Sessão bloqueada';gateUnlock(msg||'Sessão bloqueada por segurança.');}
 
 /* ---------- tela de acesso ---------- */
 function gate(html){let g=document.getElementById('gate');if(!g){g=document.createElement('div');g.id='gate';g.setAttribute('role','dialog');g.setAttribute('aria-modal','true');g.setAttribute('aria-labelledby','gt');document.body.appendChild(g);}g.innerHTML=`<div class="gbox">${html}<p class="gl"><a href="#" data-act="ckPolicy" data-arg="privacidade">Privacidade</a> · <a href="#" data-act="ckPolicy" data-arg="cookies">Cookies</a> · <a href="#" data-act="ckReopen">Preferências de cookies</a></p></div>`;const f=g.querySelector('input');f&&f.focus();return g;}

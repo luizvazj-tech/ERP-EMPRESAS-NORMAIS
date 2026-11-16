@@ -74,7 +74,7 @@ api.srv.listen(0,async()=>{const URL_='http://127.0.0.1:'+api.srv.address().port
  ev(`go('auditSrv')`);await sleep(700);ok('registro de ações exibido na tela',/dados gravados/.test(q('#svau').textContent)&&/login/.test(q('#svau').textContent));
  q('[data-act="svAudVer"]');ev(`ACT.svAudVer()`);await sleep(400);ok('verificação de integridade pela tela',/íntegra/.test(q('#toast').textContent));
  // sair
- q('#svsair').click();await sleep(500);ok('sair volta ao login e limpa os dados da memória',!!q('#sve')&&ev('DB')===null);
+ q('#svsair').click();await sleep(200);ok('sair pede confirmação antes de encerrar',/Deseja realmente sair/.test(q('#modal').textContent)&&ev('DB')!==null);q('#sairSim').click();await sleep(600);ok('sair volta ao login e limpa os dados da memória',!!q('#sve')&&ev('DB')===null);
  ok('sem erros de script',!errs.length);if(errs.length)console.log(errs.slice(0,5));
  }catch(e){console.log('EXCEÇÃO',e);fail++;}
  console.log(fail?'FALHAS '+fail:'TODOS OK');api.srv.close();fs.rmSync(process.env.DATA_DIR,{recursive:true,force:true});process.exit(fail?1:0);});

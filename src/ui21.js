@@ -12,7 +12,7 @@ ACT.tema=()=>themeNext();
 /* ---------- paleta de comandos ---------- */
 let CMD_SEL=0,CMD_LST=[],CMD_FROM=null;
 function cmdItens(){const it=[];let g='';MENU.forEach(([n,k,l])=>{if(n)g=n;it.push({l:l,g:g||'Início',run:()=>go(k)});});
-  it.push({l:'Alternar tema (claro/escuro/automático)',g:'Comando',run:themeNext},{l:'Voltar à tela anterior',g:'Comando',run:()=>back()},{l:'Ir à tela inicial',g:'Comando',run:()=>home()},{l:'Atalhos de teclado',g:'Comando',run:cmdAjuda});
+  it.push({l:'Alternar tema (claro/escuro/automático)',g:'Comando',run:themeNext},{l:'Voltar à tela anterior',g:'Comando',run:()=>back()},{l:'Ir à tela inicial',g:'Comando',run:()=>home()},{l:'Sair do sistema',g:'Comando',run:()=>ACT.sair()},{l:'Atalhos de teclado',g:'Comando',run:cmdAjuda});
   if(typeof exportar==='function'){it.push({l:'Exportar a tela atual em PDF',g:'Comando',run:()=>ACT.expPdf&&ACT.expPdf(document.body)},{l:'Exportar a tela atual em Excel',g:'Comando',run:()=>ACT.expXls&&ACT.expXls(document.body)});}
   return it;}
 function cmdFiltra(q){const t=sideNorm(q).split(/\s+/).filter(Boolean);return cmdItens().map(i=>{const h=sideNorm(i.l+' '+i.g);if(!t.every(x=>h.includes(x)))return null;const sc=t.reduce((a,x)=>a+(sideNorm(i.l).startsWith(x)?0:sideNorm(i.l).includes(x)?1:2),0);return {i,sc};}).filter(Boolean).sort((a,b)=>a.sc-b.sc).slice(0,30).map(x=>x.i);}

@@ -51,7 +51,7 @@ async function svAbrir(id){const r=await svApi('GET','/api/empresas/'+encodeURIC
   gateClose();wrapAudit();NAV={stack:[],cur:{name:'home',params:{}}};
   if(!$('#svsair')){const b=document.createElement('button');b.id='svsair';b.dataset.act='svSair';b.textContent='⎋ Sair';b.title='Encerrar a sessão';$('#top').appendChild(b);const t=document.createElement('button');t.id='svtroca';t.dataset.act='svTroca';t.textContent='⇄ Empresa';t.title='Trocar de empresa';$('#top').appendChild(t);}
   render();}
-ACT.svSair=async()=>{await svFlush();await svApi('POST','/api/auth/logout',{},{semLogout:1});SV.tok=null;SV.emp=null;svTelaLogin('Sessão encerrada.');};
+async function svSairExec(){await svFlush();await svApi('POST','/api/auth/logout',{},{semLogout:1});SV.tok=null;SV.emp=null;svTelaLogin('Você saiu do sistema. Suas últimas ações foram salvas.');}
 ACT.svTroca=async()=>{await svFlush();DB=null;svEntrar();};
 /* ---------- sincronização ---------- */
 const SV_IGN=new Set(['audit','_emps','_id','_exemplo','ver']);
