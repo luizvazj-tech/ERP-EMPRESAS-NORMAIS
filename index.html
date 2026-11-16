@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="fp-api" content="">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-lAhWEM2SvSzVGU1mjmEh/1HoKOtvtwAHzQq140gS4a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-5hncyYrUexGdF6BTGIXIoinx/1Vw0j0YvwLRULSPFuo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -1709,7 +1709,7 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
-const APP_VER='2026.11.14+3cbf9c32';
+const APP_VER='2026.11.14+b1e54493';
 const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
@@ -3043,16 +3043,16 @@ crud('ciPag',{title:'Contribuintes individuais — pró-labore e autônomos',key
 const cprbFracRb=ano=>{const m=(DB.params.cprbRb||{})[ano];return m!=null?m:(ano<2025?100:0);};
 crud('cprbRb',{title:'CPRB — contribuição sobre a receita bruta',key:'id',list:()=>rfDB().cprb,
   sub:'Receita bruta mensal por atividade desonerada e alíquota cheia da Lei 12.546/2011. A transição de 2025 a 2027 aplica 80%, 60% e 40% da alíquota (art. 9º-A); a contribuição sobre a folha cresce em paralelo (25%, 50% e 75% dos 20%). A partir de 2028 a CPRB é extinta.',
-  note:()=>'<b>Base legal.</b> Lei 12.546/2011, arts. 7º-A, 8º-A, 9º-A e 9º-B, na redação da Lei 14.973/2024. A parcela da folha já é calculada no cálculo mensal (fator '+fatorCprb(DB.params,DB.cfg.comp)+'% da CPP em '+DB.cfg.comp+'). Alíquotas cheias variam de 1,0% a 4,5% por atividade (confira a atividade e o CNAE no art. 7º-A ou 8º-A) **. A receita bruta deve observar as exclusões legais (art. 9º, V e VI) **. Em atividades mistas aplica-se a proporcionalidade do art. 9º, §§ 1º e 13 **, não calculada aqui. Retenção de 11% de cessão de mão de obra para prestador optante: 3,5% (Solução de Consulta Cosit nº 153/2026) **.',
+  note:()=>'<b>Base legal.</b> Lei 12.546/2011, arts. 7º-A, 8º-A, 9º-A e 9º-B, na redação da Lei 14.973/2024. A parcela da folha já é calculada no cálculo mensal (fator '+fatorCprb(DB.params,DB.cfg.comp)+'% da CPP em '+DB.cfg.comp+'). Códigos de receita (Manual da DCTFWeb, jan/2025): 2985-01 (art. 7º), 2991-01 (art. 8º) e 2985-06 (construção civil após 30/11/2015). Alíquotas cheias variam de 1,0% a 4,5% por atividade (confira a atividade e o CNAE no art. 7º-A ou 8º-A) **. A receita bruta deve observar as exclusões legais (art. 9º, V e VI) **. Em atividades mistas aplica-se a proporcionalidade do art. 9º, §§ 1º e 13 **, não calculada aqui. Retenção de 11% de cessão de mão de obra para prestador optante: 3,5% (Solução de Consulta Cosit nº 153/2026) **.',
   cols:[['comp','Comp.'],['ativ','Atividade'],['rb','Receita bruta',r=>'R$ '+brl(r.rb)],['aliq','Alíq. cheia %'],['cprb','CPRB devida',r=>'R$ '+brl(cprbVal(r))]],
   novo:()=>({comp:DB.cfg.comp,aliq:2}),
-  fields:r=>F('Competência','comp',r.comp,{t:'month',req:1,w:2})+F('Atividade/CNAE desonerado','ativ',r.ativ,{req:1,w:5})+F('Receita bruta do mês (R$)','rb',r.rb,{t:'money',req:1,w:3})+F('Alíquota cheia da atividade (%)','aliq',r.aliq,{req:1,w:2,hint:'Ex.: 1; 1,5; 2; 2,5; 3; 3,5; 4,5'}),
+  fields:r=>F('Competência','comp',r.comp,{t:'month',req:1,w:2})+F('Atividade/CNAE desonerado','ativ',r.ativ,{req:1,w:3})+F('Dispositivo (código de receita)','disp',r.disp||'art7',{t:'select',opts:[['art7','Art. 7º — 2985-01'],['art8','Art. 8º — 2991-01'],['cc','Construção civil — 2985-06']],w:2})+F('Receita bruta do mês (R$)','rb',r.rb,{t:'money',req:1,w:3})+F('Alíquota cheia da atividade (%)','aliq',r.aliq,{req:1,w:2,hint:'Ex.: 1; 1,5; 2; 2,5; 3; 3,5; 4,5'}),
   validate:o=>{if(!(num(o.rb)>=0))return 'Informe a receita bruta.';if(!(num(o.aliq)>0&&num(o.aliq)<=4.5))return 'Alíquota fora do intervalo de 0,1% a 4,5%.';if(!/^\d{4}-\d{2}$/.test(o.comp))return 'Competência inválida.';}});
 const cprbVal=r=>tr2(num(r.rb)*num(r.aliq)/100*cprbFracRb(+String(r.comp).slice(0,4))/100);
 /* Terceiros por entidade (conferir a tabela do FPAS na IN RFB 2.110/2022) ** */
-const TERC_ENT={'507':[['Salário-Educação',2.5],['INCRA',0.2],['SENAI',1.0],['SESI',1.5],['SEBRAE',0.6]],'515':[['Salário-Educação',2.5],['INCRA',0.2],['SENAC',1.0],['SESC',1.5],['SEBRAE',0.6]]};
+const TERC_ENT={'507':[['Salário-Educação',2.5,'1170'],['INCRA',0.2,'1176'],['SENAI',1.0,'1181'],['SESI',1.5,'1184'],['SEBRAE',0.6,'1200']],'515':[['Salário-Educação',2.5,'1170'],['INCRA',0.2,'1176'],['SENAC',1.0,'1191'],['SESC',1.5,'1196'],['SEBRAE',0.6,'1200']]};/* percentuais e códigos: MOS S-1.3 (Anexo de totalização, item 3.7) e Manual da DCTFWeb; a composição por FPAS deve ser conferida ** */
 function fpasPrincipal(comp){const c=DB.comps[comp];if(!c)return '';const m={};Object.keys(c.res||{}).forEach(id=>{const e=byId(DB.empregados,id),l=e&&byId(DB.lotacoes,e.lotacao);if(l&&l.fpas)m[l.fpas]=(m[l.fpas]||0)+1;});return Object.keys(m).sort((a,b)=>m[b]-m[a])[0]||'';}
-function tercSplit(valor,fpas){const t=TERC_ENT[String(fpas)];if(!t)return[['Terceiros (FPAS '+(fpas||'?')+': detalhar por entidade) **',valor]];const s=t.reduce((a,x)=>a+x[1],0);let rest=valor;return t.map((x,i)=>{const v=i===t.length-1?r2(rest):r2(valor*x[1]/s);rest=r2(rest-v);return[x[0]+' ('+brl(x[1])+'%)',v];});}
+function tercSplit(valor,fpas){const t=TERC_ENT[String(fpas)];if(!t)return[['Terceiros (FPAS '+(fpas||'?')+': detalhar por entidade) **',valor]];const s=t.reduce((a,x)=>a+x[1],0);let rest=valor;return t.map((x,i)=>{const v=i===t.length-1?r2(rest):r2(valor*x[1]/s);rest=r2(rest-v);return[x[0]+' ('+brl(x[1])+'%)',v,x[2]];});}
 /* gancho chamado por dctfApurar: devolve linhas adicionais e ajusta as de terceiros */
 function dctfExtras(comp,L,E){const C=DB.comps[comp],P=DB.params,out=[];if(!C)return out;
   let adM=0,adD=0,senaiBase=0,nEmp=0;const fp=fpasPrincipal(comp);
@@ -3060,23 +3060,25 @@ function dctfExtras(comp,L,E){const C=DB.comps[comp],P=DB.params,out=[];if(!C)re
     const em=encargosEmpresa(Object.assign({},r,{baseCP13:0}),P,E,e,comp,true),ed=encargosEmpresa(Object.assign({},r,{baseCP:0}),P,E,e,comp,true);adM+=em.adic;adD+=ed.adic;
     const l=byId(DB.lotacoes,e.lotacao);if(l&&['507','833'].includes(String(l.fpas)))senaiBase+=num(r.baseCP)+num(r.baseCP13);}
   adM=tr2(adM);adD=tr2(adD);
-  if(adM>0)out.push({cr:'1141-01',desc:'Adicional ao GILRAT — aposentadoria especial (6, 9 ou 12 p.p.) **',grp:'pat',deb:adM,cat:'M',cred:0,creditos:{}});
-  if(adD>0)out.push({cr:'1141-21',desc:'Adicional ao GILRAT — 13º salário **',grp:'pat',deb:adD,cat:'D',cred:0,creditos:{}});
+  if(adM>0)out.push({cr:'1141-01',desc:'CP Patronal — adicional GILRAT (aposentadoria especial 12/9/6 p.p.)',grp:'pat',deb:adM,cat:'M',cred:0,creditos:{}});
+  if(adD>0)out.push({cr:'1141-21',desc:'CP Patronal — adicional GILRAT — 13º salário',grp:'pat',deb:adD,cat:'D',cred:0,creditos:{}});
   /* SENAI adicional: acima de 500 empregados (Nota Orientativa S-1.3 nº 09/2026; DL 4.048/1942, art. 6º; DL 6.246/1944, art. 3º): 20% sobre a contribuição de 1% ** */
-  if(compAtualCmp(comp,'2026-05')>=0&&nEmp>500&&senaiBase>0)out.push({cr:'1664-01',desc:'Contribuição adicional ao SENAI — acima de 500 empregados (20% sobre 1%) **',grp:'terc',deb:tr2(senaiBase*0.2/100),cat:'M',cred:0,creditos:{}});
+  if(compAtualCmp(comp,'2026-05')>=0&&nEmp>500&&senaiBase>0)out.push({cr:'1664-01',desc:'Contribuição adicional ao SENAI — acima de 500 empregados (código 1664; percentual 20% sobre 1% **)',grp:'terc',deb:tr2(senaiBase*0.2/100),cat:'M',cred:0,creditos:{}});
   /* contribuintes individuais */
   let seg=0,pat=0,ir=0;rfDB().ci.filter(x=>x.comp===comp).forEach(x=>{const c=ciCalc(x);seg+=c.seg;pat+=c.pat;ir+=c.irrf;});seg=tr2(seg);pat=tr2(pat);ir=tr2(ir);
-  if(seg>0)out.push({cr:'1082-01',desc:'CP Segurados — contribuintes individuais (retenção de 11%)',grp:'seg',deb:seg,cat:'M',cred:0,creditos:{}});
-  if(pat>0)out.push({cr:'1138-01',desc:'CP Patronal — contribuintes individuais (20%) **',grp:'pat',deb:pat,cat:'M',cred:0,creditos:{}});
-  if(ir>0)out.push({cr:'0588-**',desc:'IRRF — rendimentos do trabalho sem vínculo (contribuintes individuais): conferir código na tabela da DCTFWeb **',grp:'ir',deb:ir,cat:'M',cred:0,creditos:{}});
+  if(seg>0)out.push({cr:'1099-01',desc:'CP Segurados — contribuintes individuais (retenção de 11%)',grp:'seg',deb:seg,cat:'M',cred:0,creditos:{}});
+  if(pat>0)out.push({cr:E.regime==='sn'?'1138-06':'1138-04',desc:'CP Patronal — contribuintes individuais (20%)'+(E.regime==='sn'?' — Simples concomitante':''),grp:'pat',deb:pat,cat:'M',cred:0,creditos:{}});
+  if(ir>0)out.push({cr:'0588-06',desc:'IRRF — rendimentos do trabalho sem vínculo empregatício (contribuintes individuais)',grp:'ir',deb:ir,cat:'M',cred:0,creditos:{}});
   /* adicional de aposentadoria especial de cooperados — Lei 10.666/2003, art. 1º: cooperativa de produção (12/9/6 p.p. sobre a remuneração) e tomador de cooperativa de trabalho (9/7/5 p.p. sobre a nota fiscal) ** */
-  const adCoop=tr2(rfDB().ci.filter(x=>x.comp===comp).reduce((a,x)=>a+ciCalc(x).adic,0)+rfDB().nf.filter(x=>x.comp===comp&&x.tipo==='tom'&&x.coopGrau).reduce((a,x)=>a+num(x.valor)*({'25':5,'20':7,'15':9}[x.coopGrau]||0)/100,0));
-  if(adCoop>0)out.push({cr:'(adicional cooperado)',desc:'Adicional de aposentadoria especial — cooperados (Lei 10.666/2003, art. 1º, §§ 1º e 2º): código a conferir **',grp:'pat',deb:adCoop,cat:'M',cred:0,creditos:{}});
+  const adProd=tr2(rfDB().ci.filter(x=>x.comp===comp).reduce((a,x)=>a+ciCalc(x).adic,0)),adTom=tr2(rfDB().nf.filter(x=>x.comp===comp&&x.tipo==='tom'&&x.coopGrau).reduce((a,x)=>a+num(x.valor)*({'25':5,'20':7,'15':9}[x.coopGrau]||0)/100,0));
+  if(adProd>0)out.push({cr:'1141-05',desc:'CP Patronal — adicional GILRAT, cooperativa de produção (12/9/6 p.p.)',grp:'pat',deb:adProd,cat:'M',cred:0,creditos:{}});
+  if(adTom>0)out.push({cr:'(adicional cooperativa de trabalho)',desc:'Adicional de aposentadoria especial — tomador de cooperativa de trabalho (Lei 10.666/2003, art. 1º, §1º): código a conferir **',grp:'pat',deb:adTom,cat:'M',cred:0,creditos:{}});
   /* CPRB */
-  const cp=tr2(rfDB().cprb.filter(x=>x.comp===comp).reduce((a,x)=>a+cprbVal(x),0));
-  if(cp>0)out.push({cr:'(CPRB)',desc:'CPRB — contribuição sobre a receita bruta (código a conferir) **',grp:'cprb',deb:cp,cat:'M',cred:0,creditos:{}});
+  const CPCOD={art7:['2985-01','art. 7º da Lei 12.546/2011'],art8:['2991-01','art. 8º da Lei 12.546/2011'],cc:['2985-06','construção civil (CEI/CNO após 30/11/2015)']};
+  Object.keys(CPCOD).forEach(k=>{const v=tr2(rfDB().cprb.filter(x=>x.comp===comp&&(x.disp||'art7')===k).reduce((a,x)=>a+cprbVal(x),0));
+    if(v>0)out.push({cr:CPCOD[k][0],desc:'CP Patronal — CPRB — '+CPCOD[k][1],grp:'cprb',deb:v,cat:'M',cred:0,creditos:{}});});
   /* terceiros por entidade: divide a linha agregada */
-  for(let i=L.length-1;i>=0;i--){if(L[i].grp==='terc'&&L[i].cr==='(por entidade)'){const l=L[i],parts=tercSplit(l.deb,fp);if(parts.length>1||true){const novos=parts.map(p=>Object.assign({},l,{desc:'CP Terceiros — '+p[0]+(l.cat==='D'?' — 13º salário':''),deb:p[1],creditos:{},cred:0}));L.splice(i,1,...novos);}}}
+  for(let i=L.length-1;i>=0;i--){if(L[i].grp==='terc'&&L[i].cr==='(por entidade)'){const l=L[i],parts=tercSplit(l.deb,fp);if(parts.length>1||true){const novos=parts.map(p=>Object.assign({},l,{cr:p[2]?p[2]+(l.cat==='D'?'-21':'-01'):l.cr,desc:'CP Terceiros — '+p[0]+(l.cat==='D'?' — 13º salário':''),deb:p[1],creditos:{},cred:0}));L.splice(i,1,...novos);}}}
   return out;}
 const compAtualCmp=(a,b)=>a<b?-1:a>b?1:0;
 /* Reinf: espelho de R-2060 (CPRB), R-2010/R-2020 (retenção previdenciária em notas) e checklist de fechamento R-2099 */

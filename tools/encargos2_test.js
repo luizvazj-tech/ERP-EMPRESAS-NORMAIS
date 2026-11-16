@@ -17,7 +17,8 @@ ok('INSS CI = 11% do teto (pró-labore acima do teto)',Math.abs(c.seg-Math.floor
 ok('patronal CI = 20% de 10.000 (Lucro Presumido)',c.pat===2000);
 ev(`DB.rf.ci[0].outras=${teto}`);ok('outras fontes no teto: INSS zero',ev(`ciCalc(DB.rf.ci[0]).seg`)===0);
 ev(`DB.rf.ci[0].outras=0`);const A2=ev(`dctfApurar('${comp}')`);
-ok('CI entra na DCTFWeb (1082-01 CI, 1138-01 CI, IRRF CI)',A2.L.some(l=>/contribuintes individuais \(retenção/.test(l.desc))&&A2.L.some(l=>/Patronal — contribuintes/.test(l.desc))&&A2.L.some(l=>/trabalho sem vínculo/.test(l.desc)));
+ok('CI na DCTFWeb com os códigos do Manual: 1099-01, 1138-04, 0588-06',A2.L.some(l=>l.cr==='1099-01')&&A2.L.some(l=>l.cr==='1138-04')&&A2.L.some(l=>l.cr==='0588-06'));
+ok('terceiros com código por entidade (1170, 1176, 1181/1191...)',['1170-01','1176-01'].every(c=>A2.L.some(l=>l.cr===c)));
 ev(`DB.empresa.regime='sn';DB.empresa.anexo='std'`);ok('Simples Anexo I–III: patronal CI = 0 (já no DAS)',ev(`ciCalc(DB.rf.ci[0]).pat`)===0);
 ev(`DB.empresa.regime='lp'`);
 /* CPRB */
@@ -26,7 +27,7 @@ ok('CPRB 2026: 60% de 4,5% sobre 100.000 = 2.700',ev(`cprbVal(DB.rf.cprb[0])`)==
 ev(`DB.rf.cprb[0].comp='2027-03'`);ok('CPRB 2027: 40% = 1.800',ev(`cprbVal(DB.rf.cprb[0])`)===1800);
 ev(`DB.rf.cprb[0].comp='2028-01'`);ok('CPRB 2028: extinta = 0',ev(`cprbVal(DB.rf.cprb[0])`)===0);
 ev(`DB.rf.cprb[0].comp='2025-06'`);ok('CPRB 2025: 80% = 3.600',ev(`cprbVal(DB.rf.cprb[0])`)===3600);
-ev(`DB.rf.cprb[0].comp='${comp}'`);ok('CPRB entra na apuração sem abater crédito',ev(`dctfApurar('${comp}')`).L.some(l=>l.grp==='cprb'&&l.cred===0));
+ev(`DB.rf.cprb[0].comp='${comp}'`);ok('CPRB entra na apuração em 2985-01 sem abater crédito',ev(`dctfApurar('${comp}')`).L.some(l=>l.cr==='2985-01'&&l.cred===0));
 /* SENAI adicional */
 ev(`DB.lotacoes.forEach(l=>l.fpas='507')`);let n=0;ev(`(function(){const c=DB.comps['${comp}'];const ids=Object.keys(c.res);for(let i=0;i<510;i++){c.res['x'+i]=Object.assign({},c.res[ids[0]]);DB.empregados.push(Object.assign({},DB.empregados[0],{id:'x'+i,categoria:'101'}));}})()`);
 const A3=ev(`dctfApurar('${comp}')`);ok('SENAI adicional 1664-01 acima de 500 empregados',A3.L.some(l=>l.cr==='1664-01'&&l.deb>0));

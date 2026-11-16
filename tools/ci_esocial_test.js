@@ -16,6 +16,6 @@ const e1=ev(`criarEvento('S-1200',{ci:'c1',comp:'${comp}'})`);const oc=ev(`valid
 ok('S-1200 de sócio sem S-2300 processado é barrado',oc.some(o=>/S-2300/.test(o)));
 const e2=ev(`validarEvento(criarEvento('S-1200',{ci:'c2',comp:'${comp}'}))`);ok('S-1200 de autônomo (701) não exige S-2300',!e2.some(o=>/S-2300/.test(o)));
 ev(`DB.rf.nf.push({id:'n1',comp:'${comp}',tipo:'tom',nome:'Coop',nf:'1',valor:10000,aliq:11,coopGrau:'20'})`);
-ev(`calcFolha('${comp}')`);const A=ev(`dctfApurar('${comp}')`);const l=A.L.find(x=>/cooperados/.test(x.desc));
-ok('DCTFWeb: adicional de cooperados = 450 (738) + 700 (tomador 7% de 10.000)',l&&l.deb===1150);
+ev(`calcFolha('${comp}')`);const A=ev(`dctfApurar('${comp}')`);ok('DCTFWeb: 1141-05 = 450 (cooperativa de produção)',(A.L.find(x=>x.cr==='1141-05')||{}).deb===450);
+ok('adicional do tomador de cooperativa de trabalho = 700, com código ainda a conferir',(A.L.find(x=>/cooperativa de trabalho/.test(x.desc))||{}).deb===700);
 ok('sem erros de script',errs.length===0);if(errs.length)console.log(errs);console.log(fail?'FALHAS '+fail:'TODOS OK');process.exit(fail?1:0);
