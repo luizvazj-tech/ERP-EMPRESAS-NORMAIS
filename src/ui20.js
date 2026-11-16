@@ -83,6 +83,8 @@ ACT.reinfGo=()=>{const o=readForm($('#fr'));go('reinfEsp',{comp:o.comp||DB.cfg.c
 
 /* ---------- eSocial dos contribuintes individuais: S-2300, S-1200 e S-1210 ---------- */
 const ciRec=id=>rfDB().ci.find(x=>x.id===id);
+const CI_NAT={'701':'3501','711':'3501','712':'3501','721':'3506','722':'3506','723':'3508','731':'3520','734':'3520','738':'3520'};
+const ciRubr=r=>DB.rubricas.find(x=>x.sys==='CI'+(CI_NAT[r.cat]||'3501'))||{cod:'301',sys:'CI3501'};
 const ENDER_CI=r=>(r.logr&&r.cep)?ENDERECO(r):'';
 GEN['S-2300']=(a,o)=>{const r=ciRec(a.id),id=novoId();
   const corpo=`${ideEvt(o)}${ideEmp()}<trabalhador><cpfTrab>${onlyD(r.cpf)}</cpfTrab><nmTrab>${xe(r.nome)}</nmTrab><sexo>${r.sexo||'M'}</sexo><racaCor>${r.racaCor||'6'}</racaCor><estCiv>${r.estCiv||'1'}</estCiv><grauInstr>${r.grauInstr||'09'}</grauInstr><nascimento><dtNascto>${r.nasc}</dtNascto><paisNascto>105</paisNascto><paisNac>105</paisNac></nascimento>${ENDER_CI(r)}</trabalhador><infoTSVInicio><cadIni>N</cadIni><codCateg>${r.cat}</codCateg><dtInicio>${r.dtInicio||r.comp+'-01'}</dtInicio></infoTSVInicio>`;
@@ -90,7 +92,7 @@ GEN['S-2300']=(a,o)=>{const r=ciRec(a.id),id=novoId();
 const _g1200=GEN['S-1200'],_g1210=GEN['S-1210'];
 GEN['S-1200']=(a,o)=>a.ci?genS1200ci(a,o):_g1200(a,o);
 GEN['S-1210']=(a,o)=>a.ci?genS1210ci(a,o):_g1210(a,o);
-function genS1200ci(a,o){const r=ciRec(a.ci),id=novoId(),est=(DB.estabs.find(x=>x.tipoEstab==='matriz')||DB.estabs[0]||{}),lot=DB.lotacoes[0]||{},ru=DB.rubricas.find(x=>x.sys==='SAL')||{cod:'001'};
+function genS1200ci(a,o){const r=ciRec(a.ci),id=novoId(),est=(DB.estabs.find(x=>x.tipoEstab==='matriz')||DB.estabs[0]||{}),lot=DB.lotacoes[0]||{},ru=ciRubr(r);
   const sem2300=!CI_S2300_OBRIG.includes(r.cat),P=DB.params,teto=num(P.tetoInss),out=num(r.outras);
   const mv=out>0?`<infoMV><indMV>${out>=teto?3:2}</indMV><remunOutrEmpr><tpInsc>1</tpInsc><nrInsc>${onlyC(r.outrasCnpj)}</nrInsc><codCateg>101</codCateg><vlrRemunOE>${fx(out)}</vlrRemunOE></remunOutrEmpr></infoMV>`:'';
   const compl=sem2300?`<infoComplem><nmTrab>${xe(r.nome)}</nmTrab><dtNascto>${r.nasc}</dtNascto></infoComplem>`:'';
@@ -104,7 +106,8 @@ function validarCI(ev,o,E){const{tipo,args}=ev.gen,r=ciRec(args.ci||args.id);if(
   if(!cpfValido(r.cpf))o.push('CPF do contribuinte individual inválido.');
   if(tipo==='S-2300'){['nasc','sexo'].forEach(k=>{if(!r[k])o.push('Campo obrigatório ausente: '+k);});if(!CI_S2300_OBRIG.includes(r.cat))o.push('Para a categoria '+r.cat+' o S-2300 é facultativo (MOS S-1.3, item 10.2.1); as informações podem ir no S-1200.');}
   if(tipo==='S-1200'||tipo==='S-1210'){if(!/^\d{4}-\d{2}$/.test(args.comp||''))o.push('Competência inválida.');if(!(num(r.valor)>0))o.push('Remuneração não informada.');
-    if(!DB.rubricas.find(x=>x.sys==='SAL'&&/^\d{4}$/.test(x.nat||'')))o.push('A rubrica de salário (S-1010) precisa ter natureza válida (Tabela 3).');
+    const ru=ciRubr(r);if(!/^\d{4}$/.test(ru.nat||''))o.push('A rubrica '+ru.cod+' precisa ter natureza válida (Tabela 3).');
+    if(tipo==='S-1200'&&!DB.eventos.some(x=>x.tipo==='S-1010'&&x.status==='processado'&&x.gen&&x.gen.args&&x.gen.args.id===ru.sys))o.push('Dependência: S-1010 da rubrica '+ru.cod+' ('+ru.desc+', natureza '+ru.nat+') ainda não processado.');
     if(DB.eventos.every(x=>!(x.tipo==='S-1000'&&x.status==='processado')))o.push('Dependência: o S-1000 (empregador) ainda não foi processado com sucesso.');}
   if(tipo==='S-1200'){if(CI_S2300_OBRIG.includes(r.cat)&&!DB.eventos.some(x=>x.tipo==='S-2300'&&x.status==='processado'&&x.empId===r.id))o.push('Dependência: S-2300 do trabalhador ainda não processado (obrigatório para a categoria '+r.cat+').');
     if(!CI_S2300_OBRIG.includes(r.cat)){if(!r.nasc)o.push('Informe a data de nascimento (infoComplem).');if(!onlyD(r.cbo))o.push('Informe o CBO (infoComplCont).');}
