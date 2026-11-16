@@ -17,7 +17,7 @@ subtitle: "Versão 2026.11 (15/11/2026)"
 | M3 | Manual técnico, de manutenção e de correções | Desenvolvedor | `manuais/03_manual_tecnico_manutencao_e_correcoes` |
 | M4 | Matriz de conformidade normativa e limitações | Todos, contratos | `manuais/04_matriz_conformidade_e_limitacoes` |
 | A1 | Roteiro de conferência dos cálculos em dúvida | Contabilidade | `Roteiro_conferencia_calculos` |
-| A2 | Planilha de auditoria e notas | Titular | `FolhaPro_auditoria_e_notas_2026-11-15.xlsx` |
+| A2 | Planilha de auditoria e notas | Titular | `FolhaPro_auditoria_e_notas_2026-11-16.xlsx` |
 | A3 | Pendências e correções | Titular | `FolhaPro_pendencias_e_correcoes.xlsx` |
 
 **Ordem para colocar o produto no mercado:** J7 (titularidade e INPI), J5 (Mallora), J6 (termos e privacidade), J1 e J2 (cliente), M4 (limitações) e M1 e M2 (entrega ao cliente).

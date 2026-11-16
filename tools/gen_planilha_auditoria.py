@@ -22,7 +22,7 @@ _old=[(0.06,9.5,8.0,9.0,8.5),(0.08,9.0,8.5,9.0,8.5),(0.08,8.5,7.5,8.0,8.0),(0.14
 PREV=round(sum(p*(f*0.25+c*0.35+t*0.25+u*0.15) for p,f,c,t,u in _old),2)
 ws=wb.active;ws.title='Notas por módulo'
 mods=[
-('Empresa, estabelecimentos, lotações, cargos e rubricas (S-1000/1005/1020/1010)',0.06,9.5,8.0,9.0,8.5,'Natureza 9219 de PLANO/COPART conforme a Tabela 3 oficial recebida (S-1010 liberado); Tabelas 4 e 21 em parte de fonte secundária; rubricas incluídas pelo usuário ainda sem validação XSD do S-1010/S-1200 com rubrica nova e validação XSD do S-1010/S-1200 com rubrica nova concluída.'),
+('Empresa, estabelecimentos, lotações, cargos e rubricas (S-1000/1005/1020/1010)',0.06,9.5,8.0,9.0,8.5,'Natureza 9219 de PLANO/COPART conforme a Tabela 3 oficial recebida (S-1010 liberado); Tabelas 3, 4, 7, 8, 18, 19 e 21 conferidas com o Anexo I oficial em 16/11/2026; rubricas incluídas pelo usuário ainda sem validação XSD do S-1010/S-1200 com rubrica nova e validação XSD do S-1010/S-1200 com rubrica nova concluída.'),
 ('Empregados e movimentações (S-2200/2205/2206/2230/2299)',0.08,9.0,8.5,9.0,8.5,'Atestados e afastamentos do controle interno não geram S-2230 automaticamente; conferir tabelas 18/19 com o leiaute oficial.'),
 ('Regras de trabalho (CCT/pisos, 12x36, banco de horas, estabilidades, pensão, consignado, plano, PLR)',0.08,8.5,7.5,8.0,8.0,'Sem validação contra folhas reais de cliente; adicionais por categoria/CCT além do piso não implementados; tabelas de PLR e consignado de fonte secundária.'),
 ('Cálculo da folha mensal (INSS, IRRF, FGTS, salário-família, VT, encargos)',0.14,9.0,8.8,9.0,8.5,'INSS por faixa, FGTS e encargos agora truncados na 2ª casa, como nos totalizadores do eSocial (MOS S-1.3); recálculo independente sem divergência; falta paralelo com folhas reais de sistema consolidado; eConsignado na rescisão (Portaria MTE 1.115/2026) e salário-maternidade não calculados.'),
@@ -38,14 +38,14 @@ mods=[
 ('Interface, menu e acessibilidade',0.03,9.0,8.0,9.0,8.5,'Sem teste com leitor de tela e sem teste com usuários reais; menu móvel retrátil ainda não implementado.'),
 ('Documentação jurídica e licenciamento (minuta, contrato de operador, RIPD, incidentes)',0.02,8.0,8.0,8.0,8.0,'Peças aguardam revisão do advogado responsável e dados do licenciado (fornecedor, encarregado).'),
 ('Contabilidade (plano de contas, lançamentos automáticos da folha, balancete e razão)',0.04,8.5,7.5,8.5,8.0,'Sem multa rescisória do FGTS, reversão de provisões no pagamento de férias/13º e centro de custo; CSV simples, sem ECD (SPED Contábil); política contábil das provisões a definir pela contabilidade da empresa.'),
-('Financeiro e arquivos bancários (contas a pagar da folha, remessa e retorno CNAB 240)',0.04,8.0,6.5,7.5,8.0,'Leiaute CNAB 240 montado a partir do padrão FEBRABAN e testado só por estrutura (240 posições, totais, retorno sintético); nenhuma homologação com banco; sem PIX, Segmento J/O e guias por código de barras; códigos de ocorrência a confirmar por banco.'),
+('Financeiro e arquivos bancários (contas a pagar da folha, remessa e retorno CNAB 240)',0.04,8.0,6.5,7.5,8.0,'Leiaute CNAB 240 conferido com o Padrão FEBRABAN v10.9 (lote 046, Pix e poupança) e testado por estrutura (240 posições, totais, retorno sintético); nenhuma homologação com banco; sem PIX, Segmento J/O e guias por código de barras; códigos de ocorrência a confirmar por banco.'),
 ('DCTFWeb (apuração, créditos vinculáveis, calendário de prazos, MAED, mora e espelho do DARF)',0.04,8.5,7.5,8.5,8.0,'Espelho de conferência: não transmite a declaração nem emite o DARF numerado (exige certificado/e-CAC ou Serpro Integra Contador); códigos de receita conferidos no Manual da DCTFWeb (jan/2025) e no MOS S-1.3 (1099-01, 1138-04, 0588-06, 1141-01/-05, 2985-01/2991-01, terceiros por entidade e 1664-01); só o código do adicional do tomador de cooperativa de trabalho segue em aberto (**); MAED e mora são simulações; feriados municipais só os cadastrados pelo usuário.'),
 ('Contribuintes individuais, CPRB, adicionais e Reinf (pró-labore, autônomos, cooperados, GILRAT adicional, SENAI adicional)',0.04,8.0,7.5,8.5,7.5,'INSS 11% com teto e múltiplas fontes, patronal 20%, IRRF, CPRB da transição 2025–2027 e adicional de cooperados calculados e ligados à DCTFWeb; S-2300/S-1200/S-1210 de CI validados no XSD, mas não homologados; Reinf só como espelho (sem XML R-2010/R-2020/R-2060/R-2099); sem proporcionalidade da CPRB em atividades mistas; percentual do SENAI adicional (o MOS só informa o código 1664 e o limite de 500 empregados) e composição de entidades por FPAS a confirmar (**); código do adicional do tomador de cooperativa de trabalho em aberto; S-1200 de CI passou a usar rubricas próprias com as naturezas 3501, 3506, 3508 e 3520 da Tabela 3 (enviar o S-1010 antes).'),
 ]
 tot=sum(m[1] for m in mods)
 mods=[(m[0],round(m[1]/tot,3))+m[2:] for m in mods]
 mods[3]=(mods[3][0],round(mods[3][1]+1-sum(m[1] for m in mods),3))+mods[3][2:]
-ws['A1']='FolhaPro — notas por módulo (auditoria de 15/11/2026, revisão com modo servidor, usuários e licenças)';ws['A1'].font=T
+ws['A1']='FolhaPro — notas por módulo (auditoria de 16/11/2026, após conferência com o Anexo I, o leiaute e o padrão CNAB)';ws['A1'].font=T
 ws['A2']='Notas atribuídas pelo próprio autor do código, após bateria de testes automatizados; não há revisão independente. Meta do projeto: 9,0 por módulo e na nota geral.';ws['A2'].font=S
 ws['A3']='Pesos das dimensões:';ws['A3'].font=BB
 dims=[('Funcionalidade',0.25),('Conformidade normativa',0.35),('Correção técnica (testes)',0.25),('Usabilidade',0.15)]
@@ -137,7 +137,12 @@ mel=[
 (41,'Tabela 3','Com a Tabela 3 do eSocial fornecida: rubricas próprias para contribuintes individuais (301 a 304) com as naturezas 3501 (autônomo), 3506 (diretor não empregado), 3508 (sócio) e 3520 (cooperado), escolhidas pela categoria no S-1200; plano de saúde e coparticipação (desconto) passam à natureza 9219, o que desbloqueia o S-1010 dessas duas rubricas. S-1010 das seis rubricas e S-1200 de CI validados no XSD (S-1010 6/6).'),
 (42,'Usabilidade e design','Tema claro, escuro e automático (segue o sistema, com alternância manual lembrada no navegador) em variáveis de cor, inclusive gráficos e cor da marca derivada por tema; paleta de comandos (Ctrl+K) para abrir qualquer tela; atalho ? com a lista de atalhos; diálogos com papel, nome, foco inicial, foco preso e devolução do foco; título da página acompanha a tela; cabeçalho de tabela fixo, números tabulares e alvos de toque de 44 px em telas de toque; botão de envio ao eSocial com contraste mínimo de 4,5:1. Contraste dos textos do tema escuro verificado por script nas telas inicial, empregados, painel e DCTFWeb (nenhum par abaixo de 4,5:1).'),
 ]
-sheet(ws2,'Melhorias realizadas até 15/11/2026','Resumo por entrega, em ordem cronológica.',['#','Área','Melhoria'],mel,[6,20,130])
+mel+=[
+(43,'Carrossel e Sair','Empresas cadastradas em carrossel 3D de cards com busca; botão Sair com confirmação e gravação das últimas ações; ambiente de teste com 10 empresas de 10 empregados (regimes, UFs, CNPJ alfanumérico).'),
+(44,'Normativo','Conferência com o Anexo I, o Anexo II e o leiaute S-1.3 (cons. até NT 07/2026 rev. 20/10/2026) fornecidos: naturezas de rubrica vencidas substituídas (1002→1012; 1020→1016 e 1017), FPAS 566/574/612, motivos da Tabela 18, classificação tributária do Simples (Tabela 08) e tipo de dependente 04 (Tabela 07, encerrado em 25/04/2023); campo infoMesmoMtv do S-2230.'),
+(45,'CNAB 240','Conferência com o Padrão FEBRABAN v10.9: lote 046, poupança (05) e Pix (45), indicativo P014, finalidade da TED, ocorrências G059 completas (150 códigos), retorno corrigido (02 não é agendamento) e rejeições de arquivo/lote; tools/cnab_test.js.'),
+]
+sheet(ws2,'Melhorias realizadas até 16/11/2026','Resumo por entrega, em ordem cronológica.',['#','Área','Melhoria'],mel,[6,20,130])
 # ---------- 3. Auditoria ----------
 ws3=wb.create_sheet('Auditoria desta rodada')
 aud=[
@@ -176,7 +181,14 @@ aud=[
 ('Usabilidade','Tema escuro, paleta Ctrl+K, atalho ?, foco de diálogos e título por tela','13 verificações aprovadas; contraste do tema escuro sem pares abaixo de 4,5:1 nas telas amostradas','node tools/ux_test.js'),
 ('Regressão','Todas as suítes existentes após as mudanças de interface','Aprovadas; upd_test depende de arquivo de chaves local ausente neste ambiente e não foi executável','tools/*.js e api/test*.js'),
 ]
-sheet(ws3,'Auditoria desta rodada (15/11/2026)','Testes executados pelo autor sobre o ambiente de exemplo; resultado e onde reproduzir.',['Área','Verificação','Resultado','Como reproduzir'],aud,[24,110,48,34])
+aud+=[
+('Regressão (16/11/2026)','Todas as suítes *_test.js, auditoria_final (33), audit1 (14) e smoke2 reexecutadas após as correções do dia','Aprovadas; upd_test continua não executável por falta do arquivo local de chaves','tools/*.js'),
+('Validação XSD (16/11/2026)','1.403 XML gerados para as 11 empresas do ambiente de exemplo (S-1000, 1005, 1010, 1020, 1200, 1210, 1299 e 2200) e 321 XML dos seis regimes do dump, todos contra o XSD S-1.3','Todos válidos; pendências de transmissão são apenas dependência de ordem de envio','tools/dump.js + tools/xsdval.py'),
+('Tabelas do Anexo I (16/11/2026)','Vigência de todas as naturezas (Tabela 03), códigos de IRRF (Tabela 21), motivos de afastamento e de desligamento (Tabelas 18 e 19), dependentes (Tabela 07), classificação tributária (Tabela 08), FPAS e terceiros (Tabela 04) e compatibilidades das Tabelas 12 e 22','Quatro divergências encontradas e corrigidas (ver Erros corrigidos); demais itens vigentes','Anexo I fornecido pelo titular'),
+('CNAB (16/11/2026)','Arquivo com formas 01, 05, 41 e 45: 240 posições em todas as linhas, lote 046, câmara 009 e Segmento B no Pix, totais de lote e de arquivo; retorno com códigos 00, 02, BD, ZA e rejeição de arquivo (HI)','6 verificações aprovadas','node tools/cnab_test.js'),
+('INSS (16/11/2026)','audit1 ajustado: o MOS (S-5001, item 2.13) manda truncar em duas casas; o teto calculado é 988,07 e o 988,09 da Portaria é aritmético','14 de 14; diferença de R$ 0,02 no teto registrada','node tools/audit1.js'),
+]
+sheet(ws3,'Auditoria desta rodada (16/11/2026)','Testes executados pelo autor sobre o ambiente de exemplo; resultado e onde reproduzir.',['Área','Verificação','Resultado','Como reproduzir'],aud,[24,110,48,34])
 # ---------- 4. Erros corrigidos ----------
 ws4=wb.create_sheet('Erros corrigidos')
 err=[
@@ -202,6 +214,14 @@ err=[
 (20,'Cooperado','Premissa do autor de que o adicional de cooperado seria 12/9/6 p.p. a cargo da tomadora: a Lei 10.666/2003, art. 1º, distingue cooperativa de produção (12/9/6 sobre a remuneração) e tomador de cooperativa de trabalho (9/7/5 sobre a nota fiscal).','Calculados os dois casos; texto legal conferido só por fonte secundária (**).'),
 (21,'Categorias','Categoria 741 (cooperado) usada no cadastro de contribuintes individuais: no MOS S-1.3 a 741 é MEI; cooperados são 731, 734 e 738.','Lista de categorias corrigida e regra de obrigatoriedade do S-2300 conforme o item 10.2.1 do MOS.'),
 (22,'Códigos de receita','Contribuintes individuais lançados nos códigos de empregados (1082-01 e 1138-01) e IRRF com código provisório, por falta de consulta à tabela oficial; terceiros somados sob um único código genérico.','Corrigidos para 1099-01, 1138-04 (1138-06 no Simples concomitante) e 0588-06, com um código por entidade de terceiros, conforme o Manual da DCTFWeb e o MOS.'),
+]
+err+=[
+(23,'Natureza de rubrica','DSR sobre horas extras usava a natureza 1002 (término em 30/04/2024) e férias e terço usavam a 1020 (término em 30/04/2023): o S-1010 com vigência atual seria rejeitado. A natureza fora reproduzida de fonte secundária.','Substituídas por 1012, 1016 e 1017 conforme o Anexo I oficial; bases já gravadas são migradas ao abrir.'),
+(24,'FPAS','FPAS 566 descrito como agroindústria, sem terceiros; exemplos da escola e da transportadora com FPAS 515.','566 corrigido (comunicação, condomínio, creche etc., terceiros 0099); incluídos 574 (ensino, 0099) e 612 (transporte rodoviário, 3139); exemplos ajustados.'),
+(25,'Classificação tributária','Tabela 08: o Anexo IV do Simples saía como 03 e o regime misto como 02, o inverso do oficial (02 = não substituída; 03 = substituída e não substituída). O indSimples do S-1200 só é exigido na 03.','Anexo IV passa a 02 e misto a 03; texto da tela ajustado.'),
+(26,'Dependentes','Tipo de dependente 04 (universitário ou escola técnica) ainda ofertado, embora encerrado em 25/04/2023 na Tabela 07.','Removido da lista; dependentes já cadastrados com 04 migram para 03.'),
+(27,'CNAB','Versão do lote 045 (vigente é 046); código de retorno 02 tratado como agendamento (significa cancelado pelo pagador); 24 dos 150 códigos de ocorrência.','Corrigidos conforme o Padrão FEBRABAN v10.9; Pix e poupança implementados.'),
+(28,'Teste','audit1 comparava o INSS com valor arredondado por faixa, em conflito com a regra de truncamento do MOS já adotada no cálculo.','Referência do teste alinhada ao MOS (S-5001, item 2.13).'),
 ]
 sheet(ws4,'Erros corrigidos','Erros encontrados (por testes, auditoria ou pelo próprio autor) e a correção aplicada.',['#','Área','Erro','Correção'],err,[6,16,90,80])
 # ---------- 5. Pendências ----------
@@ -232,9 +252,9 @@ pen=[
 ('Qualidade','Testes automatizados em integração contínua (GitHub Actions) e cobertura de regressão.','Configurar CI.','Não',24),
 ('Operação','Suporte e SLA: valores, calendário de atualização das tabelas e responsável.','Decisão comercial.','Não',14),
 ('Segurança','Exportação em JSON aberto ainda existe (com aviso).','Remover ou exigir senha.','Não',2),
-('Financeiro','Remessa CNAB 240 sem homologação com banco: convênio, câmara, finalidade, uso do Segmento B e códigos de ocorrência variam por instituição; arquivo de retorno só testado com dado sintético.','Manual CNAB do banco, arquivo de teste e validação pela mesa de integração.','Sim',24),
+('Financeiro','Remessa CNAB 240 (layout já conferido com o padrão v10.9) sem homologação com banco: convênio, código do banco do favorecido no Pix, grafia da forma de iniciação, finalidade da TED e uso do Segmento B variam por instituição; arquivo de retorno só testado com dado sintético.','Manual CNAB do banco, arquivo de teste e validação pela mesa de integração.','Sim',24),
 ('Reinf','EFD-Reinf só como espelho: sem XML nem transmissão de R-2010, R-2020, R-2060 e R-2099, sem R-4010/R-4020 e sem escrituração de notas fiscais; retenção de 3,5% para prestador optante pela CPRB pela Solução de Consulta Cosit nº 153/2026 (**).','Leiaute e XSD do Reinf; certificado.','Não',120),
-('Financeiro','Fora do arquivo bancário: PIX, Segmentos J/O (boletos e tributos por código de barras), pagamento de guias, conciliação por extrato (OFX/CNAB 240 de extrato) e fluxo de caixa.','Definir escopo com o cliente e o banco.','Não',60),
+('Financeiro','Fora do arquivo bancário: Pix por QR Code (forma 47), Segmentos J/J-52/N/O/W/Z (boletos e tributos por código de barras), pagamento de guias, conciliação por extrato (OFX/CNAB 240 de extrato) e fluxo de caixa.','Definir escopo com o cliente e o banco.','Não',60),
 ('Contabilidade','Sem lançamento da multa rescisória do FGTS, reversão de provisões no pagamento de férias e 13º, centro de custo e integração com plano de contas externo; exportação só em CSV simples, sem ECD (SPED Contábil).','Política contábil e leiaute do sistema contábil do cliente.','Não',50),
 ('Cálculo','Salário-maternidade não calculado na folha (entra na DCTFWeb só por valor informado); eConsignado na rescisão pelo percentual dado em garantia (Portaria MTE 1.115/2026) não implementado; percentual do SENAI adicional (20% sobre 1%, DL 4.048/1942, art. 6º; o MOS não o informa) e composição de entidades por FPAS a confirmar; CPRB sem proporcionalidade de atividades mistas e sem exclusões da receita bruta; adicional de cooperado conferido só em fonte secundária.','Fonte oficial dos percentuais e da legislação; casos de atividades mistas.','Sim',40),
 ('eSocial','Leitura integral do Manual de Orientação S-1.3 (430 páginas) evento a evento, comparando campos, prazos e regras com o gerador; até aqui a conferência foi parcial.','Tempo de revisão e, de preferência, validação por especialista em eSocial.','Sim',60),
@@ -246,4 +266,4 @@ ws5.cell(row=e+1,column=4,value='Total de pendências').font=BB;ws5.cell(row=e+1
 ws5.cell(row=e+2,column=4,value='Bloqueiam a nota 9,0').font=BB;ws5.cell(row=e+2,column=5,value=f'=COUNTIF(E5:E{e},"Sim")').font=BB
 ws5.cell(row=e+3,column=4,value='Horas totais estimadas').font=BB;ws5.cell(row=e+3,column=5,value=f'=SUM(F5:F{e})').font=BB
 ws5.cell(row=e+4,column=4,value='Horas dos itens que bloqueiam 9,0').font=BB;ws5.cell(row=e+4,column=5,value=f'=SUMIF(E5:E{e},"Sim",F5:F{e})').font=BB
-wb.save('/home/claude/erp-empresas-normais/docs/FolhaPro_auditoria_e_notas_2026-11-15.xlsx')
+wb.save('/home/claude/erp-empresas-normais/docs/FolhaPro_auditoria_e_notas_2026-11-16.xlsx')

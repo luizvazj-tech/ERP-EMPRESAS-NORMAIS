@@ -5,9 +5,9 @@ const ev=s=>w.eval(s);ev(`seedDemo('lp')`);
 let ok=0,bad=0;
 const chk=(nome,got,exp)=>{const d=Math.abs(got-exp)<=0.011;d?ok++:bad++;console.log((d?'OK   ':'DIVERGE ')+nome+' obtido='+got+' esperado='+exp);};
 // INSS: referências por soma de faixas (cálculo independente)
-const inssRef=b=>{b=Math.min(b,8475.55);const f=[[1621,7.5],[2902.84,9],[4354.27,12],[8475.55,14]];let p=0,t=0;for(const [l,a] of f){if(b>p)t+=(Math.min(b,l)-p)*a/100;p=l;}return Math.round(t*100)/100;};
+const inssRef=b=>{b=Math.min(b,8475.55);const f=[[1621,7.5],[2902.84,9],[4354.27,12],[8475.55,14]];let p=0,t=0;for(const [l,a] of f){if(b>p)t+=Math.floor((Math.min(b,l)-p)*a+1e-6)/100;p=l;}return Math.round(t*100)/100;}; /* MOS S-1.3, S-5001, item 2.13: duas casas sem arredondamento; truncamento por faixa */
 for(const b of [1621,2000,3600,5000,8475.55,12000])chk('INSS '+b,ev(`calcInss(${b},DB.params)`),inssRef(b));
-chk('INSS teto 988,09 (Portaria 13/2026)',ev('calcInss(9999,DB.params)'),988.09);
+chk('INSS teto com truncamento por faixa (988,07; o valor 988,09 da Portaria é aritmético)',ev('calcInss(9999,DB.params)'),988.07);
 // IRRF: exemplos oficiais Receita Federal (rend 6000; base 5392,80 -> 574,29; redutor 179,75 -> 394,54)
 const ir=(r,i,d)=>ev(`calcIrrf(${r},${i},${d||0},0,DB.params)`);
 chk('IRRF Receita ex. 6000 (simplificado)',ir(6000,0).irrf,394.54);
