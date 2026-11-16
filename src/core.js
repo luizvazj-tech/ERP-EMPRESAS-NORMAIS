@@ -72,8 +72,8 @@ function applyBrand(b){b=b||BRAND;const s=document.documentElement.style;
 /* ---------------- Rubricas padrão ---------------- */
 // natureza (Tabela 3) preenchida apenas onde confirmada em fonte oficial: 1000, 1409, 9200, 9201, 9203.
 /* Natureza das rubricas — Tabela 3 do eSocial (códigos conferidos em reprodução da tabela; confirmar no Anexo I do leiaute vigente) */
-const NATMAP={SAL:'1000',INSAL:'1202',PERIC:'1203',ADNOT:'1205',HE50:'1003',HE100:'1003',DSRHE:'1002',COMIS:'1207',GRAT:'1211',OUTP:'1099',SALFAM:'1409',
- FALTAS:'9209',ATRASOS:'9209',INSS:'9201',IRRF:'9203',VT:'9216',ADIANT:'9200',PENSAO:'9213',OUTD:'9299',FERIAS:'1020',FERTERCO:'1020',ABONO:'1023',ABONOTERCO:'1023',
+const NATMAP={SAL:'1000',INSAL:'1202',PERIC:'1203',ADNOT:'1205',HE50:'1003',HE100:'1003',DSRHE:'1012',COMIS:'1207',GRAT:'1211',OUTP:'1099',SALFAM:'1409',
+ FALTAS:'9209',ATRASOS:'9209',INSS:'9201',IRRF:'9203',VT:'9216',ADIANT:'9200',PENSAO:'9213',OUTD:'9299',FERIAS:'1016',FERTERCO:'1017',ABONO:'1023',ABONOTERCO:'1023',
  D13:'5001',D13P1:'9214',D13INSS:'9201',D13IRRF:'9203',AVISO:'6003',FERVENC:'6007',FERPROP:'6006',FERPTERCO:'6006',D13PROP:'6002',AVISOD:'6901'};
 function defaultRubricas(){
   const R=(sys,cod,desc,tp,nat,cp,ir,fg,reduz)=>({sys,cod,desc,tp,nat,incCP:cp,incIRRF:ir,incFGTS:fg,reduz:!!reduz,conf:['1000','1409','9200','9201','9203'].includes(nat)?false:false});
@@ -131,6 +131,8 @@ function emptyDB(){return{ver:1,empresa:null,estabs:[],lotacoes:[],cargos:[],rub
   cfg:{ambiente:2,modo:'sim',gateway:'',comp:compAtual()},params:defaultParams(),cct:[],bh:[],sstCat:[],sstAso:[],sstRisco:[],ret:[],rf:{ci:[],cprb:[],nf:[]},hAdv:[],hCurso:[],atest:[],hAlt:[],hSnap:{},saude:{grau:'12',per:{}},ctb:{plano:null,regra:{},lanc:[],fech:{},seq:0,prov:false,encProv:0},fin:{contas:[],tit:[],rem:[],seq:0},dctf:{cred:{},trans:{}}};}
 function loadDB(src){let r=src||null;if(!r){try{r=localStorage.getItem(LS_KEY);}catch(e){}}if(!r)r=_mem;if(r){try{const d=JSON.parse(r);const e=emptyDB();const o=Object.assign(e,d,{cfg:Object.assign(e.cfg,d.cfg||{}),params:Object.assign(e.params,d.params||{})});defaultRubricas().forEach(r=>{const x=o.rubricas.find(y=>y.sys===r.sys);if(!x)o.rubricas.push(r);else if(!x.nat&&r.nat)x.nat=r.nat;});const FIX={INSS:[['00','31'],['31','41']],IRRF:[['00','00'],['00','31']],D13INSS:[['00','32'],['32','42']],D13IRRF:[['00','00'],['00','32']]};o.rubricas.forEach(x=>{const f=FIX[x.sys];if(f&&x.incCP===f[0][0]&&x.incIRRF===f[0][1]){x.incCP=f[1][0];x.incIRRF=f[1][1];}});const IRFIX={SALFAM:'79',VT:'9',ADIANT:'9',PENSAO:'51',OUTD:'9',FERIAS:'13',FERTERCO:'13',ABONO:'75',ABONOTERCO:'75',D13P1:'9',AVISO:'74',FERVENC:'74',FERPROP:'74',FERPTERCO:'74',AVISOD:'9'};
   o.rubricas.forEach(x=>{if(!o.migIR&&IRFIX[x.sys]&&(x.incIRRF==='00'||x.incIRRF==='11'&&['FERIAS','FERTERCO'].includes(x.sys)))x.incIRRF=IRFIX[x.sys];});o.migIR=1;
+  /* Tabela 03 (Anexo I, NT 07/2026 rev.): 1002 (DSR) encerrada em 30/04/2024 e 1020 (Férias) em 30/04/2023 -> 1012, 1016 e 1017 */
+  o.rubricas.forEach(x=>{if(x.sys==='DSRHE'&&x.nat==='1002')x.nat='1012';if(x.sys==='FERIAS'&&x.nat==='1020')x.nat='1016';if(x.sys==='FERTERCO'&&x.nat==='1020')x.nat='1017';});
   if(Array.isArray(o.rubricas)){o.rubricas.forEach(r=>{if(r.sys==='CONSIG'){r.nat='9254';r.incFGTS='00';r.desc='EMPRÉSTIMO CONSIGNADO — DESCONTO';}if((r.sys==='PLANO'||r.sys==='COPART')&&!r.nat&&!r.custom)r.nat='9219';});defaultRubricas().forEach(d=>{if(!o.rubricas.some(r=>r.sys===d.sys))o.rubricas.push(d);});}
   ['cct','bh','sstCat','sstAso','sstRisco','ret','hAdv','hCurso','atest','hAlt'].forEach(k=>{if(!Array.isArray(o[k]))o[k]=[];});if(!o.hSnap||typeof o.hSnap!=='object')o.hSnap={};if(!o.saude||typeof o.saude!=='object')o.saude={grau:'12',per:{}};if(!o.saude.per)o.saude.per={};
   if(!o.migJorn){const M={'2':'4','3':'5','4':'3','5':'7','9':'9'};(o.empregados||[]).forEach(x=>{if(x.tpJornada)x.tpJornada=M[x.tpJornada]||x.tpJornada;});o.migJorn=1;}
@@ -267,7 +269,7 @@ const REGIMES={sn:'Simples Nacional',lp:'Lucro Presumido',lr:'Lucro Real'};
 const ANEXOS={std:'Anexos I, II, III ou V — CPP recolhida no DAS',iv:'Anexo IV (ou atividade vedada) — CPP recolhida fora do DAS',misto:'Misto — há atividades dos Anexos I–III/V e do Anexo IV'};
 /* Tabela 8 do eSocial: 01 substituída; 02 substituída e não substituída; 03 não substituída; 99 demais PJ */
 function classTribDe(E){if(!E)return '';if(E.regime==='sn')return E.anexo==='iv'?'03':E.anexo==='misto'?'02':'01';return '99';}
-const FPAS_REF={'515':{nome:'Comércio, serviços e demais (FPAS 515)',terc:'0115',perc:5.8},'507':{nome:'Indústria (FPAS 507)',terc:'0079',perc:5.8},'566':{nome:'Agroindústria/cooperativas — conferir (FPAS 566)',terc:'',perc:0}};
+const FPAS_REF={'515':{nome:'Comércio, serviços de saúde, turismo e demais (FPAS 515)',terc:'0115',perc:5.8},'507':{nome:'Indústria e construção civil (FPAS 507)',terc:'0079',perc:5.8},'566':{nome:'Comunicação, publicidade, condomínio, creche e profissional liberal PF (FPAS 566)',terc:'0099',perc:4.5},'574':{nome:'Estabelecimento de ensino (FPAS 574)',terc:'0099',perc:4.5},'612':{nome:'Transporte rodoviário (FPAS 612)',terc:'3139',perc:5.8}};
 function fatorCprb(P,comp){const a=Number((comp||compAtual()).slice(0,4));const f=(P.cprbFrac||{})[a];return f==null?(a<2025?0:100):f;}
 /* Regra de incidência para uma lotação: define quais contribuições patronais incidem na folha */
 function regraLot(E,l,comp,P){
@@ -539,7 +541,7 @@ function validarEvento(ev){const o=validarBase(ev),E=DB.empresa;if(!E||!ev.gen)r
     if(!FPAS_OK.test(String(l.fpas||'')))o.push('FPAS deve ter 3 dígitos (Tabela 4).');
     if(!/^\d{4}$/.test(String(l.codTercs||'')))o.push('Código de terceiros deve ter 4 dígitos (Tabela 4); use 0000 quando não houver recolhimento a terceiros.');
     if(E.regime==='sn'&&String(l.codTercs)!=='0000')o.push('Simples Nacional: terceiros dispensados — use código 0000 (LC 123/2006, art. 13, §3º).');
-    if(E.regime!=='sn'&&String(l.codTercs)==='0000')o.push('Lucro Presumido/Real: informe o código de terceiros do FPAS (ex.: 0115 para FPAS 515; 0079 para FPAS 507) **.');
+    if(E.regime!=='sn'&&String(l.codTercs)==='0000')o.push('Lucro Presumido/Real: informe o código de terceiros do FPAS (Tabela 4: 0115 para FPAS 515; 0079 para FPAS 507; 0099 para FPAS 566 e 574; 3139 para FPAS 612).');
     if(E.regime==='sn'&&E.anexo==='misto'&&!l.atvSimples)o.push('Simples misto: indique se a lotação é de atividade com CPP substituída ou não substituída.');
     if(DB.lotacoes.filter(x=>String(x.cod)===String(l.cod)).length>1)o.push('Código de lotação duplicado.');}}
   if(tipo==='S-2200'){const e=byId(DB.empregados,args.id);if(e){const l=byId(DB.lotacoes,e.lotacao),s=byId(DB.estabs,e.estab);
