@@ -21,7 +21,7 @@ const EX_EMP=[
   cct:{nome:'CCT Metalúrgicos 2026 (exemplo)',sind:'Sindicato dos Metalúrgicos (exemplo)',pisos:{'724315':'2600,00','721215':'2400,00'}},
   emps:[['Valdir José Ferreira','M','1980-01-25','2018-03-05',0,0,3100,'cct peric d2'],['Rogério Luiz Schmitt','M','1986-07-14','2020-08-17',0,0,2900,'cct ins20'],['Adriano Cesar Wagner','M','1991-11-09','2022-04-04',1,0,2700,'cct ins20 vt'],['Carlos Eduardo Becker','M','1977-05-30','2017-10-02',3,0,7800,'d1'],['Marcia Regina Kuhn','F','1989-02-02','2021-06-14',4,1,5600,'d2'],['Jair Antônio Pereira','M','1983-12-12','2019-02-11',1,0,2650,'cct ins20'],['Sidnei Roberto Lopes','M','1992-08-21','2023-01-09',2,0,2000,'vt d1'],['Everton Fabiano Dias','M','1995-03-15','2024-02-19',0,0,2800,'cct peric vt'],['Ana Paula Krüger','F','1997-09-07','@-4|01',2,1,1950,'vt'],['Roberto Carlos Mendes','M','1975-04-18','2016-05-23',2,0,2250,'d1 ins10']]}
 ];
-function exCpf(ci,i){const n=((ci*10+i+7)*7919317+100000007)%899999999+100000000;return cpfGer(String(n).slice(0,9));}
+function exCpf(ci,i){const n=((ci*1000+i+7)*7919317+100000007)%899999999+100000000;return cpfGer(String(n).slice(0,9));}
 function exBuildEmpresa(ci,old){
   const S=EX_EMP[ci],cur=compAtual(),hoje0=hojeISO();DB=emptyDB();DB._exemplo=true;DB._id=uid('c');if(old&&old.params)DB.params=old.params;DB.cfg=Object.assign(DB.cfg,{ambiente:2,modo:'sim',comp:cur});
   const cnpj=cnpjGerar(S.cnpj),sn=S.reg==='sn',ini=compAdd(cur,-8);

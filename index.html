@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="fp-api" content="">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-fNrA93gP/Rnmx3iBICnDVrhFVE12vPGvGVE2fG8E3V8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-Azgk3dr6uNRIdQrKR+puZyzH1kGbvAFdLsoOgsAu1lw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -1761,7 +1761,7 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
-const APP_VER='2026.11.14+59813d40';
+const APP_VER='2026.11.14+c310d946';
 const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
@@ -2226,7 +2226,7 @@ const EX_EMP=[
   cct:{nome:'CCT Metalúrgicos 2026 (exemplo)',sind:'Sindicato dos Metalúrgicos (exemplo)',pisos:{'724315':'2600,00','721215':'2400,00'}},
   emps:[['Valdir José Ferreira','M','1980-01-25','2018-03-05',0,0,3100,'cct peric d2'],['Rogério Luiz Schmitt','M','1986-07-14','2020-08-17',0,0,2900,'cct ins20'],['Adriano Cesar Wagner','M','1991-11-09','2022-04-04',1,0,2700,'cct ins20 vt'],['Carlos Eduardo Becker','M','1977-05-30','2017-10-02',3,0,7800,'d1'],['Marcia Regina Kuhn','F','1989-02-02','2021-06-14',4,1,5600,'d2'],['Jair Antônio Pereira','M','1983-12-12','2019-02-11',1,0,2650,'cct ins20'],['Sidnei Roberto Lopes','M','1992-08-21','2023-01-09',2,0,2000,'vt d1'],['Everton Fabiano Dias','M','1995-03-15','2024-02-19',0,0,2800,'cct peric vt'],['Ana Paula Krüger','F','1997-09-07','@-4|01',2,1,1950,'vt'],['Roberto Carlos Mendes','M','1975-04-18','2016-05-23',2,0,2250,'d1 ins10']]}
 ];
-function exCpf(ci,i){const n=((ci*10+i+7)*7919317+100000007)%899999999+100000000;return cpfGer(String(n).slice(0,9));}
+function exCpf(ci,i){const n=((ci*1000+i+7)*7919317+100000007)%899999999+100000000;return cpfGer(String(n).slice(0,9));}
 function exBuildEmpresa(ci,old){
   const S=EX_EMP[ci],cur=compAtual(),hoje0=hojeISO();DB=emptyDB();DB._exemplo=true;DB._id=uid('c');if(old&&old.params)DB.params=old.params;DB.cfg=Object.assign(DB.cfg,{ambiente:2,modo:'sim',comp:cur});
   const cnpj=cnpjGerar(S.cnpj),sn=S.reg==='sn',ini=compAdd(cur,-8);
@@ -3310,5 +3310,52 @@ ACT.sair=()=>{
 };
 ACT.svSair=ACT.sair;
 (function(){const b=document.getElementById('btnSair');if(b&&window.__SVON)b.hidden=true;})();
+/* ui24 — Ambiente de teste com 10 empresas x 10 empregados (situações variadas), para o carrossel */
+(function(){
+const PM=['Rodrigo','Felipe','Diego','Caio','Vinícius','Hugo','Samuel','Otávio','Renato','Wesley','Murilo','Alan','Ícaro','Davi'],PF=['Beatriz','Aline','Tatiane','Renata','Priscila','Luana','Michele','Carolina','Elaine','Natália','Giovana','Simone','Bianca','Raquel'],
+SN=['Almeida','Barros','Carvalho','Drummond','Esteves','Furtado','Guedes','Holanda','Ibrahim','Jordão','Klein','Lacerda','Moraes','Nogueira','Ornelas','Prado','Queiroz','Rezende','Sampaio','Tavares','Uchoa','Vasconcelos','Werneck','Xavier','Yamada','Zanetti'];
+/* sx: sexo por posição; ca: cargo (0-4); lo: lotação (0-1); sal: salário; fl: marcadores */
+function gen(k,sx,ca,lo,sal,fl,adm){const r=[];for(let j=0;j<10;j++){const f=sx[j]==='F';const nome=(f?PF:PM)[(k*3+j)%14]+' '+SN[(k*5+j*3)%26]+' '+SN[(k*7+j*2+5)%26];
+  r.push([nome,sx[j],(1975+((k*7+j*5)%26))+'-'+String(1+((k+j*3)%12)).padStart(2,'0')+'-'+String(2+((k*3+j*7)%26)).padStart(2,'0'),adm[j],ca[j],lo[j],sal[j],fl[j]]);}return r;}
+const SXA='MFMFMFFMFM',SXB='FMFMMFMFMF',SXC='MMFMFFMFMM';
+const NOVOS=[
+ {nome:'CLÍNICA VIDA PLENA LTDA',fant:'Vida Plena',cnpj:'456789010001',reg:'sn',cnae:'8630503',mun:'Belo Horizonte',cod:'3106200',uf:'MG',cep:'30130010',rat:2,fap:1,fpas:'515',terc:'0000',tcp:0,ct:'Dra. Heloísa Vida',
+  lots:[['001','Assistencial'],['002','Recepção e administração']],cargos:[['01','Técnico de enfermagem','322205'],['02','Recepcionista de consultório','422105'],['03','Auxiliar de serviços gerais','514320'],['04','Médico clínico geral','225125'],['05','Fisioterapeuta','223605']],
+  cct:{nome:'CCT Saúde 2026 (exemplo)',sind:'Sindicato dos Trabalhadores em Saúde (exemplo)',pisos:{'322205':'2300,00','422105':'1621,00'}},
+  emps:gen(3,SXB,[0,1,0,4,3,1,2,0,1,0],[0,1,0,0,0,1,1,0,1,0],[2450,1700,2380,6200,14500,1650,1621,2300,1800,2600],['cct vt d1','cct vt','cct peric d2','d1','d2','cct vt','vt','cct vt d1','cct vt','cct d3'],['2021-04-05','2022-09-12','2023-01-16','2019-06-03','2018-02-19','2024-05-06','2025-03-10','2022-11-07','@-3|10','@-1|03']),curso:['Biossegurança em serviços de saúde (NR-32)',8]},
+ {nome:'CONSTRUTORA ALICERCE S.A.',fant:'Alicerce',cnpj:'567890120001',reg:'lr',cnae:'4120400',mun:'Goiânia',cod:'5208707',uf:'GO',cep:'74000010',rat:3,fap:1.4,fpas:'507',terc:'0079',tcp:5.8,ct:'Eng. Wilson Alicerce',
+  lots:[['001','Obra - canteiro'],['002','Escritório central']],cargos:[['01','Pedreiro','715210'],['02','Servente de obras','717020'],['03','Mestre de obras','710205'],['04','Engenheiro civil','214205'],['05','Almoxarife','414105']],
+  cct:{nome:'CCT Construção Civil 2026 (exemplo)',sind:'Sindicato da Construção Civil (exemplo)',pisos:{'715210':'2450,00','717020':'1850,00'}},
+  emps:gen(4,SXA,[0,1,2,3,0,1,4,0,1,3],[0,0,0,1,0,0,1,0,0,1],[2600,1900,4800,11800,2550,1850,2900,2500,1880,9500],['cct peric','cct vt','cct d2','d1','cct vt d1','cct','vt','cct ins20','cct vt','d2'],['2020-03-02','2022-06-20','2018-08-13','2017-05-15','2021-10-04','2023-04-17','2022-01-10','2024-02-05','@-2|08','@-1|02']),curso:['NR-18 Condições e meio ambiente na construção',6]},
+ {nome:'SUPERMERCADO BOM PREÇO LTDA',fant:'Bom Preço',cnpj:'678901230001',reg:'lp',cnae:'4711302',mun:'Porto Alegre',cod:'4314902',uf:'RS',cep:'90010010',rat:2,fap:0.9,fpas:'515',terc:'0115',tcp:5.8,ct:'Cláudio Bom Preço',
+  lots:[['001','Loja'],['002','Administração']],cargos:[['01','Operador de caixa','421125'],['02','Repositor de mercadorias','521140'],['03','Açougueiro','848505'],['04','Gerente de loja','141405'],['05','Assistente administrativo','411010']],
+  cct:{nome:'CCT Comércio Varejista 2026 (exemplo)',sind:'Sindicato dos Comerciários (exemplo)',pisos:{'421125':'1850,00','521140':'1700,00'}},
+  emps:gen(5,SXC,[0,1,2,0,3,1,0,4,1,2],[0,0,0,0,1,0,0,1,0,0],[1900,1750,2800,1880,6800,1720,1860,2300,1700,2750],['cct vt','cct vt d1','cct d2','cct vt','d2','cct vt','cct vt d1','vt','cct vt','cct d1'],['2022-02-14','2023-06-05','2019-11-04','2021-03-22','2018-07-09','2024-08-12','2025-01-20','2023-09-18','@-4|07','@-1|01']),curso:['Manipulação segura de carnes e frios',8]},
+ {nome:'ESCOLA APRENDER MAIS LTDA',fant:'Aprender Mais',cnpj:'789012340001',reg:'sn',cnae:'8513900',mun:'Recife',cod:'2611606',uf:'PE',cep:'50010010',rat:1,fap:1,fpas:'515',terc:'0000',tcp:0,ct:'Profª Luciana Mais',
+  lots:[['001','Corpo docente'],['002','Secretaria e apoio']],cargos:[['01','Professor do ensino fundamental','231205'],['02','Auxiliar de secretaria','411010'],['03','Auxiliar de serviços gerais','514320'],['04','Coordenador pedagógico','239415'],['05','Assistente administrativo','411010']],
+  cct:{nome:'CCT Estabelecimentos de Ensino 2026 (exemplo)',sind:'Sindicato dos Professores (exemplo)',pisos:{'231205':'3100,00','411010':'1621,00'}},
+  emps:gen(6,SXB,[0,0,1,0,3,2,0,4,1,0],[0,0,1,0,0,1,0,1,1,0],[3300,3150,1700,3400,6900,1621,3200,2300,1750,3120],['cct d1','cct','vt','cct d2','d1','vt','cct vt','cct','vt d1','cct'],['2020-02-10','2021-02-08','2022-05-02','2018-02-05','2017-03-13','2023-07-10','2024-02-12','2022-08-15','@-3|05','@-2|01']),curso:['Primeiros socorros no ambiente escolar',8]},
+ {nome:'TRANSPORTADORA ROTA SUL LTDA',fant:'Rota Sul',cnpj:'890123450001',reg:'lr',cnae:'4930202',mun:'Cuiabá',cod:'5103403',uf:'MT',cep:'78005010',rat:3,fap:1.3,fpas:'515',terc:'0115',tcp:5.8,ct:'Fábio Rota Sul',
+  lots:[['001','Operação e frota'],['002','Administrativo']],cargos:[['01','Motorista de caminhão','782510'],['02','Armazenista','414110'],['03','Auxiliar de serviços gerais','514320'],['04','Gerente administrativo','142105'],['05','Assistente administrativo','411010']],
+  cct:{nome:'CCT Transporte Rodoviário de Cargas 2026 (exemplo)',sind:'Sindicato dos Transportadores (exemplo)',pisos:{'782510':'2900,00','414110':'2000,00'}},
+  emps:gen(7,SXA,[0,0,1,0,3,0,1,4,2,0],[0,0,0,0,1,0,0,1,0,0],[3100,3300,2050,3000,9200,3250,2000,2400,1850,3150],['cct peric d1','cct d2','cct vt','cct d1','d1','cct peric','cct vt','vt','vt d1','cct d3'],['2019-05-06','2021-08-09','2022-03-14','2018-09-17','2016-02-01','2023-11-06','2024-04-15','2023-02-13','@-2|12','@-1|04']),curso:['Direção defensiva e transporte de cargas',16]},
+ {nome:'HOTEL MAR AZUL LTDA',fant:'Mar Azul',cnpj:'901234560001',reg:'lp',cnae:'5510801',mun:'Florianópolis',cod:'4205407',uf:'SC',cep:'88010010',rat:1,fap:1,fpas:'515',terc:'0115',tcp:5.8,ct:'Sra. Marina Azul',
+  lots:[['001','Hospedagem e restaurante'],['002','Administração']],cargos:[['01','Recepcionista de hotel','422110'],['02','Garçom','513405'],['03','Cozinheiro geral','513205'],['04','Gerente administrativo','142105'],['05','Auxiliar de serviços gerais','514320']],
+  cct:{nome:'CCT Hotelaria 2026 (exemplo)',sind:'Sindicato dos Hotéis e Bares (exemplo)',pisos:{'422110':'1900,00','513405':'1750,00'}},
+  emps:gen(8,SXB,[0,1,2,0,3,1,2,4,1,4],[0,0,0,0,1,0,0,0,0,0],[2000,1800,2700,1950,7200,1780,2650,1740,1760,1700],['cct vt','cct vt d1','cct d2','cct vt','d2','cct vt','cct d1','vt','cct vt','vt d1'],['2021-09-06','2022-12-05','2020-10-19','2023-03-06','2018-04-02','2024-11-04','2022-06-13','2025-02-17','@-3|09','@-1|06']),curso:['Atendimento ao hóspede e segurança alimentar',8]},
+ {nome:'RESTAURANTE SABOR DA TERRA LTDA',fant:'Sabor da Terra',cnpj:'7K2M9A4P1QZ3',reg:'sn',cnae:'5611201',mun:'Salvador',cod:'2927408',uf:'BA',cep:'40010010',rat:1,fap:1,fpas:'515',terc:'0000',tcp:0,ct:'Sr. Jorge da Terra',
+  lots:[['001','Salão e cozinha'],['002','Administração']],cargos:[['01','Cozinheiro geral','513205'],['02','Garçom','513405'],['03','Auxiliar de cozinha','513605'],['04','Gerente de restaurante','141510'],['05','Operador de caixa','421125']],
+  cct:{nome:'CCT Bares e Restaurantes 2026 (exemplo)',sind:'Sindicato de Bares e Restaurantes (exemplo)',pisos:{'513205':'1950,00','513405':'1700,00'}},
+  emps:gen(9,SXC,[0,1,2,1,3,0,2,4,1,2],[0,0,0,0,1,0,0,0,0,0],[2150,1720,1680,1760,5400,2100,1700,1750,1710,1690],['cct vt d1','cct vt','cct vt','cct vt d2','d1','cct','vt','cct vt','vt d1','vt'],['2022-04-04','2023-05-08','2021-06-14','2020-01-06','2019-03-11','2024-09-02','2023-08-21','2022-10-10','@-2|04','@-1|09']),curso:['Boas práticas em serviços de alimentação',8]},
+];
+if(EX_EMP.length===3)NOVOS.forEach(x=>EX_EMP.push(x));
+})();
+async function exCarregarN(n){const old=DB;const prev=(old.empresa||old.empregados.length)&&!old._exemplo?old:null;const keep=(old._emps||[]).filter(x=>!x.ex);const audit0=old.audit;
+  if(prev){DB=prev;empArquivar();}const arq=prev?(DB._emps||[]).filter(x=>!x.ex):keep;DB=old;
+  const snaps=[];for(let ci=1;ci<n;ci++){await new Promise(r=>setTimeout(r,0));const d=exBuildEmpresa(ci,old);const c=Object.assign({},d);delete c._emps;delete c.audit;snaps.push({id:d._id,cnpj:d.empresa.cnpj,razao:d.empresa.razao,snap:JSON.stringify(c),em:agoraISO(),ex:true});}
+  const a=exBuildEmpresa(0,old);a._emps=arq.concat(snaps);a.audit=audit0||[];VAULT.audit=a.audit;DB=a;NAV.stack=[];audit('exemplo.carregado',n+' empresas de exemplo');saveDB();}
+ACT.exCarregar10=()=>modalConfirm('Serão criadas <b>10 empresas fictícias</b> com <b>10 empregados</b> cada, em situações variadas: Simples Nacional, Lucro Presumido e Lucro Real; nove estados; atividades de padaria, tecnologia, metalurgia, saúde, construção, supermercado, escola, transporte, hotelaria e restaurante (uma delas com CNPJ alfanumérico); admissões antigas e recentes, dependentes, insalubridade e periculosidade, convenções coletivas, exames vencidos, atestados e advertências. Seus dados atuais, se houver, são <b>preservados</b> como empresa arquivada. Pode levar alguns segundos.',async()=>{toast('Montando as 10 empresas de exemplo…');await new Promise(r=>setTimeout(r,50));try{await exCarregarN(10);}catch(e){toast('Falha ao montar o exemplo: '+e.message,'err');return;}EC.sel=null;home();go('empresa');toast('10 empresas de exemplo carregadas. Gire o carrossel e use a busca.','ok');},{title:'Ambiente de teste do carrossel',yes:'Carregar 10 empresas'});
+const _exCard24=exCard;
+const _bkView24=SC.backup.view;SC.backup.view=function(p){return _bkView24.call(this,p).replace('<button class="btn" data-act="exRemover">','<button class="btn" data-act="exCarregar10">Carregar 10 empresas (teste do carrossel)</button><button class="btn" data-act="exRemover">');};
 
 </script></body></html>
