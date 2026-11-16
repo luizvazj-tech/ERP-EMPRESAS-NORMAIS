@@ -1,10 +1,11 @@
 /* ui21 — tema claro/escuro, paleta de comandos, acessibilidade de diálogos e título por tela */
 const THEME_KEY='fp_tema';
-function themeGet(){try{const v=localStorage.getItem(THEME_KEY);return v==='light'||v==='dark'?v:'auto';}catch(e){return 'auto';}}
+let THEME_MEM=null;
+function themeGet(){if(THEME_MEM)return THEME_MEM;try{const v=localStorage.getItem(THEME_KEY);return v==='light'||v==='dark'?v:'auto';}catch(e){return 'auto';}}
 function themeApply(t){const r=document.documentElement;if(t==='light'||t==='dark')r.setAttribute('data-theme',t);else r.removeAttribute('data-theme');
   const b=document.getElementById('btnTema');if(b){const rot={auto:'◐ Tema: auto',light:'☀ Tema: claro',dark:'☾ Tema: escuro'}[t];b.textContent=rot;b.setAttribute('aria-label',rot+' (alternar)');}if(typeof applyBrand==='function'&&document.body)applyBrand();}
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>themeApply(themeGet()));}catch(e){}
-function themeNext(){const t=themeGet(),n=t==='auto'?'light':t==='light'?'dark':'auto';try{if(n==='auto')localStorage.removeItem(THEME_KEY);else localStorage.setItem(THEME_KEY,n);}catch(e){}themeApply(n);toast('Tema: '+({auto:'automático (segue o sistema)',light:'claro',dark:'escuro'})[n]);}
+function themeNext(){const t=themeGet(),n=t==='auto'?'light':t==='light'?'dark':'auto';THEME_MEM=n;try{if(n==='auto')localStorage.removeItem(THEME_KEY);else if(typeof CONSENT!=='undefined'&&CONSENT&&CONSENT.pref)localStorage.setItem(THEME_KEY,n);}catch(e){}themeApply(n);toast('Tema: '+({auto:'automático (segue o sistema)',light:'claro',dark:'escuro'})[n]);}
 ACT.tema=()=>themeNext();
 (function(){const top=document.getElementById('top');if(top&&!document.getElementById('btnTema')){const b=document.createElement('button');b.id='btnTema';b.type='button';b.setAttribute('data-act','tema');const k=document.createElement('button');k.id='btnCmd';k.type='button';k.setAttribute('data-act','cmdk');k.title='Paleta de comandos (Ctrl+K)';k.textContent='⌕ Buscar (Ctrl+K)';const ref=document.getElementById('mnav');top.insertBefore(k,ref);top.insertBefore(b,ref);}themeApply(themeGet());})();
 

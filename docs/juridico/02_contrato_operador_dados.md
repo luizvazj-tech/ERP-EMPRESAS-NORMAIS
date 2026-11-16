@@ -37,7 +37,7 @@ Controladora: [●], CNPJ [●]. Operadora: [●], CNPJ [●]. A Controladora to
 
 4.1. A Operadora comunicará à Controladora, por escrito, **em até [24] horas** do conhecimento de incidente que possa acarretar risco ou dano relevante aos titulares, informando natureza dos dados, titulares envolvidos, medidas adotadas e riscos.
 
-4.2. A Controladora avaliará e, se for o caso, comunicará a ANPD e os titulares (art. 48), observando o regulamento de comunicação de incidente de segurança vigente (Resolução CD/ANPD nº 15/2024, que prevê prazo de três dias úteis) [VERIFICAR FONTE OFICIAL]. A Operadora cooperará na investigação e na contenção.
+4.2. A Controladora avaliará e, se for o caso, comunicará a ANPD e os titulares (art. 48), observando o regulamento de comunicação de incidente de segurança vigente (Resolução CD/ANPD nº 15/2024, que prevê prazo de três dias úteis) **. A Operadora cooperará na investigação e na contenção.
 
 ## 5. Obrigações da Controladora
 

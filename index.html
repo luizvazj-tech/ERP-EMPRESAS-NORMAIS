@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="fp-api" content="">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-kcRt0ukJcJtdNJHNcUDxCKUA06FPbBsvHaHTWj314tk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-Gi8OE4mioyHhko31Bao6OIAlwF4+zcNiDiySFvBlKfs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -1500,6 +1500,7 @@ function cookiesHTML(){return `<div class="legal"><p><b>Versão ${CONSENT_VER}.<
 <tr><td class="mono">folhaPro.fail.v1</td><td>Estritamente necessário (segurança)</td><td>Conta tentativas de acesso malsucedidas para retardar ataques de adivinhação de senha.</td><td>Até o acesso bem-sucedido</td></tr>
 <tr><td class="mono">folhaPro.consent.v1</td><td>Estritamente necessário (conformidade)</td><td>Registra a sua escolha sobre cookies, com data e versão desta política.</td><td>Até a revogação ou nova versão da política</td></tr>
 <tr><td class="mono">folhaPro.brand.v1</td><td>Preferência (requer consentimento)</td><td>Memoriza nome, cores e logotipo configurados.</td><td>Até a revogação</td></tr>
+<tr><td class="mono">fp_tema</td><td>Preferência (requer consentimento)</td><td>Memoriza o tema de cores escolhido (claro, escuro ou automático).</td><td>Até a revogação</td></tr>
 <tr><td class="mono">fonts.googleapis.com / fonts.gstatic.com</td><td>Terceiro (requer consentimento)</td><td>Entrega a fonte da marca. O Google recebe o endereço IP e dados técnicos do navegador, conforme a política do próprio Google.</td><td>Sessão de navegação</td></tr></tbody></table></div>
 <p>Não utilizamos cookies de publicidade, de perfilamento ou de análise de comportamento. A hospedagem do sistema (provedor de infraestrutura) pode registrar o endereço IP e a data de acesso em logs técnicos de servidor, para segurança e disponibilidade.</p>
 <p><b>Como gerir.</b> A qualquer momento você pode alterar a escolha em <i>Sistema → Privacidade e cookies</i> ou pelo botão abaixo. Rejeitar os itens opcionais não reduz as funções do sistema; apenas a fonte da marca é substituída pela fonte padrão do dispositivo e as preferências de aparência valem somente até fechar a página. Também é possível limpar o armazenamento local nas configurações do navegador (isso apaga os dados do sistema; faça backup antes).</p>
@@ -1742,7 +1743,7 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
-const APP_VER='2026.11.14+00f96609';
+const APP_VER='2026.11.14+29defc5a';
 const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
@@ -3171,11 +3172,12 @@ ACT.ciEv=async el=>{if(!DB.empresa){toast('Cadastre a empresa primeiro.','err');
   const args=tp==='S-2300'?{id:r.id}:{ci:r.id,comp:r.comp};const ev=criarEvento(tp,args);const x=await enviarEventos([ev]);resumoEnvio(x,[ev]);refresh();};
 /* ui21 — tema claro/escuro, paleta de comandos, acessibilidade de diálogos e título por tela */
 const THEME_KEY='fp_tema';
-function themeGet(){try{const v=localStorage.getItem(THEME_KEY);return v==='light'||v==='dark'?v:'auto';}catch(e){return 'auto';}}
+let THEME_MEM=null;
+function themeGet(){if(THEME_MEM)return THEME_MEM;try{const v=localStorage.getItem(THEME_KEY);return v==='light'||v==='dark'?v:'auto';}catch(e){return 'auto';}}
 function themeApply(t){const r=document.documentElement;if(t==='light'||t==='dark')r.setAttribute('data-theme',t);else r.removeAttribute('data-theme');
   const b=document.getElementById('btnTema');if(b){const rot={auto:'◐ Tema: auto',light:'☀ Tema: claro',dark:'☾ Tema: escuro'}[t];b.textContent=rot;b.setAttribute('aria-label',rot+' (alternar)');}if(typeof applyBrand==='function'&&document.body)applyBrand();}
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>themeApply(themeGet()));}catch(e){}
-function themeNext(){const t=themeGet(),n=t==='auto'?'light':t==='light'?'dark':'auto';try{if(n==='auto')localStorage.removeItem(THEME_KEY);else localStorage.setItem(THEME_KEY,n);}catch(e){}themeApply(n);toast('Tema: '+({auto:'automático (segue o sistema)',light:'claro',dark:'escuro'})[n]);}
+function themeNext(){const t=themeGet(),n=t==='auto'?'light':t==='light'?'dark':'auto';THEME_MEM=n;try{if(n==='auto')localStorage.removeItem(THEME_KEY);else if(typeof CONSENT!=='undefined'&&CONSENT&&CONSENT.pref)localStorage.setItem(THEME_KEY,n);}catch(e){}themeApply(n);toast('Tema: '+({auto:'automático (segue o sistema)',light:'claro',dark:'escuro'})[n]);}
 ACT.tema=()=>themeNext();
 (function(){const top=document.getElementById('top');if(top&&!document.getElementById('btnTema')){const b=document.createElement('button');b.id='btnTema';b.type='button';b.setAttribute('data-act','tema');const k=document.createElement('button');k.id='btnCmd';k.type='button';k.setAttribute('data-act','cmdk');k.title='Paleta de comandos (Ctrl+K)';k.textContent='⌕ Buscar (Ctrl+K)';const ref=document.getElementById('mnav');top.insertBefore(k,ref);top.insertBefore(b,ref);}themeApply(themeGet());})();
 

@@ -19,7 +19,7 @@ Controladora: [●]. Encarregado: [●]. Fornecedor do software: [●]. Versão 
 
 **Ciclo de vida:** coleta (cadastro) → uso (cálculo, holerite, eventos) → armazenamento (navegador do dispositivo, criptografado) → compartilhamento (eSocial/Receita Federal/CEF por gateway do cliente) → descarte (exclusão e backup) .
 
-**Retenção:** prazos legais — FGTS e contratos [●]; documentos trabalhistas conforme CLT e Lei 8.036/1990; SST conforme NR-7 e NR-9 [VERIFICAR FONTE OFICIAL].
+**Retenção:** prazos legais — FGTS e contratos [●]; documentos trabalhistas conforme CLT e Lei 8.036/1990; SST conforme NR-7 e NR-9 **.
 
 ## 3. Necessidade e proporcionalidade
 

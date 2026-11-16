@@ -1,9 +1,9 @@
 ---
 title: "CONTRATO DE LICENÇA DE USO DE SOFTWARE E PRESTAÇÃO DE SUPORTE — FOLHAPRO"
-subtitle: "Minuta com campos a preencher [●]. Itens marcados [VERIFICAR FONTE OFICIAL] dependem de conferência antes da assinatura."
+subtitle: "Minuta com campos a preencher [●]. Itens marcados ** dependem de conferência antes da assinatura."
 ---
 
-**Nota ao advogado revisor.** Esta minuta parte de uma premissa técnica que condiciona o enquadramento jurídico: o FolhaPro é uma aplicação executada no navegador do cliente, que guarda os dados criptografados no próprio dispositivo, sem servidor do fornecedor. Enquanto o fornecedor não hospedar, copiar nem acessar dados pessoais, ele não os trata (Lei 13.709/2018, art. 5º, X) e não é operador; o contrato de operador (documento 02) passa a ser necessário apenas se houver suporte com acesso remoto, backup em nuvem, hospedagem ou qualquer operação sobre dados do cliente. A Cláusula 9 prevê as duas hipóteses.
+**Nota ao advogado revisor.** Esta minuta parte de uma premissa técnica que condiciona o enquadramento jurídico: o FolhaPro é uma aplicação executada no navegador do cliente, que guarda os dados criptografados no próprio dispositivo, sem servidor do fornecedor. Enquanto o fornecedor não hospedar, copiar nem acessar dados pessoais, ele não os trata (Lei 13.709/2018, art. 5º, X) e não é operador; o contrato de operador (documento 02) passa a ser necessário apenas se houver suporte com acesso remoto, backup em nuvem, hospedagem ou qualquer operação sobre dados do cliente. A Cláusula 9 prevê as duas hipóteses. **Atualização de 15/11/2026:** o FolhaPro passou a ter também o **modo servidor** (API com contas, usuários, MFA e auditoria, hospedada pelo fornecedor ou por revendedor). Nesse modo, quem hospeda os dados é operador; aplica-se a Hipótese B e o contrato 02. O titular do programa é o Dr. Luis Alfredo Vaz Junior (ver documento 07), e a revenda com marca própria à Mallora é regida pelo documento 05; esta minuta é o modelo de **sublicença ao cliente final** (Anexo II do documento 05).
 
 ## Partes
 

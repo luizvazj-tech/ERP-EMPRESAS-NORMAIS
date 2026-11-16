@@ -3,7 +3,7 @@ title: "PLANO DE RESPOSTA A INCIDENTES DE SEGURANÇA COM DADOS PESSOAIS — FOLH
 subtitle: "Modelo para a Controladora e para a Operadora; campos [●] a preencher."
 ---
 
-**Fundamento.** Lei 13.709/2018, arts. 46 a 48. O art. 48 exige que o controlador comunique à ANPD e ao titular a ocorrência de incidente que possa acarretar risco ou dano relevante. O prazo e o conteúdo da comunicação seguem a Resolução CD/ANPD nº 15/2024, que prevê três dias úteis a contar do conhecimento do incidente [VERIFICAR FONTE OFICIAL].
+**Fundamento.** Lei 13.709/2018, arts. 46 a 48. O art. 48 exige que o controlador comunique à ANPD e ao titular a ocorrência de incidente que possa acarretar risco ou dano relevante. O prazo e o conteúdo da comunicação seguem a Resolução CD/ANPD nº 15/2024, que prevê três dias úteis a contar do conhecimento do incidente **.
 
 ## 1. Equipe e contatos
 
