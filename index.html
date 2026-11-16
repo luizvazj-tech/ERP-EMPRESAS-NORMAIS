@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="fp-api" content="">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-Gi8OE4mioyHhko31Bao6OIAlwF4+zcNiDiySFvBlKfs='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-nQF+vQcE6GIUvwwltpkaggFIvDuqsAlgP0z3MGkbCNo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Folha de Pagamento e eSocial</title>
 <style>
@@ -135,6 +135,23 @@ html{scroll-padding-top:70px}
 #cmdk .ft{padding:8px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--mut)}
 kbd{font:11.5px ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--ibd);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--s2)}
 .empty{text-align:center;padding:28px 12px;color:var(--mut)}.empty b{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
+
+/* carrossel de empresas (ui22) */
+.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ecar{overflow:hidden}.ec-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}.ec-top h2{margin:0}
+.ec-busca{display:flex;align-items:center;gap:10px;flex:1;min-width:240px;max-width:480px}.ec-busca input{flex:1;min-height:38px;padding:6px 12px;border:1px solid var(--ibd);border-radius:20px;background:var(--card);color:var(--ink);font:inherit}
+.ec-stage{position:relative;height:320px;margin:10px 0 4px;perspective:1100px;outline:none;touch-action:pan-y;user-select:none}
+.ec-stage:focus-visible{box-shadow:0 0 0 3px var(--pt);border-radius:12px}
+.ec-card{position:absolute;left:50%;top:14px;width:270px;min-height:250px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:0 6px 18px rgba(0,0,0,.14);cursor:pointer;display:flex;flex-direction:column;gap:4px;filter:saturate(.45) brightness(.97);transition:transform .5s cubic-bezier(.2,.8,.2,1),opacity .4s,filter .4s,box-shadow .4s,border-color .4s;will-change:transform}
+.ec-card.sel{cursor:default;filter:none;border:2px solid var(--pt);box-shadow:0 18px 40px rgba(0,0,0,.28),0 0 0 4px color-mix(in srgb,var(--pt) 22%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--pt) 10%,var(--card)),var(--card) 55%)}
+.ec-ban{display:flex;align-items:center;gap:6px;margin-bottom:6px}.ec-av{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:17px;color:#fff;background:hsl(var(--h) 45% 38%);margin-right:auto}
+.ec-card.sel .ec-av{background:hsl(var(--h) 55% 34%);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.ec-nm{font-weight:700;font-size:15px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ec-fn{color:var(--mut);font-size:12.5px;min-height:16px}
+.ec-cn{font-variant-numeric:tabular-nums;font-size:13px}.ec-mt{display:flex;justify-content:space-between;gap:8px;color:var(--mut);font-size:12.5px;margin-top:auto}
+.ec-act{display:flex;gap:6px;margin-top:8px}.ec-act[hidden]{display:none}
+.ec-nav{display:flex;align-items:center;justify-content:center;gap:14px}.ec-dots{display:flex;gap:6px;align-items:center}.ec-dots i{width:7px;height:7px;border-radius:50%;background:var(--s3);transition:all .3s}.ec-dots i.on{width:20px;border-radius:4px;background:var(--pt)}
+@media (max-width:560px){.ec-card{width:232px}.ec-stage{height:310px}}
+@media (prefers-reduced-motion:reduce){.ec-card,.ec-dots i{transition:none}}
 </style>
 </head>
 <body>
@@ -1743,7 +1760,7 @@ SC.guias={view(p){const comp=p.comp||DB.cfg.comp,E=DB.empresa,T=totaisComp(comp)
   <div class="card"><div class="tw"><table class="t"><thead><tr><th>Obrigação</th><th class="r">Valor apurado</th><th>Onde emitir</th><th>Vencimento</th><th>Base legal</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${brl(r[1])}</td><td>${esc(r[2])}</td><td>${fmtData(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')||'<tr><td colspan="5" class="c" style="padding:16px;color:var(--mut)">Calcule a folha da competência.</td></tr>'}<tr><td><b>Total</b></td><td class="r"><b>${brl(tot)}</b></td><td colspan="3"></td></tr></tbody></table></div>
   <p class="sub">O valor do DARF/FGTS Digital pode diferir do espelho por compensações, parcelamentos, deduções (salário-família, salário-maternidade) e retificações; confira com o totalizador S-5011 na tela “Retornos”.</p></div>`;},actions:()=>[]};
 /* ===================== Atualizações assinadas (botão “Atualizar”) ===================== */
-const APP_VER='2026.11.14+29defc5a';
+const APP_VER='2026.11.14+6814ae08';
 const UPD={url:'https://folhapro-atualizacoes.onrender.com',pub:{"kty":"EC","x":"yMeg8ADMV3XzNLNb22NoUAG_1Q2OYnsihF4ZNRiBxO8","y":"JdUxlwqBLfNjzU20pZD4IvxmoT33YfXFlcNU8MKrmg0","crv":"P-256"}};
 const UPD_OK={salMin:1,tetoInss:1,inss:1,irrf:1,depIr:1,simpl:1,plrTab:1,consig:1,redutor:1,salFam:1,fgts:1,fgtsAprendiz:1,vtPerc:1,patronal:1,rat:1,fap:1,terceiros:1,adNoturno:1,peric:1,he50:1,he100:1,divisor:1,cprbFrac:1,venc:1};
 let UPDS={app:null,pacotes:[],invalidos:0,erro:'',em:null},_updKey=null;
@@ -3214,5 +3231,54 @@ document.addEventListener('keydown',e=>{if(e.key!=='Tab')return;const m=document
 /* ---------- título da página acompanha a tela (leitores de tela e histórico do navegador) ---------- */
 const _render21=render,TIT_BASE=document.title;
 render=function(){_render21();try{const m=MENU.find(x=>x[1]===NAV.cur.name);const h=document.querySelector('#main h1');const t=(h&&h.textContent.trim())||(m&&m[2]);if(t)document.title=t+' · '+TIT_BASE;}catch(e){}};
+/* ui22 — Empresas cadastradas em carrossel 3D de cards, com busca */
+const EC={q:'',sel:null,meta:new Map(),wheelT:0};
+function ecLista(){const L=[],a=DB.empresa;
+  L.push({id:'__ativa',ativa:true,razao:(a&&a.razao)||'(novo cadastro em branco)',fant:(a&&a.fantasia)||'',cnpj:(a&&a.cnpj)||'',regime:(a&&a.regime)||'',emp:(DB.empregados||[]).length,ex:!!DB._exemplo});
+  (DB._emps||[]).forEach(x=>{const k=x.id+'|'+x.em;let m=EC.meta.get(k);if(!m){m={regime:'',emp:0,fant:''};try{const s=JSON.parse(x.snap);m={regime:(s.empresa&&s.empresa.regime)||'',emp:(s.empregados||[]).length,fant:(s.empresa&&s.empresa.fantasia)||''};}catch(e){}EC.meta.set(k,m);}
+    L.push({id:x.id,ativa:false,razao:x.razao||'(sem razão social)',fant:m.fant,cnpj:x.cnpj||'',regime:m.regime,emp:m.emp,ex:!!x.ex});});
+  return L;}
+function ecFiltra(){const q=sideNorm(EC.q||'').trim(),d=onlyC(EC.q||'');const L=ecLista();if(!q)return L;
+  return L.filter(e=>sideNorm(e.razao+' '+e.fant).includes(q)||(d&&onlyC(e.cnpj).includes(d))||sideNorm(fmtCNPJ(e.cnpj)).includes(q));}
+function ecIni(r){const p=String(r||'?').replace(/[^A-Za-zÀ-ÿ0-9 ]/g,' ').split(/\s+/).filter(w=>w.length>2||/^\d+$/.test(w));return ((p[0]||'?')[0]+((p[1]||'')[0]||'')).toUpperCase();}
+function ecMat(s){let h=0;String(s).split('').forEach(c=>h=(h*31+c.charCodeAt(0))%360);return h;}
+function ecCard(e,i){const h=ecMat(e.cnpj||e.razao);
+  return `<div class="ec-card" role="option" id="ecc${i}" data-act="ecSel" data-arg="${e.id}" aria-selected="false" style="--h:${h}">
+  <div class="ec-ban"><span class="ec-av" aria-hidden="true">${esc(ecIni(e.razao))}</span>${e.ativa?'<span class="badge b-ok">Em uso</span>':''}${e.ex?'<span class="badge b-blue">Exemplo</span>':''}</div>
+  <div class="ec-nm">${esc(e.razao)}</div><div class="ec-fn">${esc(e.fant||'')}</div>
+  <div class="ec-cn">${e.cnpj?'CNPJ '+fmtCNPJ(e.cnpj):'CNPJ não informado'}</div>
+  <div class="ec-mt"><span>${esc(REGIMES[e.regime]||'Regime não definido')}</span><span>${e.emp} empregado${e.emp===1?'':'s'}</span></div>
+  <div class="ec-act" hidden>${e.ativa?`<button class="btn sm" data-act="empJaAberta">Empresa em uso</button>`:`<button class="btn sm pri" data-act="empAbrirConf" data-arg="${e.id}">Abrir empresa</button>`}<button class="btn sm" data-act="empExcluir" data-arg="${e.ativa?'':e.id}">Excluir</button></div></div>`;}
+function ecShell(){return `<div class="card ecar" id="ecar"><div class="ec-top"><h2>Empresas cadastradas</h2><div class="ec-busca"><input type="search" id="ecQ" value="${esc(EC.q)}" placeholder="Buscar por razão social, nome fantasia ou CNPJ…" aria-label="Buscar empresa cadastrada" autocomplete="off"><span class="sub" id="ecCnt" aria-hidden="true"></span></div></div>
+  <div class="ec-stage" id="ecStage" tabindex="0" role="listbox" aria-label="Empresas cadastradas. Use as setas do teclado para girar o carrossel e Enter para abrir."></div>
+  <div class="ec-nav"><button class="btn sm" data-act="ecPrev" aria-label="Empresa anterior">‹</button><div class="ec-dots" id="ecDots" aria-hidden="true"></div><button class="btn sm" data-act="ecNext" aria-label="Próxima empresa">›</button></div>
+  <div class="sr-only" id="ecLive" aria-live="polite"></div></div>`;}
+function ecIdx(L){let i=L.findIndex(e=>e.id===EC.sel);if(i<0){i=Math.max(0,L.findIndex(e=>e.ativa));EC.sel=L[i]&&L[i].id;}return i;}
+function ecDraw(anim){const st=document.getElementById('ecStage');if(!st)return;const L=ecFiltra();const cnt=document.getElementById('ecCnt');const total=ecLista().length;
+  if(cnt)cnt.textContent=EC.q?(L.length+' de '+total):(total+' empresa'+(total===1?'':'s'));
+  if(!L.length){st.innerHTML='<div class="empty"><b>Nenhuma empresa encontrada</b>Confira o nome ou o CNPJ digitado.</div>';st.dataset.k='';st.removeAttribute('aria-activedescendant');document.getElementById('ecDots').innerHTML='';return;}
+  if(st.dataset.k!==L.map(e=>e.id+e.razao+e.emp).join('|')){st.innerHTML=L.map(ecCard).join('');st.dataset.k=L.map(e=>e.id+e.razao+e.emp).join('|');}
+  const cur=ecIdx(L),W=st.clientWidth||800,gap=Math.min(W*0.27,230),cards=st.querySelectorAll('.ec-card');
+  cards.forEach((c,i)=>{const o=i-cur,a=Math.abs(o),sel=o===0;c.classList.toggle('sel',sel);c.setAttribute('aria-selected',sel?'true':'false');c.querySelector('.ec-act').hidden=!sel;
+    c.style.transform=`translateX(calc(-50% + ${o*gap}px)) translateZ(${-a*90}px) rotateY(${o===0?0:(o>0?-1:1)*Math.min(38,a*30)}deg) scale(${sel?1.1:Math.max(.7,.88-a*.05)})`;
+    c.style.opacity=a>3?0:String(sel?1:Math.max(.25,.78-a*.2));c.style.zIndex=String(100-a);c.style.pointerEvents=a>3?'none':'auto';c.tabIndex=-1;});
+  st.setAttribute('aria-activedescendant','ecc'+cur);
+  const dots=document.getElementById('ecDots');if(dots)dots.innerHTML=L.length>1&&L.length<=12?L.map((e,i)=>`<i class="${i===cur?'on':''}"></i>`).join(''):`<small>${cur+1} / ${L.length}</small>`;
+  const live=document.getElementById('ecLive');if(live&&anim)live.textContent=L[cur].razao+', '+(cur+1)+' de '+L.length+(L[cur].ativa?', em uso':'');}
+function ecStep(d){const L=ecFiltra();if(!L.length)return;const i=ecIdx(L);EC.sel=L[(i+d+L.length)%L.length].id;ecDraw(true);}
+ACT.ecPrev=()=>ecStep(-1);ACT.ecNext=()=>ecStep(1);
+ACT.ecSel=el=>{const L=ecFiltra();const id=el.dataset.arg;if(!L.some(e=>e.id===id)||id===EC.sel)return;EC.sel=id;ecDraw(true);};
+const _empView22=SC.empresa.view;
+SC.empresa.view=function(p){let h=_empView22.call(this,p);const a=h.indexOf('<div class="card"><h2>Empresas cadastradas</h2>');if(a<0)return h;const b=h.indexOf('</table></div>',a);if(b<0)return h;return h.slice(0,a)+ecShell()+h.slice(b+14);};
+const _empMount22=SC.empresa.mount;
+SC.empresa.mount=function(p){_empMount22&&_empMount22.call(this,p);const q=document.getElementById('ecQ'),st=document.getElementById('ecStage');if(!st)return;
+  if(!EC.sel||!ecLista().some(e=>e.id===EC.sel))EC.sel=null;ecDraw(false);
+  q.addEventListener('input',()=>{EC.q=q.value;const L=ecFiltra();if(L.length&&!L.some(e=>e.id===EC.sel))EC.sel=L[0].id;ecDraw(true);});
+  q.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();st.focus();}else if(e.key==='ArrowDown'){e.preventDefault();st.focus();}else if(e.key==='Escape'&&q.value){q.value='';EC.q='';ecDraw(true);}});
+  st.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){ecStep(1);e.preventDefault();}else if(e.key==='ArrowLeft'){ecStep(-1);e.preventDefault();}else if(e.key==='Home'){const L=ecFiltra();if(L[0]){EC.sel=L[0].id;ecDraw(true);}e.preventDefault();}else if(e.key==='End'){const L=ecFiltra();if(L.length){EC.sel=L[L.length-1].id;ecDraw(true);}e.preventDefault();}
+    else if(e.key==='Enter'){const L=ecFiltra(),s=L[ecIdx(L)];if(s&&!s.ativa){ACT.empAbrirConf({dataset:{arg:s.id}});}else if(s){ACT.empJaAberta();}e.preventDefault();}});
+  let x0=null;st.addEventListener('pointerdown',e=>{x0=e.clientX;});st.addEventListener('pointerup',e=>{if(x0===null)return;const dx=e.clientX-x0;x0=null;if(Math.abs(dx)>45)ecStep(dx<0?1:-1);});
+  st.addEventListener('wheel',e=>{if(Math.abs(e.deltaX)<Math.abs(e.deltaY)&&!e.shiftKey)return;e.preventDefault();const n=Date.now();if(n-EC.wheelT<260)return;EC.wheelT=n;ecStep((e.deltaX||e.deltaY)>0?1:-1);},{passive:false});
+  window.addEventListener('resize',()=>{if(document.getElementById('ecStage'))ecDraw(false);},{once:true});};
 
 </script></body></html>
