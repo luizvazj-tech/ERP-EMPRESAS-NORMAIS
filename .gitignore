@@ -3,3 +3,8 @@ api/data/
 chaves*.txt
 node_modules/
 server/data/
+*.pfx
+*.p12
+*.pfx.*
+gateway/log/
+gateway/node_modules/

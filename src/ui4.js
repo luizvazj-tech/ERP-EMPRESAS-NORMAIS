@@ -2,13 +2,18 @@
 /* ===================== INTEGRAÇÃO ===================== */
 SC.integr={view(){const C=DB.cfg;
   return `<h1>Webservice do eSocial / Integração</h1><p class="sub">Configuração do ambiente e do serviço de transmissão.</p>
-  <div data-form id="f"><div class="card"><h2>Ambiente e modo de envio</h2><div class="grid">${F('Ambiente do eSocial','ambiente',C.ambiente,{t:'select',opts:[['2','2 – Produção restrita (testes)'],['1','1 – Produção (valor jurídico)']],w:4})+F('Modo de envio','modo',C.modo,{t:'select',opts:[['sim','Simulação local (sem transmissão)'],['gw','Webservice via gateway']],w:4})+F('URL do gateway de integração','gateway',C.gateway,{w:4,ph:'https://seu-servidor/esocial'})}</div></div></div>
+  <div data-form id="f"><div class="card"><h2>Ambiente e modo de envio</h2><div class="grid">${F('Ambiente do eSocial','ambiente',C.ambiente,{t:'select',opts:[['2','2 – Produção restrita (testes)'],['1','1 – Produção (valor jurídico)']],w:4})+F('Modo de envio','modo',C.modo,{t:'select',opts:[['sim','Simulação local (sem transmissão)'],['gw','Webservice via gateway']],w:4})+F('URL do gateway de integração','gateway',C.gateway,{w:4,ph:'http://127.0.0.1:8787'})}</div></div></div>
   <div class="card"><h2>Como a transmissão real funciona</h2><p>O eSocial exige <b>comunicação segura com certificado digital (e-CNPJ ou e-CPF de procurador)</b> e <b>assinatura XMLDSig</b> em cada evento — operações que um navegador não executa com segurança nem consegue sempre realizar por restrição de CORS. Por isso este sistema separa as responsabilidades:</p>
   <p class="sub"><b>Referência normativa:</b> ${esc(LEIAUTE_REF)}. Antes de transmitir em produção, confirme no Portal do eSocial se os esquemas XSD correspondem à etapa em vigor.</p>
   <p><b>1. Este sistema (front-end)</b> cadastra, calcula, gera o XML de cada evento (leiaute S-1.3), mantém a biblioteca e controla status, recibo e retificações.<br><b>2. Gateway de integração (servidor seu)</b> valida o XML contra os XSD oficiais, assina com o certificado A1, monta o <span class="mono">envioLoteEventos</span> e chama os serviços SOAP do eSocial.</p>
   <h3>Serviços do eSocial (conferir no Manual de Orientação do Desenvolvedor, seção “URL dos Web Services”)</h3>
   <div class="tw"><table class="t"><tbody><tr><td>Envio de lote — produção restrita</td><td class="mono">https://webservices.producaorestrita.esocial.gov.br/servicos/empregador/enviarloteeventos/WsEnviarLoteEventos.svc</td></tr><tr><td>Consulta de lote — produção restrita</td><td class="mono">https://webservices.producaorestrita.esocial.gov.br/servicos/empregador/consultarloteeventos/WsConsultarLoteEventos.svc</td></tr><tr><td>Envio / consulta — produção</td><td class="mono">https://webservices.envio.esocial.gov.br/servicos/empregador/… (mesmos nomes de serviço)</td></tr></tbody></table></div>
-  <h3 style="margin-top:14px">Contrato que o gateway deve expor para este sistema</h3>
+  <h3 style="margin-top:14px">Gateway local FolhaPro (pasta <span class="mono">gateway/</span> do repositório)</h3>
+  <p>O repositório traz um gateway pronto, que roda <b>no seu computador</b> (Node.js 18 ou superior), lê o certificado A1 (.pfx) e a senha só na memória, assina cada evento (XMLDSig RSA-SHA256, Manual do Desenvolvedor, seção 6.7), monta o lote de até 50 eventos, chama o <span class="mono">EnviarLoteEventos</span> e o <span class="mono">ConsultarLoteEventos</span> por SOAP 1.1 com TLS mútuo e devolve a este sistema o protocolo, os recibos e as ocorrências. Por padrão ele só opera em <b>produção restrita</b>; a produção exige iniciá-lo com <span class="mono">--producao</span>. Passo a passo no arquivo <span class="mono">gateway/README.md</span>.</p>
+  <pre class="xml">cd gateway &amp;&amp; npm install
+ESOCIAL_PFX=C:\certificados\empresa.pfx node server.js
+(informe aqui: Modo “Webservice via gateway” e URL http://127.0.0.1:8787)</pre>
+  <h3 style="margin-top:14px">Contrato que o gateway expõe para este sistema</h3>
   <pre class="xml">POST {gateway}/lotes
 { "ambiente": 2, "grupo": 1|2|3,           // 1 tabelas/iniciais · 2 não periódicos · 3 periódicos
   "empregador": {"tpInsc":1,"nrInsc":"CNPJ14"},
@@ -16,15 +21,15 @@ SC.integr={view(){const C=DB.cfg;
 }  →  200 {"protocolo":"…"}
 
 GET {gateway}/lotes/{protocolo}
-  →  {"status":"processando"|"processado",
+  →  {"status":"processando"|"processado"|"erro",   // erro: lote rejeitado (campos mensagem e ocorrencias)
       "eventos":[{"id":"ID1…","situacao":"sucesso"|"rejeitado","recibo":"…",
                   "ocorrencias":[{"codigo":"…","descricao":"…"}]}]}
 
-GET {gateway}/status   →  200 (teste de conexão)</pre>
+GET {gateway}/status   →  200 {ambiente, transmissor, certificadoValidoAte} (teste de conexão)</pre>
   <div class="note">Em páginas publicadas como artefato do Claude o navegador bloqueia chamadas a outros domínios; o modo webservice funciona quando o arquivo HTML é aberto localmente ou hospedado no seu domínio (com CORS liberado no gateway). Antes de usar em <b>produção</b>, valide todos os eventos em produção restrita.</div></div>`;},
   actions:()=>[{label:'Testar conexão',act:'intTest'},{label:'💾 Salvar configuração',act:'intSave',cls:'pri',key:'save'}]};
 ACT.intSave=()=>{const o=readForm($('#f'));DB.cfg.ambiente=Number(o.ambiente);DB.cfg.modo=o.modo;DB.cfg.gateway=o.gateway;if(o.modo==='gw'&&!o.gateway){toast('Informe a URL do gateway.','err');return;}saveDB();DIRTY=false;toast('Configuração salva.','ok');refresh();};
-ACT.intTest=async()=>{const u=($('[name=gateway]').value||'').replace(/\/$/,'');if(!u){toast('Informe a URL do gateway.','err');return;}try{const r=await fetch(u+'/status');toast(r.ok?'Gateway respondeu normalmente.':'Gateway respondeu HTTP '+r.status,r.ok?'ok':'err');}catch(e){toast('Sem conexão com o gateway: '+e.message,'err');}};
+ACT.intTest=async()=>{const u=($('[name=gateway]').value||'').replace(/\/$/,'');if(!u){toast('Informe a URL do gateway.','err');return;}try{const r=await fetch(u+'/status');if(!r.ok){toast('Gateway respondeu HTTP '+r.status,'err');return;}let j={};try{j=await r.json();}catch(_){}const amb=Number($('[name=ambiente]').value);if(j.ambiente&&j.ambiente!==amb){toast('Atenção: o gateway está no ambiente '+j.ambiente+' e esta tela, no '+amb+'. Os envios serão recusados até os dois coincidirem.','err');return;}const dt=j.certificadoValidoAte?new Date(j.certificadoValidoAte):null;toast('Gateway respondeu'+(j.ambiente?' · ambiente '+j.ambiente+(j.ambiente===2?' (produção restrita)':' (produção)'):'')+(j.transmissor&&j.transmissor.nrInsc?' · transmissor '+j.transmissor.nrInsc:'')+(dt?' · certificado válido até '+dt.toLocaleDateString('pt-BR'):'')+'.','ok');}catch(e){toast('Sem conexão com o gateway: '+e.message,'err');}};
 
 /* ===================== PARÂMETROS LEGAIS ===================== */
 const getP=(o,pth)=>pth.split('.').reduce((a,k)=>a[k],o);

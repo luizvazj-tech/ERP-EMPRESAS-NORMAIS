@@ -1,0 +1,47 @@
+'use strict';
+/* Teste de ponta a ponta do gateway contra um eSocial SIMULADO (TLS mútuo, XMLDSig conferido no servidor). Não usa a rede do governo. */
+const { execFileSync, spawn } = require('child_process'); const fs = require('fs'), os = require('os'), path = require('path');
+const mock = require('./mock_esocial');
+const T = fs.mkdtempSync(path.join(os.tmpdir(), 'gwtest-')); const sh = (...a) => execFileSync('openssl', a, { cwd: T, stdio: 'pipe' });
+let falhas = 0, gw; const ok = (c, m) => { console.log((c ? '  ✔ ' : '  ✖ ') + m); if (!c) falhas++; };
+(async () => {
+  sh('req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', 'ca.key', '-out', 'ca.pem', '-subj', '/CN=AC Teste', '-days', '2');
+  fs.writeFileSync(path.join(T, 'srv.ext'), 'subjectAltName=IP:127.0.0.1\n');
+  sh('req', '-newkey', 'rsa:2048', '-nodes', '-keyout', 'srv.key', '-out', 'srv.csr', '-subj', '/CN=127.0.0.1');
+  sh('x509', '-req', '-in', 'srv.csr', '-CA', 'ca.pem', '-CAkey', 'ca.key', '-CAcreateserial', '-out', 'srv.pem', '-days', '2', '-extfile', 'srv.ext');
+  sh('req', '-newkey', 'rsa:2048', '-nodes', '-keyout', 'cli.key', '-out', 'cli.csr', '-subj', '/C=BR/O=ICP-Brasil/CN=EMPRESA TESTE LTDA:12345678000199');
+  sh('x509', '-req', '-in', 'cli.csr', '-CA', 'ca.pem', '-CAkey', 'ca.key', '-CAcreateserial', '-out', 'cli.pem', '-days', '2');
+  sh('pkcs12', '-export', '-inkey', 'cli.key', '-in', 'cli.pem', '-certfile', 'ca.pem', '-out', 'cli.pfx', '-passout', 'pass:segredo123');
+  const read = (f) => fs.readFileSync(path.join(T, f), 'utf8');
+  const PM = 18443, PG = 18787;
+  const srv = await mock.iniciar(PM, { key: read('srv.key'), cert: read('srv.pem'), ca: read('ca.pem') });
+  const env = Object.assign({}, process.env, { ESOCIAL_PFX: path.join(T, 'cli.pfx'), ESOCIAL_PFX_PASS: 'segredo123', ESOCIAL_CA: path.join(T, 'ca.pem'), ESOCIAL_LOG: path.join(T, 'log'),
+    ESOCIAL_URL_ENVIO: 'https://127.0.0.1:' + PM + '/envio', ESOCIAL_URL_CONSULTA: 'https://127.0.0.1:' + PM + '/consulta' });
+  gw = spawn('node', ['server.js', '--porta', String(PG)], { cwd: __dirname, env }); let saida = ''; gw.stdout.on('data', d => saida += d); gw.stderr.on('data', d => saida += d);
+  for (let i = 0; i < 40 && !/Gateway pronto/.test(saida); i++) await new Promise(r => setTimeout(r, 150));
+  ok(/Gateway pronto/.test(saida), 'gateway iniciou (certificado .pfx lido com a senha)'); ok(/CNPJ 12345678000199/.test(saida), 'CNPJ identificado no certificado');
+  const B = 'http://127.0.0.1:' + PG;
+  const ev = (seq, extra) => { const id = 'ID11234567800019920261116120000' + String(seq).padStart(5, '0'); return { id, tipo: 'S-1000', xml: '<?xml version="1.0" encoding="UTF-8"?><eSocial xmlns="http://www.esocial.gov.br/schema/evt/evtInfoEmpregador/v_S_01_03_00"><evtInfoEmpregador Id="' + id + '"><ideEvento><tpAmb>2</tpAmb></ideEvento><ideEmpregador><tpInsc>1</tpInsc><nrInsc>12345678</nrInsc></ideEmpregador>' + (extra || '') + '</evtInfoEmpregador></eSocial>' }; };
+  const post = (b) => fetch(B + '/lotes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
+  let r = await fetch(B + '/status'); let j = await r.json(); ok(r.ok && j.ambiente === 2 && j.transmissor.nrInsc === '12345678000199', 'GET /status → ambiente 2 e transmissor do certificado');
+  r = await post({ ambiente: 1, grupo: 1, empregador: { tpInsc: 1, nrInsc: '12345678000199' }, eventos: [ev(1)] }); j = await r.json(); ok(r.status === 409, 'ambiente 1 pedido a gateway de homologação → 409, nada enviado');
+  r = await post({ ambiente: 2, grupo: 1, empregador: { tpInsc: 1, nrInsc: '99999999000199' }, eventos: [ev(1)] }); ok(r.status === 400, 'evento de outro empregador → 400');
+  r = await post({ ambiente: 2, grupo: 1, empregador: { tpInsc: 1, nrInsc: '12345678000199' }, eventos: Array.from({ length: 51 }, (_, i) => ev(i + 1)) }); ok(r.status === 400, 'mais de 50 eventos → 400');
+  const eventos = [ev(1), ev(2, '<x>ç ã é</x>'), ev(3)];
+  r = await post({ ambiente: 2, grupo: 1, empregador: { tpInsc: 1, nrInsc: '12345678000199' }, eventos }); j = await r.json();
+  if (r.status !== 200) console.log('  resposta:', JSON.stringify(j), '\n  log do gateway:', saida.slice(-600));
+  ok(r.status === 200 && /^1\.2\./.test(j.protocolo), 'POST /lotes → protocolo ' + j.protocolo + ' (TLS mútuo aceito pelo servidor)');
+  const lote = fs.readFileSync(path.join(T, 'log', j.protocolo + '-lote-assinado.xml'), 'utf8');
+  ok((lote.match(/<Signature /g) || []).length === 3, 'três assinaturas no lote'); ok(!/<\?xml/.test(lote), 'sem declaração XML dentro do lote');
+  ok(/<ideEmpregador><tpInsc>1<\/tpInsc><nrInsc>12345678<\/nrInsc>/.test(lote) && /<ideTransmissor><tpInsc>1<\/tpInsc><nrInsc>12345678000199</.test(lote), 'ideEmpregador (CNPJ base) e ideTransmissor (CNPJ do certificado)');
+  ok(/Algorithm="http:\/\/www.w3.org\/2001\/04\/xmldsig-more#rsa-sha256"/.test(lote) && /xmlenc#sha256/.test(lote) && /URI=""/.test(lote), 'RSA-SHA256, digest SHA-256 e Reference URI=""');
+  let c1 = await (await fetch(B + '/lotes/' + j.protocolo)).json(); ok(c1.status === 'processando', 'consulta 1 → processando (101)');
+  let c2 = await (await fetch(B + '/lotes/' + j.protocolo)).json();
+  ok(c2.status === 'processado' && c2.eventos.length === 3, 'consulta 2 → processado com 3 eventos');
+  ok(c2.eventos[0].situacao === 'sucesso' && /^1\.2\./.test(c2.eventos[0].recibo) && c2.eventos[0].id === eventos[0].id, 'evento 1: sucesso, recibo e Id correlacionados');
+  ok(c2.eventos[2].situacao === 'rejeitado' && c2.eventos[2].ocorrencias[0].codigo === 'MS0001', 'evento 3: rejeitado com ocorrência (código e descrição)');
+  ok(!c2.eventos.some(e => /assinatura/.test(JSON.stringify(e.ocorrencias)) && e.id !== eventos[2].id), 'o servidor simulado validou a assinatura de todos os eventos');
+  r = await fetch(B + '/lotes/xyz', { headers: { Origin: 'https://site-estranho.com' } }); ok(r.status === 403, 'origem não autorizada → 403');
+  gw.kill(); srv.close();
+  console.log(falhas ? '\nFALHAS: ' + falhas : '\nGATEWAY_TEST_OK'); process.exit(falhas ? 1 : 0);
+})().catch(e => { console.error(e); if (gw) gw.kill(); process.exit(1); });
